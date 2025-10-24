@@ -1,16 +1,9 @@
 package api
 
 import (
-<<<<<<< HEAD
-	"bytes"
-	"io"
-	"net/http"
-	"crypto/tls"
-=======
 	"crypto/tls"
 	"io"
 	"net/http"
->>>>>>> 14660e4 (Modified API call mechanisms between middleware and embedded system)
 	"time"
 
 	"github.com/gofiber/fiber/v2"
