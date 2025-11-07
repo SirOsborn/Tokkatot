@@ -139,7 +139,7 @@ func main() {
 	apiRoutes.Get("/toggle-fan", api.ToggleFanHandler)
 	apiRoutes.Get("/toggle-bulb", api.ToggleBulbHandler)
 	apiRoutes.Get("/toggle-feeder", api.ToggleFeederHandler)
-	apiRoutes.Get("/toggle-water", api.ToggleWaterHandler)
+	apiRoutes.Get("/toggle-pump", api.TogglePumpHandler)
 
 	// AI Disease Detection routes
 	apiRoutes.Get("/ai/health", api.AIHealthCheckHandler)

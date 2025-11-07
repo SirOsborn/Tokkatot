@@ -39,7 +39,6 @@ void read_dht22(float *temperature, float *humidity)
     if (ret == DHT_OK) {
         *temperature = getTemperature();
         *humidity = getHumidity();
-        ESP_LOGI(TAG, "Temperature: %.2f°C, Humidity: %.2f%%", *temperature, *humidity);
     } else {
         errorHandler(ret);
         *temperature = 0.0f;
@@ -47,9 +46,9 @@ void read_dht22(float *temperature, float *humidity)
     }
 }
 
-float read_water_level(void)
+int read_water_level(void)
 {
-    return adc_read_voltage(adc_config, WATER_SENSOR_ADC_CHANNEL);
+    return adc_read_raw(adc_config, WATER_SENSOR_ADC_CHANNEL);
 }
 
 void get_current_sensor_data(sensor_data_t *data)
@@ -57,14 +56,11 @@ void get_current_sensor_data(sensor_data_t *data)
     float temp, humid;
     read_dht22(&temp, &humid);
     
-    data->timestamp = esp_timer_get_time() / 1000000; // Convert to seconds
+    data->timestamp = esp_timer_get_time() / 1000; // Convert to milliseconds
     data->temperature = temp;
     data->humidity = humid;
     data->water_level = read_water_level();
-    
-    ESP_LOGI(TAG, "Sensors - Temp: %.1f°C, Humidity: %.1f%%, Water Level: %.2fV", 
-             temp, humid, data->water_level);
-    
+        
     update_sensor_history(data);
 }
 

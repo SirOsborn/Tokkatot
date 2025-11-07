@@ -448,7 +448,7 @@
     </style>
 </head>
 <body>
-    <div id="header"></div>
+    <div id="header-placeholder"></div>
     <div id="navbar"></div>
 
     <div class="disease-detection-container">
@@ -506,6 +506,7 @@
         </div>
     </div>
 
+    <script src="../js/index.js"></script>
     <script src="../js/header.js"></script>
     <script src="../js/navbar.js"></script>
     <script src="../js/scriptHome.js"></script>
@@ -640,12 +641,14 @@
                 if (result.success) {
                     displayResult(result.prediction);
                 } else {
-                    displayError(result.error || 'Failed to analyze image');
+                    // Show detailed error message
+                    const errorMsg = result.details || result.error || 'Failed to analyze image';
+                    displayError(errorMsg);
                 }
 
             } catch (error) {
                 loading.style.display = 'none';
-                displayError('បញ្ហាបណ្តាញ: ' + error.message);
+                displayError('បញ្ហាបណ្តាញ: ' + error.message + '. សូមព្យាយាមម្តងទៀត។');
             }
         }
 

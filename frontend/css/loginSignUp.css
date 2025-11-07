@@ -22,17 +22,22 @@ body {
   background: #20a39e;
 }
 .wrapper {
-  width: 380px;
+  width: 90%;
+  max-width: 380px;
   padding: 40px 30px 50px 30px;
   background: #fff;
   border-radius: 5px;
   text-align: center;
   box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.1);
+  margin: 0 auto; 
+  box-sizing: border-box; 
 }
+
 .wrapper header {
   font-size: 35px;
   font-weight: 600;
 }
+
 .wrapper form {
   margin: 40px 0;
 }
@@ -63,7 +68,7 @@ form .field .input-area {
   position: relative;
 }
 form input {
-  width: 100%;
+  width: 70%;
   height: 100%;
   outline: none;
   padding: 0 45px;
@@ -164,3 +169,5 @@ form input[type="submit"] {
 form input[type="submit"]:hover {
   background: #ffba49;
 }
+
+

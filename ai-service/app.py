@@ -4,10 +4,8 @@ import numpy as np
 from flask import Flask, request, jsonify
 from PIL import Image
 import tensorflow as tf
-from tensorflow import keras
-import cv2
-import io
-import base64
+# Use tf_keras for compatibility with legacy Keras 2.x models
+import tf_keras as keras
 
 app = Flask(__name__)
 
@@ -75,8 +73,14 @@ class ChickenDiseaseDetector:
             # Preprocess the image
             processed_image = self.preprocess_image(image)
             
-            # Make prediction
-            predictions = self.model.predict(processed_image)
+            # Make prediction with error handling
+            print("Starting model prediction...")
+            try:
+                predictions = self.model.predict(processed_image, verbose=0)
+            except Exception as pred_error:
+                print(f"Prediction failed, retrying... Error: {pred_error}")
+                # Retry once
+                predictions = self.model.predict(processed_image, verbose=0)
             
             # Get predicted class
             predicted_class_idx = np.argmax(predictions[0])
@@ -100,6 +104,8 @@ class ChickenDiseaseDetector:
             }
         except Exception as e:
             print(f"Error during prediction: {e}")
+            import traceback
+            traceback.print_exc()
             raise
     
     def get_recommendation(self, disease, confidence):
@@ -167,65 +173,96 @@ def health_check():
 def predict_disease():
     """Main prediction endpoint"""
     if not detector:
-        return jsonify({'error': 'Model not loaded'}), 500
+        print("ERROR: Detector not initialized")
+        return jsonify({
+            'success': False,
+            'error': 'Model not loaded. Please check server logs.',
+            'details': 'AI model initialization failed'
+        }), 500
     
     try:
+        print(f"Received prediction request")
+        print(f"Request files: {request.files}")
+        print(f"Request form: {request.form}")
+        print(f"Request content type: {request.content_type}")
+        
         # Check if image is provided
         if 'image' not in request.files:
-            return jsonify({'error': 'No image provided'}), 400
+            print("ERROR: No 'image' field in request.files")
+            return jsonify({
+                'success': False,
+                'error': 'No image provided',
+                'hint': 'Expected multipart/form-data with image field'
+            }), 400
         
         file = request.files['image']
         if file.filename == '':
-            return jsonify({'error': 'No image selected'}), 400
+            print("ERROR: Empty filename")
+            return jsonify({
+                'success': False,
+                'error': 'No image selected'
+            }), 400
+        
+        print(f"Processing image: {file.filename}, content_type: {file.content_type}")
         
         # Read and process image
-        image = Image.open(file.stream)
+        try:
+            image = Image.open(file.stream)
+            print(f"Image opened successfully: size={image.size}, mode={image.mode}")
+        except Exception as img_error:
+            print(f"ERROR: Failed to open image: {img_error}")
+            return jsonify({
+                'success': False,
+                'error': 'Invalid image file',
+                'details': str(img_error)
+            }), 400
         
         # Make prediction
-        result = detector.predict_disease(image)
-        
-        return jsonify({
-            'success': True,
-            'prediction': result,
-            'timestamp': str(np.datetime64('now'))
-        })
+        print("Starting prediction...")
+        try:
+            result = detector.predict_disease(image)
+            print(f"Prediction complete: {result['predicted_disease']} ({result['confidence']:.2%})")
+            
+            return jsonify({
+                'success': True,
+                'prediction': result,
+                'timestamp': str(np.datetime64('now'))
+            })
+        except Exception as pred_error:
+            print(f"ERROR: Prediction failed: {pred_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'success': False,
+                'error': 'Prediction failed',
+                'details': str(pred_error)
+            }), 500
     
     except Exception as e:
-        print(f"Prediction error: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/predict-base64', methods=['POST'])
-def predict_disease_base64():
-    """Prediction endpoint for base64 encoded images (useful for mobile)"""
-    if not detector:
-        return jsonify({'error': 'Model not loaded'}), 500
-    
-    try:
-        data = request.get_json()
-        
-        if not data or 'image' not in data:
-            return jsonify({'error': 'No base64 image provided'}), 400
-        
-        # Decode base64 image
-        image_data = base64.b64decode(data['image'])
-        image = Image.open(io.BytesIO(image_data))
-        
-        # Make prediction
-        result = detector.predict_disease(image)
-        
+        print(f"ERROR: Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
-            'success': True,
-            'prediction': result,
-            'timestamp': str(np.datetime64('now'))
-        })
-    
-    except Exception as e:
-        print(f"Prediction error: {e}")
-        return jsonify({'error': str(e)}), 500
+            'success': False,
+            'error': 'Internal server error',
+            'details': str(e),
+            'type': str(type(e).__name__)
+        }), 500
 
 if __name__ == '__main__':
     # Initialize the detector
+    print("="*60)
+    print("Starting Tokkatot AI Service")
+    print("="*60)
     initialize_detector()
     
-    # Start the Flask server
-    app.run(host='10.0.0.1', port=5000, debug=False)
+    if detector:
+        print("✅ AI Service ready to accept requests")
+    else:
+        print("❌ AI Service started but detector failed to initialize")
+    
+    print("="*60)
+    
+    # Start the Flask server on localhost (middleware will proxy requests)
+    print("Starting Flask server on 127.0.0.1:5000")
+    app.run(host='127.0.0.1', port=5000, debug=False)

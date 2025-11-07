@@ -19,7 +19,7 @@ var AIServiceURL = getAIServiceURL()
 func getAIServiceURL() string {
 	url := os.Getenv("AI_SERVICE_URL")
 	if url == "" {
-		return "http://10.0.0.1:5000" // Default local AI service
+		return "http://127.0.0.1:5000" // Default localhost AI service
 	}
 	return url
 }
@@ -165,22 +165,30 @@ func PredictDiseaseHandler(c *fiber.Ctx) error {
 	// Parse response
 	var predictionResp PredictionResponse
 	if err := json.Unmarshal(body, &predictionResp); err != nil {
+		fmt.Printf("Failed to parse AI response. Status: %d, Body: %s\n", resp.StatusCode, string(body))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":    "Failed to parse AI service response",
-			"response": string(body),
+			"success": false,
+			"error":   "Failed to parse AI service response",
+			"details": string(body),
 		})
 	}
 
 	// Return the prediction result
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK || !predictionResp.Success {
+		errorMsg := predictionResp.Error
+		if errorMsg == "" {
+			errorMsg = "Unknown error from AI service"
+		}
+		fmt.Printf("AI service error: %s (status: %d)\n", errorMsg, resp.StatusCode)
 		return c.Status(resp.StatusCode).JSON(fiber.Map{
+			"success": false,
 			"error":   "AI service returned error",
-			"details": predictionResp.Error,
+			"details": errorMsg,
 		})
 	}
 
-	// Log the prediction for monitoring (optional)
-	fmt.Printf("Disease prediction: %s (%.2f%% confidence) at %s\n",
+	// Log the prediction for monitoring
+	fmt.Printf("✅ Disease prediction: %s (%.2f%% confidence) at %s\n",
 		predictionResp.Prediction.PredictedDisease,
 		predictionResp.Prediction.Confidence*100,
 		predictionResp.Timestamp)

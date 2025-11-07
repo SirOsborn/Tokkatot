@@ -1,132 +1,77 @@
-<!DOCTYPE html>
-<html lang="km">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>ព័ត៌មានលម្អិត - Smart Poultry</title>
-        <link rel="stylesheet" href="../css/styleProfile.css" />
-        <link rel="stylesheet" href="../css/styleHeader.css" />
-        <link rel="stylesheet" href="../css/stylenavbar.css" />
-        <link rel="icon" href="../assets/images/tokkatot logo-02.png" type="image/x-icon" />
-    </head>
-    <body>
-        <div class="container">
-            <!-- Header Placeholder -->
-            <div id="header-placeholder"></div>
+    <!DOCTYPE html>
+    <html lang="km">
+        <head>
+            <meta charset="UTF-8" />
+            <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>ព័ត៌មានលម្អិត - Smart Poultry</title>
+            <link rel="stylesheet" href="../css/styleProfile.css" />
+            <link rel="stylesheet" href="../css/styleHeader.css" />
+            <link rel="stylesheet" href="../css/stylenavbar.css" />
+            <link rel="icon" href="../assets/images/tokkatot logo-02.png" type="image/x-icon" />
+        </head>
+        <body>
+            <div class="container">
+                <!-- Header Placeholder -->
+                <div id="header-placeholder"></div>
 
-            <!-- User Information Form Section -->
-            <div class="profile-section user-info-section">
-                <h2>ព័ត៌មានផ្ទាល់ខ្លួន</h2>
-                <form id="userInfoForm" class="user-form">
-                    <div class="form-group">
-                        <label for="fullName">ឈ្មោះពេញ</label>
-                        <input type="text" id="fullName" name="fullName" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="phoneNumber">លេខទូរស័ព្ទ</label>
-                        <input type="tel" id="phoneNumber" name="phoneNumber" pattern="[0-9]{9,10}" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="gender">ភេទ</label>
-                        <select id="gender" name="gender" required>
-                            <option value="">ជ្រើសរើសភេទ</option>
-                            <option value="male">ប្រុស</option>
-                            <option value="female">ស្រី</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group location-group">
-                        <label for="province">ទីតាំងកសិដ្ឋាន</label>
-                        <select id="province" name="province" required>
-                            <option value="">ជ្រើសរើសខេត្ត/ក្រុង</option>
-                            <option value="Phnom Penh">ភ្នំពេញ</option>
-                            <option value="Kandal">កណ្តាល</option>
-                            <option value="Kampong Speu">កំពង់ស្ពឺ</option>
-                            <option value="Takeo">តាកែវ</option>
-                            <option value="Kampot">កំពត</option>
-                            <option value="Preah Sihanouk">ព្រះសីហនុ</option>
-                            <option value="Koh Kong">កោះកុង</option>
-                            <option value="Kampong Chhnang">កំពង់ឆ្នាំង</option>
-                            <option value="Pursat">ពោធិ៍សាត់</option>
-                            <option value="Battambang">បាត់ដំបង</option>
-                            <option value="Pailin">ប៉ៃលិន</option>
-                            <option value="Banteay Meanchey">បន្ទាយមានជ័យ</option>
-                            <option value="Siem Reap">សៀមរាប</option>
-                            <option value="Oddar Meanchey">ឧត្តរមានជ័យ</option>
-                            <option value="Preah Vihear">ព្រះវិហារ</option>
-                            <option value="Kampong Thom">កំពង់ធំ</option>
-                            <option value="Kampong Cham">កំពង់ចាម</option>
-                            <option value="Prey Veng">ព្រៃវែង</option>
-                            <option value="Svay Rieng">ស្វាយរៀង</option>
-                            <option value="Tboung Khmum">ត្បូងឃ្មុំ</option>
-                            <option value="Kratie">ក្រចេះ</option>
-                            <option value="Stung Treng">ស្ទឹងត្រែង</option>
-                            <option value="Ratanakiri">រតនគិរី</option>
-                            <option value="Mondulkiri">មណ្ឌលគិរី</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="save-button">
-                        <img src="../assets/icons/save.png" alt="Save Button" />
-                        រក្សាទុក
-                    </button>
-                </form>
-            </div>
-
-            <!-- About Us Section -->
-            <div class="profile-section">
-                <!-- University Info -->
-                <div class="university-info">
-                    <img src="../assets/images/camtech.jpg" alt="CamTech University Logo" class="university-logo">
-                    <h2>គម្រោងនិស្សិតនៃសាកលវិទ្យាល័យ CamTech</h2>
+                <!-- Facebook QR Section -->
+                <div class="contact-card qr-card">
+                    <p class="qr-text">តាមដានពួកយើងនៅលើ Facebook</p>
+                    <img src="../assets/images/facebook-qr.jpg" alt="Facebook QR" class="qr-image">
                 </div>
 
-                <!-- Project Info -->
-                <div class="project-info">
-                    <h3>អំពីគម្រោង Smart Poultry</h3>
-                    <p>គម្រោងនេះត្រូវបានបង្កើតឡើងដើម្បីជួយកសិករក្នុងការគ្រប់គ្រងស្រុកមាន់របស់ពួកគេប្រកបដោយប្រសិទ្ធភាព តាមរយៈការប្រើប្រាស់បច្ចេកវិទ្យា IoT។</p>
-                    <ul>
-                        <li>កាត់បន្ថយការប្រើប្រាស់កម្លាំងពលកម្មសម្រាប់កសិករ</li>
-                        <li>បង្កើនប្រាក់ចំណូលតាមរយៈការគ្រប់គ្រងដោយស្វ័យប្រវត្តិ</li>
-                        <li>តាមដានសីតុណ្ហភាព និងសំណើមដោយស្វ័យប្រវត្តិ</li>
-                        <li>គ្រប់គ្រងប្រព័ន្ធបំភ្លឺ ចំណីអាហារ និងទឹក</li>
-                    </ul>
-                </div>
+                <!-- About Us Section -->
+                <div class="profile-section">
+                    <!-- University Info -->
+                    <div class="university-info">
+                        <img src="../assets/images/camtech.jpg" alt="CamTech University Logo" class="university-logo">
+                        <h2>គម្រោងនិស្សិតនៃសាកលវិទ្យាល័យ CamTech</h2>
+                    </div>
 
-                <!-- Support Info -->
-                <div class="support-info">
-                    <h3>ជំនួយបច្ចេកទេស</h3>
-                    <div class="contact-cards">
-                        <div class="contact-card">
-                            <span class="material-icons-sharp">phone</span>
-                            <p>088 944 449</p>
-                        </div>
-                        <div class="contact-card">
-                            <span class="material-icons-sharp">phone</span>
-                            <p>099 992 939</p>
+                    <!-- Project Info -->
+                    <div class="project-info">
+                        <h3>អំពីគម្រោង Smart Poultry</h3>
+                        <p>គម្រោងនេះត្រូវបានបង្កើតឡើងដើម្បីជួយកសិករក្នុងការគ្រប់គ្រងស្រុកមាន់របស់ពួកគេប្រកបដោយប្រសិទ្ធភាព តាមរយៈការប្រើប្រាស់បច្ចេកវិទ្យា IoT។</p>
+                        <ul>
+                            <li>កាត់បន្ថយការប្រើប្រាស់កម្លាំងពលកម្មសម្រាប់កសិករ</li>
+                            <li>បង្កើនប្រាក់ចំណូលតាមរយៈការគ្រប់គ្រងដោយស្វ័យប្រវត្តិ</li>
+                            <li>តាមដានសីតុណ្ហភាព និងសំណើមដោយស្វ័យប្រវត្តិ</li>
+                            <li>គ្រប់គ្រងប្រព័ន្ធបំភ្លឺ ចំណីអាហារ និងទឹក</li>
+                        </ul>
+                    </div>
+
+                    <!-- Support Info -->
+                    <div class="support-info">
+                        <h3>ជំនួយបច្ចេកទេស</h3>
+                        <div class="contact-cards">
+                            <div class="contact-card">
+                                <span class="material-icons-sharp">phone</span>
+                                <p>088 944 449</p>
+                            </div>
+                            <div class="contact-card">
+                                <span class="material-icons-sharp">phone</span>
+                                <p>099 992 939</p>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- University Link -->
+                    <div class="university-link">
+                        <h3>គេហទំព័រសាកលវិទ្យាល័យ</h3>
+                        <a href="https://camtech.edu.kh" target="_blank" class="camtech-button">
+                            <span class="material-icons-sharp">school</span>
+                            CamTech University
+                        </a>
+                    </div>
                 </div>
 
-                <!-- University Link -->
-                <div class="university-link">
-                    <h3>គេហទំព័រសាកលវិទ្យាល័យ</h3>
-                    <a href="https://camtech.edu.kh" target="_blank" class="camtech-button">
-                        <span class="material-icons-sharp">school</span>
-                        CamTech University
-                    </a>
-                </div>
+                <!-- Notification Toast -->
+                <!-- <div id="notification" class="notification"></div> -->
             </div>
-
-            <!-- Notification Toast -->
-            <div id="notification" class="notification"></div>
-        </div>
-        <script src="../js/index.js"></script>
-        <script src="../js/header.js"></script>
-        <script src="../js/navbar.js"></script>
-        <script src="../js/profile.js"></script>
-    </body>
-</html> 
+            <script src="../js/index.js"></script>
+            <script src="../js/header.js"></script>
+            <script src="../js/navbar.js"></script>
+            <script src="../js/profile.js"></script>
+        </body>
+    </html> 

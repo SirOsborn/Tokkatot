@@ -89,8 +89,8 @@ func ToggleFeederHandler(c *fiber.Ctx) error {
 	return toggleHandler(&c, "/toggle-feeder")
 }
 
-func ToggleWaterHandler(c *fiber.Ctx) error {
-	return toggleHandler(&c, "/toggle-water")
+func TogglePumpHandler(c *fiber.Ctx) error {
+	return toggleHandler(&c, "/toggle-pump")
 }
 
 // ====== SCHEDULE HANDLERS ====== //

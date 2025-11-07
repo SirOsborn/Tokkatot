@@ -17,18 +17,18 @@
 // Device states
 typedef struct {
     bool auto_mode;
-    bool fan_state;
-    bool bulb_state;
-    bool feeder_state;
-    bool pump_state;
-    bool conveyer_state;
+    bool fan;
+    bool bulb;
+    bool feeder;
+    bool pump;
+    bool conveyer;
 } device_state_t;
 
 // Function declarations
 void device_control_init(void);
-void set_servo_position(int position);
-void dispense_food(void);
-void update_device_state(device_state_t *state);
+void open_feeder(void);
+void close_feeder(void);
 void toggle_device(gpio_num_t pin, bool *state);
+void update_device_state(device_state_t *state);
 
 #endif // DEVICE_CONTROL_H

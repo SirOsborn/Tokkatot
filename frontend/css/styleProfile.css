@@ -33,91 +33,6 @@ body {
     margin: 0 auto;
 }
 
-/* User Information Form */
-.user-info-section {
-    margin-bottom: 30px;
-}
-
-.user-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 12px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.form-group label {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--color-dark);
-}
-
-.form-group input,
-.form-group select {
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 16px;
-    color: var(--color-dark);
-    background-color: var(--color-white);
-    transition: all 0.3s ease;
-    font-family: 'Kantumruy Pro', sans-serif;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-    border-color: var(--color-primary);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(255, 186, 73, 0.2);
-}
-
-.form-group input:hover,
-.form-group select:hover {
-    border-color: #ccc;
-}
-
-.location-group select {
-    width: 100%;
-}
-
-.save-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 24px;
-    background-color: var(--color-primary);
-    color: var(--color-dark);
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-family: 'Kantumruy Pro', sans-serif;
-}
-
-.save-button:hover {
-    background-color: #ffc107;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 186, 73, 0.4);
-}
-
-.save-button:active {
-    transform: translateY(0);
-}
-
-.save-button .material-icons-sharp {
-    font-size: 20px;
-}
-
 /* Notification Toast */
 .notification {
     position: fixed;
@@ -148,27 +63,6 @@ body {
     }
 }
 
-/* Responsive Design for Form */
-@media screen and (max-width: 768px) {
-    .user-form {
-        padding: 15px;
-    }
-
-    .form-group label {
-        font-size: 14px;
-    }
-
-    .form-group input,
-    .form-group select {
-        padding: 10px;
-        font-size: 14px;
-    }
-
-    .save-button {
-        padding: 10px 20px;
-        font-size: 14px;
-    }
-}
 
 /* Profile Section */
 .profile-section {
@@ -376,4 +270,38 @@ body {
         width: 100%;
         justify-content: center;
     }
+}
+
+.qr-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;       
+    justify-content: center;   
+    padding: 20px;
+    width: 100%;              
+    max-width: 350px;          
+    text-align: top center;
+    gap: 10px;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    box-sizing: border-box;    
+    overflow: hidden;         
+    margin-bottom: 20px;
+}
+
+.qr-image {
+    width: 100%;               
+    max-width: 180px;          
+    height: auto;             
+    border-radius: 12px;
+    border: 2px solid #FFBA49;
+    transition: transform 0.3s ease;
+}
+
+.qr-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-dark);
+    margin: 0;
 }

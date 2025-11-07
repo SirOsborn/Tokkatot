@@ -91,13 +91,15 @@ const chartConfig = {
 				},
 			},
 			y: {
-				type: 'linear',
-				display: true,
-				position: 'left',
-				beginAtZero: false,
-				grid: {
-					color: "rgba(255, 186, 73, 0.1)",
-				},
+			type: 'linear',
+			display: true,
+			position: 'left',
+			beginAtZero: false,
+			suggestedMin: 20,
+			suggestedMax: 35,
+			grid: {
+				color: "rgba(255, 186, 73, 0.1)",
+			},
 				ticks: {
 					font: {
 						size: 10,
@@ -115,14 +117,15 @@ const chartConfig = {
 				},
 			},
 			y1: {
-				type: 'linear',
-				display: true,
-				position: 'right',
-				beginAtZero: true,
-				max: 100,
-				grid: {
-					drawOnChartArea: false,
-				},
+			type: 'linear',
+			display: true,
+			position: 'right',
+			beginAtZero: false,
+			suggestedMin: 0,
+			suggestedMax: 100,
+			grid: {
+				drawOnChartArea: false,
+			},
 				ticks: {
 					font: {
 						size: 10,
@@ -147,19 +150,65 @@ let temperatureChart;
 
 // Initialize chart
 document.addEventListener("DOMContentLoaded", () => {
-	const ctx = document.getElementById("temperatureChart");
-	if (ctx) {
-		temperatureChart = new Chart(ctx, chartConfig);
+	const canvas = document.getElementById("temperatureChart");
+	const wrapper = canvas.parentElement;
+	
+	console.log("Canvas element:", canvas);
+	console.log("Wrapper dimensions:", wrapper.offsetWidth, "x", wrapper.offsetHeight);
+	console.log("Chart constructor:", typeof Chart);
+	
+	if (!canvas) {
+		console.error("Canvas element not found!");
+		return;
+	}
+	
+	if (typeof Chart === 'undefined') {
+		console.error("Chart.js library not loaded!");
+		return;
+	}
+	
+	// Set canvas size to match wrapper
+	canvas.width = wrapper.offsetWidth;
+	canvas.height = wrapper.offsetHeight;
+	
+	try {
+		temperatureChart = new Chart(canvas, chartConfig);
+		console.log("Chart initialized successfully:", temperatureChart);
 
-		// Start data fetching
-		fetchCurrentData();
-		fetchHistoricalData();
+		// Start data fetching - fetch both current and historical data together
+		fetchAndUpdateData();
 
-		// Set up intervals for updates
-		setInterval(fetchCurrentData, 5000); // Update current data every 5 seconds
-		setInterval(fetchHistoricalData, 30000); // Update historical data every 30 seconds (less frequent for performance)
+		// Update every 3 seconds
+		setInterval(fetchAndUpdateData, 3000);
+	} catch (error) {
+		console.error("Error initializing chart:", error);
 	}
 });
+
+// Fetch and update both current data and chart
+async function fetchAndUpdateData() {
+	try {
+		// Get current data
+		const currentResponse = await fetch("/api/get-current-data");
+		let currentData = await currentResponse.json();
+		currentData = JSON.parse(currentData.data);
+		updateCurrentValues(currentData);
+
+		// Get historical data for chart
+		const historyResponse = await fetch("/api/get-historical-data");
+		let historyData = await historyResponse.json();
+		historyData = JSON.parse(historyData.data);
+		
+		console.log('Historical data received:', historyData.length, 'records');
+		if (historyData.length > 0) {
+			console.log('Sample data:', historyData[0]);
+		}
+		
+		updateChart(historyData);
+	} catch (error) {
+		console.error("Error fetching data:", error);
+	}
+}
 
 // Fetch current temperature and humidity
 async function fetchCurrentData() {
@@ -217,26 +266,40 @@ function updateCurrentValues(data) {
 
 // Update temperature chart
 function updateChart(data) {
-	if (!temperatureChart || !data || data.length === 0) return;
+	console.log("updateChart called with data:", data ? data.length : 0, "records");
+	console.log("temperatureChart exists:", !!temperatureChart);
+	
+	if (!temperatureChart || !data || data.length === 0) {
+		console.log("Cannot update chart - missing data or chart not initialized");
+		return;
+	}
 
-	// Sort data by timestamp to ensure chronological order
-	const sortedData = data.sort((a, b) => {
-		const dateA = parseTimestamp(a.timestamp);
-		const dateB = parseTimestamp(b.timestamp);
-		return dateA - dateB;
+	// Take last 20 data points for display
+	const recentData = data.slice(-20);
+	console.log("Recent data to display:", recentData.length, "points");
+	
+	// Use current browser time for timestamps
+	const now = new Date();
+	const timestamps = recentData.map((item, index) => {
+		// Calculate time based on position (assuming data is in order)
+		const timeOffset = (index - recentData.length + 1) * 5; // 5 seconds between readings
+		const date = new Date(now.getTime() + timeOffset * 1000);
+		return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 	});
+	
+	const temperatures = recentData.map((item) => item.temperature);
+	const humidities = recentData.map((item) => item.humidity);
 
-	// Filter and group data for better visualization
-	const processedData = processDataForChart(sortedData);
-
-	const timestamps = processedData.map((item) => formatTimestampForChart(item.date));
-	const temperatures = processedData.map((item) => item.temperature);
-	const humidities = processedData.map((item) => item.humidity);
-
+	console.log("Updating chart with", recentData.length, "data points");
+	console.log("Temperature range:", Math.min(...temperatures), "-", Math.max(...temperatures));
+	console.log("Humidity range:", Math.min(...humidities), "-", Math.max(...humidities));
+	
 	temperatureChart.data.labels = timestamps;
 	temperatureChart.data.datasets[0].data = temperatures;
 	temperatureChart.data.datasets[1].data = humidities;
-	temperatureChart.update();
+	temperatureChart.update('none'); // Update without animation for smoother updates
+	
+	console.log("Chart updated successfully");
 }
 
 // Helper function to parse timestamp consistently

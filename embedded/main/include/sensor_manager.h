@@ -11,9 +11,9 @@
 #define WATER_SENSOR_ADC_UNIT ADC_UNIT_1
 #define WATER_SENSOR_ADC_CHANNEL ADC_CHANNEL_7
 
-// Water level thresholds (in volts)
-#define WATER_LEVEL_LOW    0.3f
-#define WATER_LEVEL_FULL   1.0f
+// Water level thresholds
+#define WATER_LEVEL_LOW    300
+#define WATER_LEVEL_FULL   2000
 
 #define QUEUE_SIZE 10
 
@@ -21,7 +21,7 @@ typedef struct {
     uint64_t timestamp;
     float temperature;
     float humidity;
-    float water_level;
+    int water_level;
 } sensor_data_t;
 
 typedef struct {
@@ -35,5 +35,7 @@ void read_dht22(float *temperature, float *humidity);
 void get_current_sensor_data(sensor_data_t *data);
 void update_sensor_history(sensor_data_t *data);
 void get_sensor_history(sensor_history_t *history);
+void read_dht22(float *temperature, float *humidity);
+int read_water_level(void);
 
 #endif // SENSOR_MANAGER_H

@@ -51,7 +51,6 @@ header img {
 /* Weather & Gas Information */
 div > div {
   background: white;
-  padding: 15px;
   margin: 10px 0;
   border-radius: 10px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -112,6 +111,14 @@ div > p {
   height: 0;
 }
 
+.legend-color.temperature-color {
+  background-color: #FFBA49; /* Matches chart temperature color */
+}
+
+.legend-color.humidity-color {
+  background-color: #4FC3F7; /* Matches chart humidity color */
+}
+
 .slider {
   position: absolute;
   cursor: pointer;
@@ -159,7 +166,7 @@ header {
 /* Info Section */
 .info-section {
   background-color: var(--color-white);
-  padding: 20px;
+  padding: 30px;
   border-radius: var(--card-border-radius);
   margin: 20px auto;
   box-shadow: var(--box-shadow);
@@ -244,7 +251,7 @@ header {
 /* Graph Container */
 .graph-container {
   background-color: var(--color-white);
-  padding: 20px;
+  padding: 30px;
   border-radius: var(--card-border-radius);
   margin: 20px auto;
   box-shadow: var(--box-shadow);
@@ -263,6 +270,11 @@ header {
   position: relative;
   height: 300px;
   margin-bottom: 20px;
+}
+
+#temperatureChart {
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .graph-legend {
@@ -332,7 +344,9 @@ header {
   }
 
   .info-section {
-      margin: 15px 10px;
+      margin: 2px;
+      margin-top: 20px;
+      margin-bottom: 20px;
       padding: 15px;
   }
 
@@ -375,7 +389,6 @@ header {
   }
 
   .graph-container {
-      margin: 15px 10px;
       padding: 15px;
   }
 
