@@ -68,7 +68,7 @@ async function fetchInitialSettings() {
         let data = await response.json();
         data = JSON.parse(data.data);
         // console.log("Fetched initial state:", data);
-        
+
         updateUI(data);
     } catch (error) {
         console.error("Error fetching initial state:", error);
@@ -76,7 +76,7 @@ async function fetchInitialSettings() {
     }
 }
 
-setInterval(fetchInitialSettings, 1000);
+setInterval(fetchInitialSettings, 100);
 
 // Update the UI based on retrieved settings
 function updateUI(data) {
