@@ -6,12 +6,15 @@
 
 **Advanced IoT-Based Poultry Disease Detection & Farm Automation**
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+🌐 **Website:** [https://tokkatot.aztrolabe.com](https://tokkatot.aztrolabe.com)  
+📧 **Email:** [tokkatot.info@gmail.com](mailto:tokkatot.info@gmail.com)
+
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go)](https://go.dev/)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python)](https://www.python.org/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-FF6F00?logo=tensorflow)](https://www.tensorflow.org/)
 
-[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Documentation](#-documentation) • [Demo](#-demo)
+[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Documentation](#-documentation)
 
 </div>
 
@@ -477,53 +480,11 @@ curl -X GET http://10.0.0.1:4000/api/toggle-fan \
 
 ---
 
-## 🤝 Contributing
+## 📝 License & Usage
 
-We welcome contributions! Please follow these steps:
+This project is **proprietary software** developed for Tokkatot Startup. See the [LICENSE](LICENSE) file for complete terms and conditions.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Code Style
-
-- **Go:** Follow [Effective Go](https://golang.org/doc/effective_go.html)
-- **Python:** Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/)
-- **JavaScript:** Follow [Airbnb Style Guide](https://github.com/airbnb/javascript)
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👥 Authors
-
-**Tokkatot Development Team**
-- PureGoat (Lead)
-- Project Contributors
-- Cambodia
-
----
-
-## 🙏 Acknowledgments
-
-- **CamTech University** - Project support and guidance
-- **TensorFlow Team** - EfficientNet model architecture
-- **Fiber Framework** - Fast Go web framework
-- **Khmer Community** - Localization support
-
----
-
-## 📞 Support
-
-- **Issues:** [GitHub Issues](https://github.com/SirOsborn/Tokkatot/issues)
-- **Documentation:** [Project Wiki](https://github.com/SirOsborn/Tokkatot/wiki)
-- **Email:** [Contact the team](mailto:support@tokkatot.local)
+**Unauthorized copying, modification, distribution, or commercial use is strictly prohibited.**
 
 ---
 
@@ -555,35 +516,60 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 5-year data retention
 
 **Timeline:** 27-35 weeks (6-8 months) - See [docs/PROJECT_TIMELINE.md](docs/PROJECT_TIMELINE.md)
+- ✅ Basic farm monitoring (local WiFi AP)
+- ✅ AI disease detection (EfficientNetB0)
+- ✅ Manual device control (web UI)
+- ✅ SQLite local database
+- ✅ ESP32 sensor integration
+
+### Version 2.0 🚀 (In Development - Production)
+- 🔄 **Phase 1-2:** Backend API architecture (Go + PostgreSQL + InfluxDB)
+- 🔄 **Phase 3:** Frontend v2 (Vue.js 3, WCAG AAA accessibility, offline support)
+- 🔄 **Phase 4:** Embedded v2 (ESP32 OTA updates, MQTT, better reliability)
+- 🔄 **Phase 5:** Cloud integration (DigitalOcean, Kubernetes)
+- 🔄 **Phase 6-8:** Testing, deployment, rollout
+
+**Changes from v1.0 → v2.0:**
+- Cloud-connected (not just local)
+- Multi-farm support (not single farm only)
+- Real-time monitoring (WebSocket + MQTT)
+- Remote device control
+- OTA firmware updates (no farm visits)
+- In-app alerts & message log (dashboard only)
+- Farmer-centric UI (large text, Khmer language, accessibility)
+- 99.5% uptime target
+- 5-year data retention
+
+**Timeline:** 27-35 weeks (6-8 months) - See [docs/PROJECT_TIMELINE.md](docs/PROJECT_TIMELINE.md)
 
 ---
 
-## 📊 Screenshots
+## 🎨 Design & Resources
 
-### Dashboard
-![Dashboard](frontend/assets/images/tokkatot%20logo-02.png)
-*Real-time monitoring of farm conditions*
+### UI Design Pages (v1.0)
+Mockups and design specifications for version 1.0 interface:
+- Dashboard Layout
+- Device Control Interface
+- Farm Settings Page
+- Disease Detection UI
 
-### Disease Detection
-![Disease Detection](frontend/assets/images/tokkatot%20logo-02.png)
-*AI-powered disease identification*
+See `design/` folder for detailed page designs and Figma exports.
 
-### Device Controls
-![Controls](frontend/assets/images/tokkatot%20logo-02.png)
-*Remote farm equipment management*
+### QR Codes
+Quick access codes for demo and documentation:
+- **App Access QR** - Direct link to v1.0 prototype
+- **Website QR** - [https://tokkatot.aztrolabe.com](https://tokkatot.aztrolabe.com)
+- **Documentation QR** - Specifications & technical docs
+- **Support QR** - Email & contact information
 
----
-
-## 🌟 Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=SirOsborn/Tokkatot&type=Date)](https://star-history.com/#SirOsborn/Tokkatot&Date)
+See `qr-codes/` folder for printable assets.
 
 ---
 
 <div align="center">
 
-**Made with ❤️ for Cambodian Farmers**
+**Proprietary Software - Tokkatot Startup**
 
-[Report Bug](https://github.com/SirOsborn/Tokkatot/issues) • [Request Feature](https://github.com/SirOsborn/Tokkatot/issues) • [Documentation](https://github.com/SirOsborn/Tokkatot/wiki)
+For internal use only. Unauthorized copying, modification, or distribution is prohibited.
 
 </div>
