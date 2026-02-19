@@ -14,7 +14,7 @@
 
 ### Phase 1: Planning & Architecture (Weeks 1-2)
 **Duration**: 2 weeks  
-**Team**: Tech Lead, Architects (Neath, Heng)  
+**Team**: Architects (Heng)  
 
 **Activities**:
 - Team kickoff and assignment
@@ -40,7 +40,7 @@
 
 ### Phase 2: Backend Development (Weeks 3-10)
 **Duration**: 8 weeks  
-**Team**: Backend (Heng), DevOps, Secondary Dev  
+**Team**: Backend (Rangsey, Neang, Rika), DevOps, Secondary Dev  
 
 **Weeks 3-4: Core Services**
 - Authentication service (JWT, login, registration)
@@ -86,7 +86,7 @@
 
 ### Phase 3: Frontend Development (Weeks 7-14)
 **Duration**: 8 weeks (overlaps with backend)  
-**Team**: Frontend Developer (Rika), Secondary Dev  
+**Team**: Frontend Developer (Rika, Rangsey, Heng), Secondary Dev  
 
 **Weeks 7-8: UI Framework & Responsive Design**
 - Vue.js 3 project setup
@@ -173,6 +173,7 @@
 
 ### Phase 5: Integration & Testing (Weeks 13-18)
 **Duration**: 6 weeks  
+**Team**:  (Heng, Neath)  
 
 **Weeks 13-15: System Integration**
 - Backend ↔ Frontend API integration
@@ -216,12 +217,12 @@
 
 ### Phase 6: AI/ML Integration (Weeks 14-18)
 **Duration**: 5 weeks (overlaps with integration)  
-**Team**: AI/ML Specialist (with team support)  
+**Team**: AI/ML Specialist (Heng)  
 
 **Optional Phase**: Chicken disease detection  
 
 **Activities**:
-- Train/validate disease detection model
+- Integrate the Ensemble model for real time 24h/7d detection
 - API endpoint for image upload/analysis
 - Model deployment to production
 - Performance optimization
@@ -229,7 +230,7 @@
 
 **Deliverables**:
 - Functional disease detection API
-- Model accuracy > 85%
+- Model achieving zero false positive
 - Response time < 5 seconds
 
 ---
@@ -356,7 +357,7 @@ Phase 10: Improvements          [█████████] Weeks 27-35
 ### Team Capacity Planning
 
 **Phase 1 (Weeks 1-2)**:
-- Tech Lead: 100% (daily standup, architecture reviews)
+- Tech Lead: 100% (Weekly standup, architecture reviews)
 - Backend Lead (Heng): 50% (environment setup)
 - Frontend Lead (Rika): 50% (figma design)
 - Embedded (Neath): 50% (hardware planning)

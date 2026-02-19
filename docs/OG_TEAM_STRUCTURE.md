@@ -8,9 +8,9 @@
 
 ## Team Overview
 
-**Total Team Size**: 6-8 people  
+**Total Team Size**: 5 people  
 **Duration**: 6-8 months (with scaling after launch)  
-**Reporting Structure**: Project Manager ← Team Lead ← Individual Contributors  
+**Reporting Structure**: Tech Lead ← Individual Contributors  
 
 ---
 
@@ -18,17 +18,17 @@
 
 ### Engineering Leadership
 
-#### 1. Tech Lead / Project Manager
+#### 1. Tech Lead
 **Name**: [Lead Name - TBD]  
-**Role**: Overall project leadership and execution  
+**Role**: Overall technical leadership and execution  
 
 **Responsibilities**:
 - Project planning and timeline management
 - Resource allocation
-- Daily standup facilitation
+- Standup facilitation
 - Stakeholder communication
 - Risk tracking and mitigation
-- Decision arbitration (technical/non-technical)
+- Decision arbitration (technical)
 - Production deployment oversight
 
 **Time Commitment**: 100% (full-time)  
@@ -44,7 +44,7 @@
 ### Backend Engineering
 
 #### 2. Backend Lead - API & Services
-**Name**: Heng  
+**Name**: Rika  
 **Role**: Backend architecture and development  
 
 **Responsibilities**:
@@ -99,7 +99,7 @@
 ### Frontend Engineering
 
 #### 4. Frontend Lead - UI/UX Developer
-**Name**: Rika  
+**Name**: Rangsey 
 **Role**: Frontend architecture and development  
 
 **Responsibilities**:
@@ -171,7 +171,7 @@
 ### Infrastructure & DevOps
 
 #### 6. DevOps Engineer / Infrastructure
-**Name**: Raingsey  
+**Name**: Heng  
 **Role**: Infrastructure setup and CI/CD  
 
 **Responsibilities**:
@@ -206,7 +206,7 @@
 ### Quality Assurance
 
 #### 7. QA Lead / Test Automation
-**Name**: [TBD]  
+**Name**: Heng 
 **Role**: Testing coordination and automation  
 
 **Responsibilities**:
@@ -261,7 +261,7 @@
 
 ### Standup Meetings
 
-**Daily Standup**: 15 minutes (9:00 AM)
+**Standup**: 15 minutes (9:00 AM)
 - All team members
 - Format: What I did, what I'm doing, blockers
 - Location: Zoom/in-person
@@ -278,132 +278,22 @@
 - Stakeholder feedback
 - Retrospective (what went well, improve)
 
-### Communication Channels
-
-**Real-time Chat**: Slack
-- `#tokkatot-general` - announcements
-- `#tokkatot-backend` - backend discussions
-- `#tokkatot-frontend` - frontend discussions
-- `#tokkatot-embedded` - embedded systems
-- `#tokkatot-bugs` - bug reports
-- `#tokkatot-urgent` - critical issues
-
-**Email**: For formal communications
-- Decisions, approvals
-- Escalations
-- External communications
-
-**GitHub Issues**: Technical tracking
-- Bug reports
-- Feature requests
-- Code review discussions
-
 ---
 
-## Decision-Making & Escalation
+## Escalation
 
-### Decision Authority
-
-| Decision Type | Authority | Approval Required |
-|---|---|---|
-| **Technical Architecture** | Tech Lead + Team Leads | CTO (if exists) |
-| **Feature Scope** | Tech Lead | Project Manager |
-| **Timeline Changes** | Tech Lead | Stakeholders |
-| **Infrastructure Changes** | DevOps + Tech Lead | Tech Lead approval |
-| **Security Issues** | Tech Lead + DevOps | CTO + Legal (if sensitive) |
-| **Production Changes** | Tech Lead + DevOps | Tech Lead sign-off |
-| **Hiring/Roles** | Tech Lead | HR/Management |
-
-### Escalation Path
-
-**Level 1**: Team member → Team Lead (same discipline)  
-**Level 2**: Team Lead → Tech Lead (cross-team)  
-**Level 3**: Tech Lead → Project Manager/CTO (strategic)  
+**Level 1**: Team member → Tech Lead (same discipline)  
+**Level 2**: Tech Lead → Project CEO (strategic)  
 **Emergency**: Direct to Tech Lead (any level)  
 
 ---
 
-## Knowledge & Code Ownership
-
-### Code Ownership
-
-| Component | Owner | Backup |
-|---|---|---|
-| Authentication | Heng | Backend Dev |
-| Device Service | Heng | Backend Dev |
-| Schedule Engine | Backend Dev | Heng |
-| API Gateway | Heng | DevOps |
-| Real-time (WebSocket) | Backend Dev | Heng |
-| Frontend Core | Rika | Frontend Dev (if hired) |
-| Embedded Firmware | Neath | [TBD] |
-| Infrastructure | Raingsey | Tech Lead |
-| Database | Heng + Raingsey | Tech Lead |
-
-### Knowledge Transfer
+## Knowledge Transfer
 
 - **Pair Programming**: 1-2 hours per week (cross-functional)
 - **Documentation**: Code comments, README files
 - **Design Documents**: Architecture decisions
 - **Video Tutorials**: How-to guides for complex systems
-
----
-
-## Onboarding & Training
-
-### New Team Member Onboarding (1 week)
-
-**Day 1**:
-- Welcome & team introduction
-- Development environment setup
-- GitHub access, communication tools
-- Project overview
-
-**Day 2-3**:
-- Technology stack deep dive
-- Code repository walkthrough
-- Setting up local development
-- Running tests and deploying locally
-
-**Day 4**:
-- Pair programming with team lead
-- First small task/bug fix
-- Code review process
-
-**Day 5**:
-- Independent task completion
-- Team collaboration
-- Retrospective
-
----
-
-## Performance & Recognition
-
-### Key Performance Indicators (KPIs)
-
-**All Team Members**:
-- Deliver assigned features on-time (90%+ target)
-- Code quality (> 70% test coverage, < 5 critical bugs/month)
-- Responsiveness (< 2 hour response to blockers)
-- Collaboration (active participation, helping others)
-
-**Team Leads**:
-- Team productivity and morale
-- Feature delivery quality
-- Code review turnaround (< 4 hours)
-- Risk identification and mitigation
-
-**Tech Lead**:
-- Overall project delivery (on-time, budget)
-- Team morale and retention
-- Quality metrics maintained
-- Stakeholder satisfaction
-
-### Recognition & Rewards
-
-- **Monthly**: Highlight top contributor in standup
-- **Quarterly**: Performance review and bonuses
-- **Launch**: Team celebration event
-- **Post-Launch**: Career development planning
 
 ---
 
@@ -422,19 +312,6 @@
 - Add: 2 Backend Devs, 1 Frontend Dev, 1 QA Dev
 - Structure: Sub-teams by feature area
 - Focus: Multi-region support, advanced features
-
----
-
-## Contact Information Template
-
-```
-Name: [Name]
-Email: [email@example.com]
-Phone: [+855-XX-XXX-XXXX]
-Role: [Role]
-Time Zone: [UTC+7 (Cambodia)]
-Availability: Mon-Fri 8 AM - 6 PM (flexible)
-```
 
 ---
 
