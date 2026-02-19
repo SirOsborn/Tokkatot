@@ -5,7 +5,7 @@
 **Status**: Planning Phase  
 
 **Total Duration**: 27-35 weeks (6-8 months)  
-**Start Date**: March 2026 (assumed)  
+**Start Date**:  End of February 2026 
 **Target Launch**: Q2/Q3 2026  
 
 ---
