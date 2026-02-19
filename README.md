@@ -431,14 +431,6 @@ Mockups and design specifications for version 1.0 interface:
 
 See `design/` folder for detailed page designs and Figma exports.
 
-### QR Codes
-Quick access codes for demo and documentation:
-- **App Access QR** - Direct link to v1.0 prototype
-- **Website QR** - [https://tokkatot.aztrolabe.com](https://tokkatot.aztrolabe.com)
-- **Documentation QR** - Specifications & technical docs
-- **Support QR** - Email & contact information
----
-
 <div align="center">
 
 **Proprietary Software - Tokkatot Startup**
