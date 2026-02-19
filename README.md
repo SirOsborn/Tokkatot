@@ -72,7 +72,53 @@
 ## � Version
 
 - **Current Release:** v1.0 (Prototype)
-- **In Development:** v2.0 (Production) - See [docs/SPECIFICATIONS_INDEX.md](docs/SPECIFICATIONS_INDEX.md)
+- **In Development:** v2.0 (Production) - See [docs/00_SPECIFICATIONS_INDEX.md](docs/00_SPECIFICATIONS_INDEX.md)
+
+---
+
+## 🚀 Quick Start
+
+### v1.0 (Current - Local Mode)
+
+**Requirements:**
+- Raspberry Pi 4B+ (2GB RAM min) or Ubuntu Server 20.04+
+- WiFi connectivity or Ethernet
+- ESP32 microcontroller (pre-flashed)
+- Docker (recommended) or direct installation
+
+**Installation (Automatic):**
+```bash
+# Clone repository
+git clone https://github.com/SirOsbornOjr/tokkatot.git
+cd tokkatot
+
+# Run setup script
+bash scripts/deploy-all.sh
+```
+
+**Manual Installation:**
+1. Set up Raspberry Pi OS or Ubuntu Server 20.04+
+2. Configure WiFi Access Point: `bash scripts/setup-access-point.sh`
+3. Deploy Middleware: `bash scripts/setup-middleware-service.sh`
+4. Deploy AI Service: See `ai-service/README.md`
+5. Access: Open browser at `http://10.0.0.1:3000`
+
+**Default Credentials (v1.0 - Demo):**
+- Email: `test@tokkatot.local`
+- Password: `Password123`
+
+### v2.0 (Production - Cloud-Based)
+
+**Status:** In development - See [docs/00_SPECIFICATIONS_INDEX.md](docs/00_SPECIFICATIONS_INDEX.md)
+
+v2.0 will add:
+- ☁️ Cloud connectivity (DigitalOcean)
+- 🌍 Multi-farm support  
+- 📱 Mobile app + PWA
+- 🔔 Push notifications
+- 📊 Advanced analytics
+- 🇰🇭 Khmer/English language support
+- ♿ Accessibility for elderly farmers
 
 ---
 
@@ -154,19 +200,20 @@
 ```
 tokkatot/
 ├── docs/                        # Documentation & Specifications (v2.0)
-│   ├── SPECIFICATIONS_INDEX.md  # Start here - navigation hub
-│   ├── SPECIFICATIONS_ARCHITECTURE.md
-│   ├── SPECIFICATIONS_REQUIREMENTS.md
-│   ├── SPECIFICATIONS_DATABASE.md
-│   ├── SPECIFICATIONS_TECHNOLOGY_STACK.md
-│   ├── SPECIFICATIONS_FRONTEND.md
-│   ├── SPECIFICATIONS_EMBEDDED.md
-│   ├── SPECIFICATIONS_DEPLOYMENT.md
-│   ├── SPECIFICATIONS_SECURITY.md
-│   ├── PROJECT_TIMELINE.md
-│   ├── TEAM_STRUCTURE.md
-│   ├── RISK_MANAGEMENT.md
-│   └── TOKKATOT_2.0_FARMER_CENTRIC_ADDITIONS.md
+│   ├── 00_SPECIFICATIONS_INDEX.md           # Start here - navigation hub
+│   ├── 01_SPECIFICATIONS_ARCHITECTURE.md    # System design & architecture
+│   ├── 02_SPECIFICATIONS_REQUIREMENTS.md    # Functional & non-functional requirements
+│   ├── IG_SPECIFICATIONS_DATABASE.md        # Database schema (PostgreSQL)
+│   ├── IG_SPECIFICATIONS_API.md             # Backend API (58 endpoints)
+│   ├── IG_SPECIFICATIONS_FRONTEND.md        # Frontend UI/UX for farmers
+│   ├── IG_SPECIFICATIONS_EMBEDDED.md        # ESP32 firmware architecture
+│   ├── IG_SPECIFICATIONS_SECURITY.md        # Authentication & security
+│   ├── IG_TOKKATOT_2.0_FARMER_CENTRIC_SPECIFICATIONS.md  # Farmer accessibility
+│   ├── OG_SPECIFICATIONS_TECHNOLOGY_STACK.md # Technology selections
+│   ├── OG_SPECIFICATIONS_DEPLOYMENT.md      # Cloud infrastructure
+│   ├── OG_PROJECT_TIMELINE.md               # Development phases & milestones
+│   ├── OG_TEAM_STRUCTURE.md                 # Team roles & responsibilities
+│   └── OG_RISK_MANAGEMENT.md                # Risk analysis & mitigation
 │
 ├── frontend/                    # Progressive Web App (v1.0)
 │   ├── pages/                   # HTML pages
@@ -223,22 +270,34 @@ tokkatot/
 
 ### Version 2.0 Specifications (Production Release - In Development)
 
-**Start here:** [docs/SPECIFICATIONS_INDEX.md](docs/SPECIFICATIONS_INDEX.md) - Complete navigation guide
+**Farmer-Centric Smart Poultry System** - Designed for elderly Cambodian farmers with low digital literacy
 
+**Start here:** [docs/00_SPECIFICATIONS_INDEX.md](docs/00_SPECIFICATIONS_INDEX.md) - Complete navigation guide
+
+#### Core Specifications (Read in Order)
 | Document | Purpose | Audience |
 |----------|---------|----------|
-| [SPECIFICATIONS_ARCHITECTURE.md](docs/SPECIFICATIONS_ARCHITECTURE.md) | System design & data flow | Tech Lead, Backend, DevOps |
-| [SPECIFICATIONS_REQUIREMENTS.md](docs/SPECIFICATIONS_REQUIREMENTS.md) | Functional requirements (FR1-FR8) | All team members |
-| [SPECIFICATIONS_DATABASE.md](docs/SPECIFICATIONS_DATABASE.md) | Database schema (13 PostgreSQL tables) | Backend, DevOps |
-| [SPECIFICATIONS_TECHNOLOGY_STACK.md](docs/SPECIFICATIONS_TECHNOLOGY_STACK.md) | Tech selection & justification | Tech Lead, all devs |
-| [SPECIFICATIONS_FRONTEND.md](docs/SPECIFICATIONS_FRONTEND.md) | UI/UX & accessibility (WCAG AAA) | Frontend, Design |
-| [SPECIFICATIONS_EMBEDDED.md](docs/SPECIFICATIONS_EMBEDDED.md) | ESP32 firmware architecture | Embedded |
-| [SPECIFICATIONS_DEPLOYMENT.md](docs/SPECIFICATIONS_DEPLOYMENT.md) | DigitalOcean, Kubernetes, CI/CD | DevOps |
-| [SPECIFICATIONS_SECURITY.md](docs/SPECIFICATIONS_SECURITY.md) | JWT auth, RBAC, encryption, compliance | Security, DevOps |
-| [PROJECT_TIMELINE.md](docs/PROJECT_TIMELINE.md) | 10 phases, 27-35 weeks, milestones | Project Manager |
-| [TEAM_STRUCTURE.md](docs/TEAM_STRUCTURE.md) | Team roles & responsibilities | Management |
-| [RISK_MANAGEMENT.md](docs/RISK_MANAGEMENT.md) | 10 identified risks & mitigation | Project Manager, Tech Lead |
-| [TOKKATOT_2.0_FARMER_CENTRIC_ADDITIONS.md](docs/TOKKATOT_2.0_FARMER_CENTRIC_ADDITIONS.md) | Farmer-first design details | All team members |
+| [01_SPECIFICATIONS_ARCHITECTURE.md](docs/01_SPECIFICATIONS_ARCHITECTURE.md) | System design, 3-tier architecture, data flow | Tech Lead, Backend, DevOps |
+| [02_SPECIFICATIONS_REQUIREMENTS.md](docs/02_SPECIFICATIONS_REQUIREMENTS.md) | Functional requirements, farmer-centric design | All team members |
+
+#### Implementation Guides (IG_*)
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [IG_SPECIFICATIONS_DATABASE.md](docs/IG_SPECIFICATIONS_DATABASE.md) | PostgreSQL schema (13 tables), simplified roles | Backend, DevOps |
+| [IG_SPECIFICATIONS_API.md](docs/IG_SPECIFICATIONS_API.md) | Backend API (58 endpoints), simplified for farmers | Backend, Frontend |
+| [IG_SPECIFICATIONS_FRONTEND.md](docs/IG_SPECIFICATIONS_FRONTEND.md) | UI/UX for farmers (48px+ fonts, WCAG AAA, Khmer/English) | Frontend, Design |
+| [IG_SPECIFICATIONS_EMBEDDED.md](docs/IG_SPECIFICATIONS_EMBEDDED.md) | ESP32 firmware, Tokkatot team manages setup | Embedded |
+| [IG_SPECIFICATIONS_SECURITY.md](docs/IG_SPECIFICATIONS_SECURITY.md) | Authentication (email/phone), simplified roles, encryption | Security, Backend |
+| [IG_TOKKATOT_2.0_FARMER_CENTRIC_SPECIFICATIONS.md](docs/IG_TOKKATOT_2.0_FARMER_CENTRIC_SPECIFICATIONS.md) | Phone/Email registration, accessibility for elderly farmers | All team members |
+
+#### Operational Guides (OG_*)
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [OG_SPECIFICATIONS_TECHNOLOGY_STACK.md](docs/OG_SPECIFICATIONS_TECHNOLOGY_STACK.md) | Tech selections (Go, Python, PostgreSQL, DigitalOcean) | Tech Lead, all devs |
+| [OG_SPECIFICATIONS_DEPLOYMENT.md](docs/OG_SPECIFICATIONS_DEPLOYMENT.md) | Cloud infrastructure, Docker, CI/CD pipelines | DevOps |
+| [OG_PROJECT_TIMELINE.md](docs/OG_PROJECT_TIMELINE.md) | 10 phases, 27-35 weeks, milestones | Project Manager |
+| [OG_TEAM_STRUCTURE.md](docs/OG_TEAM_STRUCTURE.md) | Team roles, responsibilities, handoff procedures | Management |
+| [OG_RISK_MANAGEMENT.md](docs/OG_RISK_MANAGEMENT.md) | 10 identified risks, mitigation strategies | Project Manager, Tech Lead |
  
 ---
 
@@ -357,7 +416,7 @@ This project is **proprietary software** developed for Tokkatot Startup. See the
 - 99.5% uptime target
 - 5-year data retention
 
-**Timeline:** 27-35 weeks (6-8 months) - See [docs/PROJECT_TIMELINE.md](docs/PROJECT_TIMELINE.md)
+**Timeline:** 27-35 weeks (6-8 months) - See [docs/OG_PROJECT_TIMELINE.md](docs/OG_PROJECT_TIMELINE.md)
 
 ---
 
