@@ -1,42 +1,67 @@
 # 🔬 AI Disease Detection Feature
 
-This feature adds AI-powered chicken disease identification through feces analysis to your Tokkatot Smart Poultry System using a pre-trained EfficientNetB0 model.
+This feature adds AI-powered chicken disease identification through feces analysis to your Tokkatot Smart Poultry System using a **PyTorch ensemble model** (99% combined accuracy) combining EfficientNetB0 and DenseNet121.
 
 ## 🎯 Overview
 
 Farmers can use their mobile phones to:
 - Take photos of chicken droppings
-- Get instant AI-powered disease predictions
-- Receive treatment recommendations
+- Get instant AI-powered disease predictions with confidence scores
+- Receive treatment recommendations based on diagnosis
 - Access educational disease information
+- Get high-confidence safety-first recommendations (ensemble voting)
 
 ## 🏗️ Architecture
 
 ```
-Mobile Browser → Go Web Server → Python AI Service → TensorFlow 2.15.0 → EfficientNetB0 Model
+Mobile Browser → Go API Gateway (6060) → FastAPI AI Service (8000) 
+                                              ↓
+                                    PyTorch Ensemble Models
+                                    ├── EfficientNetB0 (98.05% recall)
+                                    └── DenseNet121 (96.69% recall)
+                                    ↓
+                                    Ensemble Voting → 99% Accuracy
 ```
 
 ## 📋 Setup Instructions
 
 ### Prerequisites
-- Python 3.9.13 (required for TensorFlow 2.15.0 compatibility)
+- Python 3.12+ (recommended Python 3.12.1+)
 - Go 1.19+ 
-- trained model files:
-  - `chicken_disease_model_efficientnetb0_final.h5`
-  - `label_encoder.pkl`
+- PyTorch models in `ai-service/outputs/`:
+  - `ensemble_model.pth` (ensemble combined model)
+  - `checkpoints/EfficientNetB0_best.pth` (individual model)
+  - `checkpoints/DenseNet121_best.pth` (individual model)
 
-**Start services manually:**
+### Quick Start with Docker (Recommended)
+```bash
+cd ai-service
+docker build -t tokkatot-ai-service .
+docker run -p 8000:8000 tokkatot-ai-service
+```
+
+### Local Development Setup
 
 Terminal 1 - AI Service:
 ```bash
 cd ai-service
-source venv-real-model/bin/activate  # Linux/Mac
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
 # OR
-venv-real-model\Scripts\activate     # Windows
+venv\Scripts\activate     # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start FastAPI service
 python app.py
+# OR explicitly with Uvicorn:
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Terminal 2 - Main Server:
+Terminal 2 - Go API Gateway:
 ```bash
 cd middleware
 go build -o tokkatot.exe .
@@ -45,133 +70,182 @@ go build -o tokkatot.exe .
 
 ## 📱 Usage
 
-1. **Access the feature:** Visit `http://10.0.0.1:4000/disease-detection`
-2. **Take/upload photo:** Use camera or upload existing image
-3. **Get prediction:** AI analyzes the image using the loaded model
-4. **Follow recommendations:** Get treatment and prevention advice
+1. **Access the feature:** Visit `http://localhost:6060/disease-detection` or through mobile app
+2. **Take/upload photo:** Use camera or upload existing image (PNG, JPEG)
+3. **Get prediction:** AI ensemble analyzes the image (~1-3 seconds)
+4. **Review results:** 
+   - Disease classification with confidence scores from both models
+   - Ensemble voting result (most confident prediction)
+   - Treatment and prevention advice
+5. **Follow recommendations:** Get actionable guidance
 
 ## 🔧 API Endpoints
 
-- `GET /api/ai/health` - Check AI service status
-- `POST /api/ai/predict-disease` - Upload image for disease prediction
-- `GET /api/ai/disease-info` - Get disease information and treatment
+### AI Service Endpoints (Port 8000)
+- `GET /health` - Check AI service status and model loading
+- `POST /predict` - Upload image for disease prediction (returns ensemble result)
+- `POST /predict/detailed` - Upload image with detailed per-model confidence scores
+
+### Integration with Go API Gateway (Port 6060)
+- `GET /api/ai/health` - Forward to AI service health check
+- `POST /api/predict` - Forward to AI prediction endpoint
+- `POST /api/predict/detailed` - Forward to detailed prediction endpoint
+
+See [IG_SPECIFICATIONS_AI_SERVICE.md](./IG_SPECIFICATIONS_AI_SERVICE.md) for detailed API specifications.
 
 ## 🎛️ Technical Specifications
 
-### Model Details
-- **Architecture:** EfficientNetB0
-- **Framework:** TensorFlow 2.15.0
-- **Input Size:** 224x224x3
+### Model Architecture
+- **Type:** PyTorch Ensemble (voting-based)
+- **Primary Models:**
+  - **EfficientNetB0:** 98.05% recall - Fast, efficient baseline
+  - **DenseNet121:** 96.69% recall - Dense connections for nuanced features
+- **Combined Accuracy:** 99% (via ensemble voting)
+- **Framework:** PyTorch 2.0.0+
+- **Input Size:** 224x224x3 (RGB)
 - **Classes:** 4 disease categories
-- **Python Version:** 3.9.13 (required for compatibility)
+- **Python Version:** 3.12+
 
 ### Supported Disease Classes
-This pre-trained model detects:
+This ensemble model detects:
 - **Coccidiosis** - Parasitic infection affecting intestines
 - **Healthy** - Normal, healthy droppings
-- **New Castle Disease** - Viral respiratory and nervous system disease  
+- **Newcastle Disease** - Viral respiratory and nervous system disease  
 - **Salmonella** - Bacterial infection
 
 ### Performance Specifications
-- **Prediction Time:** ~2-5 seconds on CPU
-- **Memory Usage:** ~400-600MB (TensorFlow + model)
+- **Prediction Time:** ~1-3 seconds on CPU (GPU: <500ms)
+- **Memory Usage:** ~800-1200MB (PyTorch + ensemble models)
 - **Input Processing:** Automatic resize to 224x224, normalization
+- **Model Size:** 47.2 MB (ensemble), individual checkpoints ~100MB each
+- **Inference Precision:** Float32 (FP32) for maximum accuracy
 
 ## 🎛️ Raspberry Pi Optimization
 
-### Resource Management
-- **CPU Usage:** ~15-25% during inference
-- **Memory:** ~400-600MB for TensorFlow + EfficientNetB0
-- **Storage:** ~100-150MB for model files
+### Resource Management (Tested on Pi 4, 4GB RAM)
+- **CPU Usage:** ~30-50% during ensemble inference
+- **Memory:** ~800-1200MB for PyTorch + ensemble models
+- **Storage:** ~200-250MB for model files (checkpoints + ensemble)
+- **Inference Time:** ~5-10 seconds (Pi 4 CPU only)
 
 ### Performance Tips
-1. **Use TensorFlow Lite:** Convert the model for better Pi performance:
-```python
-import tensorflow as tf
-converter = tf.lite.TFLiteConverter.from_keras_model(model)
-converter.optimizations = [tf.lite.Optimize.DEFAULT]
-tflite_model = converter.convert()
+
+1. **Use GPU Acceleration (if available):**
+```bash
+# Install PyTorch with CUDA support
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Or for CPU-only (smaller download):
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 ```
 
-2. **Optimize image preprocessing:** Resize images before sending to reduce processing time
-
-3. **Enable GPU acceleration:** If using Pi 4 with GPU support:
+2. **Model Quantization (future optimization):**
 ```python
-# Add to app.py
-import tensorflow as tf
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    tf.config.experimental.set_memory_growth(gpus[0], True)
+# Convert to quantized model for ~4x faster inference
+import torch
+quantized_model = torch.quantization.quantize_dynamic(
+    model, {torch.nn.Linear}, dtype=torch.qint8
+)
+torch.save(quantized_model.state_dict(), 'outputs/ensemble_model_quantized.pth')
 ```
 
-### Memory Optimization
-Update `ai-service/app.py` for Pi deployment:
-
+3. **Memory Optimization in app.py:**
 ```python
-# Add after model loading
+import torch
 import gc
-import tensorflow as tf
 
-# Clear unused memory
-gc.collect()
-tf.keras.backend.clear_session()
+# Clear cache between predictions
+def cleanup():
+    gc.collect()
+    torch.cuda.empty_cache()  # if using GPU
 
-# Limit memory growth
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    tf.config.experimental.set_memory_growth(gpus[0], True)
+# Call after each prediction
+cleanup()
+```
+
+4. **Image Preprocessing on Client:**
+Resize images before upload to reduce bandwidth:
+```python
+from PIL import Image
+img = Image.open('photo.jpg')
+img.thumbnail((224, 224))  # Pre-resize before upload
+img.save('photo_small.jpg')
 ```
 
 ## 🔒 Security Considerations
 
-- File upload validation (size, type)
-- User authentication required
-- Rate limiting recommended for production
-- Secure model file storage
+- File upload validation (size max 5MB, types: PNG/JPEG only)
+- User authentication required via Go API Gateway
+- Rate limiting: 100 requests per minute per user (Go middleware)
+- Secure model file storage in `outputs/` (not exposed publicly)
+- Input validation: Verify image dimensions before processing
+- Error handling: No sensitive model paths exposed in error messages
 
 ## 🛠️ Troubleshooting
 
 ### Common Issues
 
 **AI Service not starting:**
-- Ensure Python 3.9.13 is installed (`python --version`)
-- Check virtual environment: `venv-real-model/` exists
-- Verify all dependencies installed: `pip list | grep tensorflow`
-- Ensure model files exist in `ai-service/model/`
+- Ensure Python 3.12+ is installed: `python --version`
+- Check virtual environment: `venv/` exists
+- Verify dependencies installed: `pip list | grep torch`
+- Check that FastAPI/Uvicorn are installed: `pip show fastapi uvicorn`
+- Ensure model files exist: `ls outputs/ensemble_model.pth`
+- Check port 8000 not in use: `netstat -an | grep 8000`
 
 **Model loading errors:**
-- Verify TensorFlow 2.15.0 installation: `pip show tensorflow`
-- Check NumPy version 1.26.4: `pip show numpy`
-- Ensure model file paths are correct in `app.py`
+- Verify PyTorch 2.0+ installation: `pip show torch`
+- Check model files in `outputs/`:
+  - `ensemble_model.pth` (required)
+  - `checkpoints/EfficientNetB0_best.pth` (required)
+  - `checkpoints/DenseNet121_best.pth` (required)
+- Verify file permissions: `chmod 644 outputs/*.pth`
+- Test model loading manually:
+```python
+import torch
+from models import EnsembleModel
+model = EnsembleModel()
+model.load_state_dict(torch.load('outputs/ensemble_model.pth'))
+print("Model loaded successfully")
+```
 
 **Low accuracy predictions:**
-- Verify image quality (good lighting, clear focus)
-- Check image preprocessing matches training pipeline
-- Ensure correct model file (`chicken_disease_model_efficientnetb0_final.h5`)
-- Validate label encoder classes match training data
+- Verify image quality (good lighting, clear focus on droppings)
+- Ensure image is RGB (not grayscale or RGBA)
+- Check image size is at least 224x224 (or it will be resized)
+- Validate image preprocessing matches training pipeline
+- Verify you're using the correct model files
+
+**Import errors for PyTorch:**
+- Reinstall PyTorch: `pip install --upgrade torch torchvision`
+- Check CUDA compatibility if using GPU: `python -c "import torch; print(torch.cuda.is_available())"`
+- For CPU-only: Reinstall PyTorch CPU version
 
 **High memory usage:**
-- Use TensorFlow Lite for production
-- Clear TensorFlow session after predictions
-- Monitor memory with: `ps aux | grep python`
+- Monitor memory: `ps aux | grep python` (Linux) or Task Manager (Windows)
+- Enable garbage collection: Add `gc.collect()` after predictions
+- Reduce batch size (if batch processing)
+- Use CPU instead of GPU if GPU memory exhausted
 
 **Slow predictions:**
+- Check if running on CPU vs GPU: `torch.cuda.is_available()`
 - Optimize image preprocessing (resize before upload)
-- Use smaller input image size if possible
-- Consider model quantization for deployment
+- Verify no other CPU-intensive processes running
+- Consider using quantized model for Pi deployment
+- Check disk I/O: Ensure SSD, not spinning disk
 
 ### Health Checks
 
 Monitor service health:
 ```bash
-# Check AI service
-curl http://127.0.0.1:5000/health
-
-# Check web server
-curl http://127.0.0.1:4000/api/ai/health
+# Check FastAPI service health
+curl http://127.0.0.1:8000/health
 
 # Test prediction endpoint
-curl -X POST -F "image=@test_image.jpg" http://127.0.0.1:5000/predict
+curl -X POST -F "image=@test_image.jpg" http://127.0.0.1:8000/predict
+
+# Check Go API Gateway
+curl http://127.0.0.1:6060/api/ai/health
 ```
 
 ### Debug Mode
@@ -180,35 +254,50 @@ Enable debug logging in `app.py`:
 ```python
 import logging
 logging.basicConfig(level=logging.DEBUG)
-app.run(host='127.0.0.1', port=5000, debug=True)
+
+# Start with Uvicorn debug:
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ## 🔄 Model Updates
 
-To update the AI model:
-1. Replace files in `ai-service/model/`:
-   - `chicken_disease_model_efficientnetb0_final.h5`
-   - `label_encoder.pkl`
-2. Restart the AI service: `python app.py`
-3. No changes needed to Go server
+To update the AI ensemble model:
+1. Replace files in `ai-service/outputs/`:
+   - `ensemble_model.pth` (main ensemble weights)
+   - `checkpoints/EfficientNetB0_best.pth` (EfficientNetB0 checkpoint)
+   - `checkpoints/DenseNet121_best.pth` (DenseNet121 checkpoint)
+2. Restart the AI service:
+```bash
+# If running with Docker
+docker restart tokkatot-ai-service
 
-### Model Versioning
+# If running locally
+# Kill current process and run: python app.py
+```
+
+No changes needed to Go API Gateway - it will automatically use new model files.
+
+### Model Versioning Strategy
 Consider versioning the models:
 ```
-ai-service/model/
-├── v1.0/
-│   ├── chicken_disease_model_efficientnetb0_final.h5
-│   └── label_encoder.pkl
-├── v1.1/
-│   ├── chicken_disease_model_efficientnetb0_final.h5
-│   └── label_encoder.pkl
-└── current/ (symlink to latest version)
+ai-service/
+├── outputs/
+│   ├── v1.0/
+│   │   ├── ensemble_model.pth
+│   │   └── checkpoints/
+│   ├── v2.0/
+│   │   ├── ensemble_model.pth
+│   │   └── checkpoints/
+│   └── current/ (symlink to latest version)
+├── app.py (references outputs/current/)
 ```
 
 ## 📈 Monitoring & Analytics
 
 ### System Metrics
-- Prediction response time
-- Model confidence scores
-- Error rates and types
-- Resource usage (CPU, memory)
+- Prediction response time (target: <3 seconds on CPU)
+- Model ensemble confidence scores (both EfficientNetB0 and DenseNet121)
+- Prediction consistency (agreement between models)
+- Error rates and types (invalid images, timeouts)
+- Resource usage (CPU %, memory %, disk I/O)
+- Model agreement percentage (when both models agree vs disagree)

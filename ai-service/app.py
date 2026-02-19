@@ -1,268 +1,224 @@
-import os
-import pickle
-import numpy as np
-from flask import Flask, request, jsonify
+"""
+FastAPI service for Chicken Disease Detection Ensemble Model.
+Provides REST API endpoints for disease prediction from fecal images.
+"""
+
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from PIL import Image
-import tensorflow as tf
-# Use tf_keras for compatibility with legacy Keras 2.x models
-import tf_keras as keras
+import io
+import torch
+from typing import Optional
+import logging
 
-app = Flask(__name__)
+from inference import ChickenDiseaseDetector
 
-class ChickenDiseaseDetector:
-    def __init__(self, model_path, label_encoder_path):
-        """Initialize the disease detector with model and label encoder"""
-        self.model = None
-        self.label_encoder = None
-        self.input_shape = (224, 224)  # Default input shape, can be updated based on model
-        
-        self.load_model(model_path)
-        self.load_label_encoder(label_encoder_path)
-    
-    def load_model(self, model_path):
-        """Load the trained Keras model"""
-        try:
-            self.model = keras.models.load_model(model_path)
-            print(f"Model loaded successfully from {model_path}")
-            print(f"Model input shape: {self.model.input_shape}")
-            # Update input shape based on model
-            if len(self.model.input_shape) >= 3:
-                self.input_shape = self.model.input_shape[1:3]
-        except Exception as e:
-            print(f"Error loading model: {e}")
-            raise
-    
-    def load_label_encoder(self, label_encoder_path):
-        """Load the label encoder"""
-        try:
-            with open(label_encoder_path, 'rb') as f:
-                self.label_encoder = pickle.load(f)
-            print(f"Label encoder loaded successfully from {label_encoder_path}")
-            print(f"Classes: {self.label_encoder.classes_}")
-        except Exception as e:
-            print(f"Error loading label encoder: {e}")
-            raise
-    
-    def preprocess_image(self, image):
-        """Preprocess image for model prediction"""
-        try:
-            # Convert to RGB if needed
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
-            
-            # Resize to model input size
-            image = image.resize(self.input_shape)
-            
-            # Convert to numpy array
-            img_array = np.array(image)
-            
-            # Normalize pixel values (adjust based on training preprocessing)
-            img_array = img_array.astype('float32') / 255.0
-            
-            # Add batch dimension
-            img_array = np.expand_dims(img_array, axis=0)
-            
-            return img_array
-        except Exception as e:
-            print(f"Error preprocessing image: {e}")
-            raise
-    
-    def predict_disease(self, image):
-        """Predict disease from preprocessed image"""
-        try:
-            # Preprocess the image
-            processed_image = self.preprocess_image(image)
-            
-            # Make prediction with error handling
-            print("Starting model prediction...")
-            try:
-                predictions = self.model.predict(processed_image, verbose=0)
-            except Exception as pred_error:
-                print(f"Prediction failed, retrying... Error: {pred_error}")
-                # Retry once
-                predictions = self.model.predict(processed_image, verbose=0)
-            
-            # Get predicted class
-            predicted_class_idx = np.argmax(predictions[0])
-            confidence = float(predictions[0][predicted_class_idx])
-            
-            # Convert to label
-            predicted_label = self.label_encoder.inverse_transform([predicted_class_idx])[0]
-            
-            # Get all probabilities
-            all_probabilities = {}
-            for i, prob in enumerate(predictions[0]):
-                label = self.label_encoder.inverse_transform([i])[0]
-                all_probabilities[label] = float(prob)
-            
-            return {
-                'predicted_disease': predicted_label,
-                'confidence': confidence,
-                'all_probabilities': all_probabilities,
-                'is_healthy': predicted_label.lower() in ['healthy', 'normal', 'no_disease'],
-                'recommendation': self.get_recommendation(predicted_label, confidence)
-            }
-        except Exception as e:
-            print(f"Error during prediction: {e}")
-            import traceback
-            traceback.print_exc()
-            raise
-    
-    def get_recommendation(self, disease, confidence):
-        """Get recommendation based on predicted disease"""
-        recommendations = {
-            'healthy': "The chicken appears healthy. Continue regular monitoring.",
-            'coccidiosis': "Possible coccidiosis detected. Consider consulting a veterinarian and check water quality.",
-            'salmonella': "Potential salmonella infection. Isolate the bird and consult a veterinarian immediately.",
-            'e_coli': "Possible E.coli infection. Improve hygiene and consult a veterinarian.",
-            'newcastle': "Potential Newcastle disease. This is serious - contact veterinarian immediately and isolate birds.",
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="Tokkatot AI - Chicken Disease Detection",
+    description="Safety-First Ensemble AI for detecting chicken diseases via fecal images",
+    version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure this for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global detector instance
+detector: Optional[ChickenDiseaseDetector] = None
+
+
+class HealthResponse(BaseModel):
+    """Health check response model"""
+    status: str
+    model_loaded: bool
+    device: str
+
+
+class PredictionResponse(BaseModel):
+    """Prediction response model"""
+    classification: str
+    risk_level: str
+    should_isolate: bool
+    action: str
+    confidence: float
+    details: Optional[dict] = None
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize the model on startup"""
+    global detector
+    try:
+        logger.info("Loading ensemble model...")
+        detector = ChickenDiseaseDetector(
+            model_path='outputs/ensemble_model.pth',
+            device='auto',
+            healthy_threshold=0.80,
+            uncertainty_threshold=0.50
+        )
+        logger.info("✓ Model loaded successfully!")
+    except Exception as e:
+        logger.error(f"Failed to load model: {str(e)}")
+        raise
+
+
+@app.get("/", response_model=dict)
+async def root():
+    """Root endpoint"""
+    return {
+        "message": "Tokkatot AI - Chicken Disease Detection API",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "predict": "/predict",
+            "predict_detailed": "/predict/detailed"
         }
-        
-        base_recommendation = recommendations.get(disease.lower(), "Unknown condition detected. Consult a veterinarian for proper diagnosis.")
-        
-        if confidence < 0.7:
-            base_recommendation += " Note: Low confidence prediction - consider retaking photo with better lighting and closer view."
-        
-        return base_recommendation
+    }
 
-# Initialize the detector (update paths to your model files)
-import os
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "model", "chicken_disease_model_efficientnetb0_final.h5")
-LABEL_ENCODER_PATH = os.path.join(BASE_DIR, "model", "label_encoder.pkl")
 
-detector = None
-
-def initialize_detector():
-    """Initialize detector with error handling"""
-    global detector
-    try:
-        print(f"Checking paths:")
-        print(f"  Model path: {MODEL_PATH}")
-        print(f"  Encoder path: {LABEL_ENCODER_PATH}")
-        print(f"  Model exists: {os.path.exists(MODEL_PATH)}")
-        print(f"  Encoder exists: {os.path.exists(LABEL_ENCODER_PATH)}")
-        
-        if os.path.exists(MODEL_PATH) and os.path.exists(LABEL_ENCODER_PATH):
-            print("Creating ChickenDiseaseDetector...")
-            detector = ChickenDiseaseDetector(MODEL_PATH, LABEL_ENCODER_PATH)
-            print("Disease detector initialized successfully!")
-            print(f"Detector is now: {detector}")
-        else:
-            print(f"Model files not found:")
-            print(f"  Model: {MODEL_PATH} - {'Found' if os.path.exists(MODEL_PATH) else 'Not found'}")
-            print(f"  Label Encoder: {LABEL_ENCODER_PATH} - {'Found' if os.path.exists(LABEL_ENCODER_PATH) else 'Not found'}")
-    except Exception as e:
-        print(f"Failed to initialize detector: {e}")
-        import traceback
-        traceback.print_exc()
-
-@app.route('/health', methods=['GET'])
-def health_check():
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
     """Health check endpoint"""
-    global detector
-    print(f"Health check - detector is: {detector}")
-    print(f"Health check - detector is None: {detector is None}")
-    return jsonify({
-        'status': 'healthy' if detector else 'model_not_loaded',
-        'model_loaded': detector is not None,
-        'detector_type': str(type(detector)) if detector else 'None'
-    })
+    return {
+        "status": "healthy" if detector is not None else "unhealthy",
+        "model_loaded": detector is not None,
+        "device": str(detector.device) if detector else "none"
+    }
 
-@app.route('/predict', methods=['POST'])
-def predict_disease():
-    """Main prediction endpoint"""
-    if not detector:
-        print("ERROR: Detector not initialized")
-        return jsonify({
-            'success': False,
-            'error': 'Model not loaded. Please check server logs.',
-            'details': 'AI model initialization failed'
-        }), 500
+
+@app.post("/predict", response_model=PredictionResponse)
+async def predict(file: UploadFile = File(...)):
+    """
+    Predict disease from fecal image (simple response).
+    
+    Args:
+        file: Image file (JPEG, PNG)
+    
+    Returns:
+        Simple classification result with action recommendation
+    """
+    if detector is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
     
     try:
-        print(f"Received prediction request")
-        print(f"Request files: {request.files}")
-        print(f"Request form: {request.form}")
-        print(f"Request content type: {request.content_type}")
+        # Read image
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents)).convert('RGB')
         
-        # Check if image is provided
-        if 'image' not in request.files:
-            print("ERROR: No 'image' field in request.files")
-            return jsonify({
-                'success': False,
-                'error': 'No image provided',
-                'hint': 'Expected multipart/form-data with image field'
-            }), 400
+        # Get prediction with details (we need some details even for simple response)
+        result = detector.predict(image, return_details=True)
         
-        file = request.files['image']
-        if file.filename == '':
-            print("ERROR: Empty filename")
-            return jsonify({
-                'success': False,
-                'error': 'No image selected'
-            }), 400
-        
-        print(f"Processing image: {file.filename}, content_type: {file.content_type}")
-        
-        # Read and process image
-        try:
-            image = Image.open(file.stream)
-            print(f"Image opened successfully: size={image.size}, mode={image.mode}")
-        except Exception as img_error:
-            print(f"ERROR: Failed to open image: {img_error}")
-            return jsonify({
-                'success': False,
-                'error': 'Invalid image file',
-                'details': str(img_error)
-            }), 400
-        
-        # Make prediction
-        print("Starting prediction...")
-        try:
-            result = detector.predict_disease(image)
-            print(f"Prediction complete: {result['predicted_disease']} ({result['confidence']:.2%})")
-            
-            return jsonify({
-                'success': True,
-                'prediction': result,
-                'timestamp': str(np.datetime64('now'))
-            })
-        except Exception as pred_error:
-            print(f"ERROR: Prediction failed: {pred_error}")
-            import traceback
-            traceback.print_exc()
-            return jsonify({
-                'success': False,
-                'error': 'Prediction failed',
-                'details': str(pred_error)
-            }), 500
+        # Return simplified response
+        return {
+            "classification": result['classification'],
+            "risk_level": result['risk_level'],
+            "should_isolate": result['should_isolate'],
+            "action": result['action'],
+            "confidence": result['ensemble']['avg_confidence']
+        }
     
     except Exception as e:
-        print(f"ERROR: Unexpected error: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            'success': False,
-            'error': 'Internal server error',
-            'details': str(e),
-            'type': str(type(e).__name__)
-        }), 500
+        logger.error(f"Prediction error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
-if __name__ == '__main__':
-    # Initialize the detector
-    print("="*60)
-    print("Starting Tokkatot AI Service")
-    print("="*60)
-    initialize_detector()
+
+@app.post("/predict/detailed", response_model=PredictionResponse)
+async def predict_detailed(file: UploadFile = File(...)):
+    """
+    Predict disease from fecal image (detailed response).
     
-    if detector:
-        print("✅ AI Service ready to accept requests")
-    else:
-        print("❌ AI Service started but detector failed to initialize")
+    Args:
+        file: Image file (JPEG, PNG)
     
-    print("="*60)
+    Returns:
+        Detailed classification result with individual model predictions and probabilities
+    """
+    if detector is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
     
-    # Start the Flask server on localhost (middleware will proxy requests)
-    print("Starting Flask server on 127.0.0.1:5000")
-    app.run(host='127.0.0.1', port=5000, debug=False)
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    try:
+        # Read image
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents)).convert('RGB')
+        
+        # Get detailed prediction
+        result = detector.predict(image, return_details=True)
+        
+        # Return full response with details
+        return {
+            "classification": result['classification'],
+            "risk_level": result['risk_level'],
+            "should_isolate": result['should_isolate'],
+            "action": result['action'],
+            "confidence": result['ensemble']['avg_confidence'],
+            "details": result
+        }
+    
+    except Exception as e:
+        logger.error(f"Prediction error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
+
+@app.post("/evaluate/safety")
+async def evaluate_safety(file: UploadFile = File(...)):
+    """
+    Quick safety evaluation for fecal image.
+    
+    Args:
+        file: Image file (JPEG, PNG)
+    
+    Returns:
+        Safety assessment with reason
+    """
+    if detector is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    try:
+        # Read image
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents)).convert('RGB')
+        
+        # Evaluate safety
+        is_safe, reason = detector.evaluate_safety(image)
+        
+        return {
+            "is_safe": is_safe,
+            "status": "SAFE" if is_safe else "ISOLATE",
+            "reason": reason
+        }
+    
+    except Exception as e:
+        logger.error(f"Safety evaluation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

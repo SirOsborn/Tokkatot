@@ -1,5 +1,8 @@
-# IDE - VSCode
-.vscode/
+# IDE - VSCode (local user settings only)
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/tasks.json
 
 # Dependencies
 /node_modules
@@ -7,13 +10,17 @@
 package-lock.json
 yarn.lock
 
-# Environment files
+# Environment files (SECRETS - NEVER COMMIT)
 .env
 .env.local
 .env.example
 .env.development.local
 .env.test.local
 .env.production.local
+middleware/.env
+middleware/.env.local
+ai-service/.env
+ai-service/.env.local
 venv*/
 .venv*/
 env*/
@@ -48,3 +55,10 @@ Thumbs.db
 /certs/*.pem
 /embedded/main/certs
 /embedded/main/certs/*.pem
+
+# AI Service - Model files (proprietary, too large)
+ai-service/outputs/
+ai-service/*.pth
+ai-service/*.h5
+ai-service/*.pkl
+
