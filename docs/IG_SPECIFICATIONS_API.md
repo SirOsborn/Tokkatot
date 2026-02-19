@@ -1597,6 +1597,133 @@ Response (200):
 Data Source: event_logs table
 ```
 
+### AI/Disease Detection Endpoints (3)
+
+#### 64. Get AI Service Health
+```
+GET /ai/health
+Authorization: Bearer {access_token}
+
+Response (200):
+{
+  "status": "healthy",
+  "model_loaded": true,
+  "models": {
+    "ensemble_model": "loaded",
+    "efficientnetb0": "loaded",
+    "densenet121": "loaded"
+  },
+  "timestamp": "2026-02-19T10:30:00Z",
+  "version": "2.0.0"
+}
+
+Data Source: AI Service (PyTorch FastAPI)
+Requires: User role >= Viewer
+```
+
+#### 65. Predict Disease from Image
+```
+POST /ai/predict
+Authorization: Bearer {access_token}
+Content-Type: multipart/form-data
+
+Request:
+- image: Image file (PNG/JPEG, max 5MB)
+- device_id: UUID (optional - for device association)
+
+Response (200):
+{
+  "prediction_id": "uuid",
+  "disease": "Coccidiosis",
+  "confidence": 0.98,
+  "ensemble_confidence": 0.99,
+  "models": {
+    "efficientnetb0": {
+      "disease": "Coccidiosis",
+      "confidence": 0.97
+    },
+    "densenet121": {
+      "disease": "Coccidiosis",
+      "confidence": 0.99
+    }
+  },
+  "recommendation": "Isolate affected birds and consult veterinarian",
+  "treatment_options": [
+    {
+      "name": "Amprolium",
+      "dosage": "0.0125% in drinking water",
+      "duration": "5-7 days"
+    }
+  ],
+  "timestamp": "2026-02-19T10:30:00Z",
+  "processing_time_ms": 1200
+}
+
+Error Responses:
+- 400 Bad Request: Invalid image file (not PNG/JPEG, corrupted, etc.)
+- 413 Payload Too Large: Image exceeds 5MB limit
+- 503 Service Unavailable: AI model not loaded or AI service down
+
+Data Source: PyTorch Ensemble Model
+Requires: User role >= Viewer
+Rate Limit: 100 requests/minute
+```
+
+#### 66. Predict Disease with Detailed Scores
+```
+POST /ai/predict/detailed
+Authorization: Bearer {access_token}
+Content-Type: multipart/form-data
+
+Request:
+- image: Image file (PNG/JPEG, max 5MB)
+- device_id: UUID (optional)
+
+Response (200):
+{
+  "prediction_id": "uuid",
+  "ensemble_result": {
+    "disease": "Coccidiosis",
+    "confidence": 0.99
+  },
+  "per_model_results": {
+    "efficientnetb0": {
+      "disease": "Coccidiosis",
+      "confidence": 0.97,
+      "score_per_class": {
+        "Healthy": 0.01,
+        "Coccidiosis": 0.97,
+        "Newcastle_Disease": 0.01,
+        "Salmonella": 0.01
+      },
+      "inference_time_ms": 620
+    },
+    "densenet121": {
+      "disease": "Coccidiosis",
+      "confidence": 0.99,
+      "score_per_class": {
+        "Healthy": 0.00,
+        "Coccidiosis": 0.99,
+        "Newcastle_Disease": 0.01,
+        "Salmonella": 0.00
+      },
+      "inference_time_ms": 580
+    }
+  },
+  "model_agreement": true,
+  "recommendation": "High confidence diagnosis. Isolate affected birds immediately.",
+  "risk_level": "critical",
+  "timestamp": "2026-02-19T10:30:00Z",
+  "total_processing_time_ms": 1200
+}
+
+Note: This endpoint provides detailed per-model scores for analysis and debugging.
+
+Data Source: PyTorch Ensemble Model (detailed output)
+Requires: User role >= Manager (detailed scores)
+Rate Limit: 50 requests/minute
+```
+
 ---
 
 ## Real-Time Communication
@@ -1732,6 +1859,7 @@ INTERNAL_ERROR - Unexpected server error
 | Authentication | 10 | 5 |
 | Data Read | 300 | 50 |
 | Device Control | 100 | 20 |
+| AI Prediction | 100 | 20 |
 | Configuration | 50 | 10 |
 | Analytics/Reports | 30 | 5 |
 

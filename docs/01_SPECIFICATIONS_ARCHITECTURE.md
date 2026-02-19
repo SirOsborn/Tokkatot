@@ -71,6 +71,14 @@ Tokkatot 2.0 is a cloud-based smart farming IoT system with edge computing fallb
 │  │  • Connection management & heartbeat                     │ │
 │  └──────────────────────────────────────────────────────────┘ │
 │                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │  AI/Disease Detection Service (PyTorch FastAPI)          │ │
+│  │  • PyTorch Ensemble Model (99% accuracy)                 │ │
+│  │  • EfficientNetB0 + DenseNet121 voting                   │ │
+│  │  • Image analysis fastapi endpoints                      │ │
+│  │  • Returns disease predictions + treatment info          │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
                      ↕ Internal API / Message Queue
 ┌─────────────────────────────────────────────────────────────────┐
@@ -253,6 +261,22 @@ Tokkatot 2.0 is a cloud-based smart farming IoT system with edge computing fallb
 - Heartbeat/keepalive
 - Message queuing for offline clients
 - Broadcast to multiple clients
+
+**H. AI/Disease Detection Service (PyTorch FastAPI)**
+- **Purpose**: AI-powered chicken disease detection from feces images
+- **Technology**: PyTorch 2.0.0, FastAPI, Uvicorn
+- **Model Architecture**: Ensemble voting (EfficientNetB0 + DenseNet121)
+- **Accuracy**: 99% combined (98.05% + 96.69% per-model)
+- **Endpoints**:
+  - `GET /health` - Service health and model status
+  - `POST /predict` - Disease prediction (ensemble result)
+  - `POST /predict/detailed` - Detailed per-model confidence scores
+- **Input**: PNG/JPEG images (max 5MB, 224x224 pixels)
+- **Outputs**: Disease classification, confidence scores, treatment recommendations
+- **Performance**: 1-3 seconds CPU, <500ms GPU
+- **Deployment**: Docker container, 2 CPU, 4GB RAM
+- **Safety**: Ensemble voting ensures high-confidence predictions
+- **Integration**: Called via Go API Gateway, stores results in PostgreSQL
 
 ---
 
@@ -464,6 +488,66 @@ Sync Service:
   ↓
 Dashboard updated
 ```
+
+### Pattern 5: AI Disease Detection
+
+```
+Farmer (Mobile App / Web)
+  ↓
+[Captures or uploads image of chicken droppings]
+  ↓
+[Client sends HTTPS POST to /api/ai/predict with image file]
+  ↓
+API Gateway (Rate limit, Auth validate)
+  ↓
+Go API Middleware
+  ↓
+[Forward to AI Service: POST /predict]
+  ↓
+AI Service (FastAPI)
+  ↓
+[Load image, resize to 224x224, normalize]
+  ↓
+PyTorch Ensemble Model
+  ├→ [EfficientNetB0: process image]
+  │   └→ [Output: disease class + confidence 0.97]
+  └→ [DenseNet121: process image]
+      └→ [Output: disease class + confidence 0.99]
+  ↓
+[Ensemble Voting: select highest confidence]
+  ↓
+[Return: disease, confidence, treatment_options]
+  ↓
+API Middleware (stores result in PostgreSQL prediction_logs)
+  ↓
+Response (200):
+{
+  "disease": "Coccidiosis",
+  "confidence": 0.99,
+  "recommendation": "Isolate affected birds...",
+  "treatment_options": [...]
+}
+  ↓
+[Broadcast result to connected WebSocket clients]
+  ↓
+User App (displays disease diagnosis + recommendations)
+```
+
+**Timeline:**
+- User to gateway: ~20ms
+- Gateway to AI service: ~5ms
+- Image preprocessing: ~200ms
+- Model inference: ~800-1200ms (EfficientNetB0 + DenseNet121 parallel)
+- Ensemble voting: ~50ms
+- Database store: ~10ms
+- Response to user: ~50ms
+- **Total latency: 1-3 seconds** (CPU) or **<500ms** (GPU)
+
+**Reliability:**
+- Ensemble voting provides 99% accuracy
+- If model confidence < 50%: Return "uncertain" with guidance to retake photo
+- Failed predictions logged for training data collection
+- Model updates trigger service restart (no downtime to users)
 
 ---
 
