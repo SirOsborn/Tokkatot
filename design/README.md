@@ -6,9 +6,8 @@ This folder contains design mockups and UI specifications for Tokkatot v1.0 prot
 
 ### Contents
 
+- **Device Control** - Device on/off controls and manual operations **As First Page**
 - **Dashboard Layout** - Main dashboard interface with real-time monitoring
-- **Device Control** - Device on/off controls and manual operations
-- **Settings Page** - User preferences and farm configuration
 - **Disease Detection** - AI disease identification interface
 - **Profile Page** - User profile and account management
 

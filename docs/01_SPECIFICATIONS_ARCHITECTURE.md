@@ -193,20 +193,19 @@ Tokkatot 2.0 is a cloud-based smart farming IoT system with edge computing fallb
 
 **Microservices:**
 
-**A. Authentication Service**
-- User registration and login
-- JWT token generation and validation
-- Password reset and email verification
-- Role-based access control (RBAC)
-- OAuth2 integration (optional)
+**A. Authentication Service (Farmer-Centric)**
+- User registration (email OR phone number, not both required)
+- Simple login with JWT tokens (no MFA for farmers)
+- Password reset via email or SMS
+- Simplified role-based access (Owner, Manager, Viewer only)
 - Multi-device session management
 - Activity audit logging
 
-**B. Device Service**
-- Device lifecycle management (register, update, decommission)
+**B. Device Service (Tokkatot Team Managed)**
+- Device lifecycle management (added by Tokkatot team only)
 - Device state tracking (online/offline/error)
 - Command execution to devices (via MQTT)
-- Firmware version management
+- Firmware version management and OTA updates
 - Device grouping and organization
 - Health monitoring and diagnostics
 - Connection status broadcasts
@@ -541,14 +540,15 @@ farm/{farmId}/devices/{deviceId}/
 - **Concurrent users**: 2-5 per farm
 - **API calls per day**: ~100K-500K
 
-### Security Requirements (See SPECIFICATIONS_SECURITY.md)
+### Security Requirements (See IG_SPECIFICATIONS_SECURITY.md)
 
 - TLS 1.3+ for all communications
-- JWT tokens with 24-hour expiration
-- Role-based access control (RBAC)
+- JWT tokens with 24-hour expiration (no MFA for farmers)
+- Simplified role system (Owner, Manager, Viewer)
 - Rate limiting and DDoS protection
 - Encrypted storage of sensitive data
 - Audit logs for all actions
+- Phone/Email registration support
 
 ---
 
@@ -627,18 +627,21 @@ farm/{farmId}/devices/{deviceId}/
 
 ## Key Files & Documentation
 
-- **SPECIFICATIONS_DATABASE.md** - Database schema details
-- **SPECIFICATIONS_API.md** - API endpoints and contracts
-- **SPECIFICATIONS_FRONTEND.md** - UI/UX and responsive design
-- **SPECIFICATIONS_EMBEDDED.md** - Device firmware architecture
-- **SPECIFICATIONS_DEPLOYMENT.md** - Infrastructure setup
-- **SPECIFICATIONS_SECURITY.md** - Security implementation
+- **IG_SPECIFICATIONS_DATABASE.md** - Database schema details
+- **IG_SPECIFICATIONS_API.md** - API endpoints and contracts (8 auth, 5 user mgmt, 8 farm mgmt, 9 device mgmt, 8 control, 7 scheduling, 8 alerts, 5 reporting = 58 total)
+- **IG_SPECIFICATIONS_FRONTEND.md** - UI/UX for farmers (48px+ fonts, WCAG AAA, Khmer/English)
+- **IG_SPECIFICATIONS_EMBEDDED.md** - Device firmware architecture (Tokkatot team manages device setup)
+- **IG_SPECIFICATIONS_SECURITY.md** - Security with simplified roles (no complex RBAC)
+- **OG_SPECIFICATIONS_DEPLOYMENT.md** - Infrastructure setup
+- **IG_TOKKATOT_2.0_FARMER_CENTRIC_SPECIFICATIONS.md** - Phone/Email registration, accessibility for elderly farmers
 
 ---
 
 **Version History**
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.0-FarmerCentric | Feb 2026 | Simplified for elderly farmers with low digital literacy |
+| | | Phone/Email registration, 3 simple roles, device setup by team |
 | 2.0 | Feb 2026 | Initial production specification |
 
 **Next Steps**: Review with tech team, finalize technology selections, begin Phase 1 implementation.

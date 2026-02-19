@@ -1,78 +1,80 @@
 # Tokkatot 2.0: Functional & Non-Functional Requirements
 
-**Document Version**: 2.0  
+**Document Version**: 2.0-FarmerCentric  
 **Last Updated**: February 2026  
 **Status**: Final Specification
+
+**Design Principle**: Optimized for elderly farmers in Cambodia with low digital literacy
 
 ---
 
 ## Overview
 
-This document specifies all functional requirements (features to build) and non-functional requirements (performance, security, compatibility targets) for Tokkatot 2.0.
+This document specifies all functional requirements (features to build) and non-functional requirements (performance, security, compatibility targets) for Tokkatot 2.0. All requirements prioritize simplicity and accessibility for farmers with limited technical knowledge.
 
 ---
 
 ## Functional Requirements
 
-### FR1: User Management & Authentication
+### FR1: User Management & Authentication (Farmer-Centric)
 
-**FR1.1** - User Registration
-- Allow new users to create accounts with email
-- Email verification required before account activation
-- Password must meet minimum security: 8+ characters, mixed case, number, symbol
+**FR1.1** - User Registration (Email OR Phone)
+- Allow new users to create accounts with EITHER email OR phone number (farmer chooses)
+- Flexible contact verification: email link OR SMS code (6 digits)
+- Password requirement simplified: 8+ characters (no complexity rules needed for farmers)
+- Name required for account creation
 - Terms of Service acceptance required
-- Maximum 3 registration attempts per email per hour (rate limit)
-- New users start with "Viewer" role by default
+- Maximum 3 registration attempts per contact per hour (rate limit)
+- New users start as farm owner if first signup
 
 **FR1.2** - User Login
-- Support email + password authentication
+- Support email/phone + password authentication
 - Generate JWT tokens valid for 24 hours
-- Support "Remember me" (extend session to 30 days)
+- Option to stay logged in on device (extend session to 30 days)
 - Failed login lockout: 5 failed attempts = 15 minute lockout
-- Log all login attempts (success/failure)
+- Log all login attempts (success/failure) for audit
 - Support multi-device sessions (logout from specific devices)
+- **MFA NOT required** (kept simple for farmers)
 
 **FR1.3** - Password Management
-- Password reset via email verification link
-- Reset links expire after 30 minutes
+- Password reset via email or SMS code
+- Reset codes expire after 30 minutes
 - Password change must verify current password
-- Password history: prevent reuse of last 3 passwords
-- Automatic logout after 30 minutes of inactivity
+- Automatic logout after 60 minutes of inactivity
 - Option to logout all devices at once
 
-**FR1.4** - Role-Based Access Control (RBAC)
-- 4 roles: Admin, Manager, Keeper, Viewer
+**FR1.4** - Simplified Role System (Farmer-Centric)
+- 3 roles ONLY: Owner, Manager, Viewer (no complexity)
 - Role matrix:
-  - **Admin**: All permissions, user management, billing
-  - **Manager**: Device control, scheduling, user invitations
-  - **Keeper**: Manual control, view logs
-  - **Viewer**: Read-only, dashboard view only
-- Granular permission model
-- Support custom roles with permission selection (future)
+  - **Owner**: Farm owner - full access, invite managers/viewers, manage all settings
+  - **Manager**: Can control devices, create schedules, invite viewers
+  - **Viewer**: Read-only access - see device status and data only
+- No granular permissions, no custom roles (keep it simple)
 
 **FR1.5** - User Profiles
-- Profile information: name, phone, language preference, timezone
-- Avatar upload (max 5MB, auto-crop to 512x512)
-- Notification preferences per user
-- API key generation for integrations (optional)
+- Profile information: name, language (Khmer/English toggle), timezone
+- Avatar upload optional (max 5MB)
+- Notification preferences per user (quiet hours for alerts)
+- NO API key generation (not for farmers)
 
 **FR1.6** - Activity Audit Logging
-- Log all user actions: login, commands, schedule changes, data exports
-- Timestamp, user ID, action type, resource ID, IP address
-- Retention: 5 years
-- Admin dashboard to view audit logs
-- Export audit logs as CSV
+- Log all user actions: login, commands, schedule changes
+- Timestamp, user ID, action type, IP address
+- Retention: 5 years for compliance
+- NO admin dashboard for farmers to view logs (done by Tokkatot team)
+- Export for Tokkatot team analysis
 
 ---
 
-### FR2: Device Management
+### FR2: Device Management (Tokkatot Team Only)
 
-**FR2.1** - Device Registration
-- Manual registration: code/QR code from device sticker
-- Automatic discovery: broadcast on local network
-- Import multiple devices via CSV
-- Device metadata: model, firmware version, serial number
-- Assigned to farm/location on registration
+**FR2.1** - Device Registration (Team Setup ONLY)
+- **IMPORTANT: Farmers CANNOT register devices themselves**
+- Device registration done by Tokkatot team technicians only
+- Devices pre-configured before deployment to farm
+- Device metadata: model, firmware version, serial number (set by team)
+- Devices assigned to farm/location at setup time
+- Farmers only view pre-configured devices
 
 **FR2.2** - Device Monitoring
 - Real-time connectivity status (online/offline/error)
@@ -80,24 +82,25 @@ This document specifies all functional requirements (features to build) and non-
 - Current firmware version
 - Signal strength indicator (for WiFi)
 - Device location/room assignment
-- Device name customization
+- **Farmers CAN customize device name/location only** (e.g., "Water Tank Pump" → "Tank 2 Pump")
+- NOT device type, model, hardware settings
 
-**FR2.3** - Device Control
+**FR2.3** - Device Control (Farmer-Facing)
 - Instant ON/OFF commands for each device
 - Command acknowledgement from device
 - Command timeout (30 seconds) with user notification
-- Queuing of commands if device offline
+- Queuing of commands if device offline (sync when online)
 - Command history per device
-- Batch commands (multiple devices at once)
+- Batch commands (multiple devices at once) - simple group control
 
-**FR2.4** - Firmware Management
+**FR2.4** - Firmware Management (Team Managed)
+- **Tokkatot team ONLY can trigger firmware updates**
 - Automatic firmware version checking
-- Manual firmware update trigger
 - OTA (Over-The-Air) update mechanism
-- Update progress indicator
+- Scheduled updates (2 AM Cambodia time by default)
 - Automatic rollback if boot fails
-- Firmware version lock (prevent downgrades if needed)
-- Staged rollout (10%, 50%, 100% of devices)
+- Device updates do NOT require farmer interaction
+- Farmers receive notification when device reboots for update
 
 **FR2.5** - Device Grouping
 - Organize devices by farm/location/type

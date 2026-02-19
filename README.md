@@ -76,46 +76,6 @@
 
 ---
 
-### Option 1: One-Command Setup (Recommended)
-
-```bash
-# Clone repository
-git clone https://github.com/SirOsborn/Tokkatot.git
-cd Tokkatot
-
-# Run complete deployment
-sudo bash scripts/deploy-all.sh
-```
-
-### Option 2: Manual Setup
-
-```bash
-# 1. Setup WiFi Access Point
-sudo bash scripts/setup-access-point.sh
-
-# 2. Build and install middleware
-sudo bash scripts/setup-middleware-service.sh
-
-# 3. (Optional) Setup GitHub Actions runner
-sudo bash scripts/setup-github-runner.sh
-
-# 4. Reboot
-sudo reboot
-```
-
-### Access the System
-
-1. **Connect to WiFi**
-   - SSID: `Smart Poultry 1.0.0-0001`
-   - Password: `skibiditoilet168`
-
-2. **Open Browser**
-   - Go to: `http://10.0.0.1:4000`
-
-3. **Create Account**
-   - Sign up and start managing your farm!
-
----
 
 ## 🏗️ Architecture
 
@@ -279,16 +239,7 @@ tokkatot/
 | [TEAM_STRUCTURE.md](docs/TEAM_STRUCTURE.md) | Team roles & responsibilities | Management |
 | [RISK_MANAGEMENT.md](docs/RISK_MANAGEMENT.md) | 10 identified risks & mitigation | Project Manager, Tech Lead |
 | [TOKKATOT_2.0_FARMER_CENTRIC_ADDITIONS.md](docs/TOKKATOT_2.0_FARMER_CENTRIC_ADDITIONS.md) | Farmer-first design details | All team members |
-
-### Version 1.0 Guides (Current Prototype)
-
-| Document | Description |
-|----------|-------------|
-| [QUICKSTART.md](QUICKSTART.md) | 5-minute setup guide |
-| [DEPLOYMENT.md](DEPLOYMENT.md) | Comprehensive deployment guide |
-| [VIRTUALBOX_SETUP.md](VIRTUALBOX_SETUP.md) | Testing with VirtualBox |
-| [scripts/README.md](scripts/README.md) | Script documentation |
-
+ 
 ---
 
 ## 🖥️ System Requirements
@@ -313,72 +264,6 @@ tokkatot/
 - **Browser:** Chrome 90+, Firefox 88+, Safari 14+
 - **Connection:** WiFi (2.4GHz)
 - **Resolution:** 360px+ width
-
----
-
-## 🛠️ Development Setup
-
-### Prerequisites
-
-```bash
-# Install Go
-wget https://go.dev/dl/go1.23.6.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.23.6.linux-amd64.tar.gz
-export PATH=$PATH:/usr/local/go/bin
-
-# Install Python
-sudo apt install python3 python3-pip python3-venv
-
-# Install Git
-sudo apt install git
-```
-
-### Clone and Build
-
-```bash
-# Clone repository
-git clone https://github.com/SirOsborn/Tokkatot.git
-cd Tokkatot
-
-# Setup middleware
-cd middleware
-go mod download
-go build -o middleware main.go
-
-# Setup AI service
-cd ../ai-service
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Run development server
-cd ../middleware
-./middleware
-```
-
----
-
-## 🧪 Testing
-
-### System Verification
-
-```bash
-# Run complete system check
-sudo bash scripts/verify-system.sh
-```
-
-### Manual Testing
-
-```bash
-# Test middleware
-curl http://localhost:4000
-
-# Test AI service
-curl http://localhost:5000/health
-
-# Test with VirtualBox
-# See VIRTUALBOX_SETUP.md for detailed instructions
-```
 
 ---
 
@@ -437,49 +322,6 @@ curl http://localhost:5000/health
 
 ---
 
-## 🎓 Usage Examples
-
-### Disease Detection (Python)
-
-```python
-import requests
-
-url = "http://10.0.0.1:4000/api/ai/predict-disease"
-files = {"image": open("chicken_sample.jpg", "rb")}
-headers = {"Authorization": "Bearer YOUR_JWT_TOKEN"}
-
-response = requests.post(url, files=files, headers=headers)
-result = response.json()
-
-print(f"Disease: {result['prediction']['predicted_disease']}")
-print(f"Confidence: {result['prediction']['confidence']}")
-```
-
-### Get Sensor Data (JavaScript)
-
-```javascript
-fetch('http://10.0.0.1:4000/api/get-current-data', {
-    headers: {
-        'Authorization': 'Bearer YOUR_JWT_TOKEN'
-    }
-})
-.then(res => res.json())
-.then(data => {
-    console.log('Temperature:', data.temperature);
-    console.log('Humidity:', data.humidity);
-});
-```
-
-### Toggle Device (cURL)
-
-```bash
-# Toggle fan
-curl -X GET http://10.0.0.1:4000/api/toggle-fan \
-  -H "Cookie: token=YOUR_JWT_TOKEN"
-```
-
----
-
 ## 📝 License & Usage
 
 This project is **proprietary software** developed for Tokkatot Startup. See the [LICENSE](LICENSE) file for complete terms and conditions.
@@ -491,31 +333,6 @@ This project is **proprietary software** developed for Tokkatot Startup. See the
 ## 🗺️ Roadmap
 
 ### Version 1.0 ✅ (Current - Prototype/Local)
-- ✅ Basic farm monitoring (local WiFi AP)
-- ✅ AI disease detection (EfficientNetB0)
-- ✅ Manual device control (web UI)
-- ✅ SQLite local database
-- ✅ ESP32 sensor integration
-
-### Version 2.0 🚀 (In Development - Production)
-- 🔄 **Phase 1-2:** Backend API architecture (Go + PostgreSQL + InfluxDB)
-- 🔄 **Phase 3:** Frontend v2 (Vue.js 3, WCAG AAA accessibility, offline support)
-- 🔄 **Phase 4:** Embedded v2 (ESP32 OTA updates, MQTT, better reliability)
-- 🔄 **Phase 5:** Cloud integration (DigitalOcean, Kubernetes)
-- 🔄 **Phase 6-8:** Testing, deployment, rollout
-
-**Changes from v1.0 → v2.0:**
-- Cloud-connected (not just local)
-- Multi-farm support (not single farm only)
-- Real-time monitoring (WebSocket + MQTT)
-- Remote device control
-- OTA firmware updates (no farm visits)
-- In-app alerts & message log (dashboard only)
-- Farmer-centric UI (large text, Khmer language, accessibility)
-- 99.5% uptime target
-- 5-year data retention
-
-**Timeline:** 27-35 weeks (6-8 months) - See [docs/PROJECT_TIMELINE.md](docs/PROJECT_TIMELINE.md)
 - ✅ Basic farm monitoring (local WiFi AP)
 - ✅ AI disease detection (EfficientNetB0)
 - ✅ Manual device control (web UI)
@@ -561,9 +378,6 @@ Quick access codes for demo and documentation:
 - **Website QR** - [https://tokkatot.aztrolabe.com](https://tokkatot.aztrolabe.com)
 - **Documentation QR** - Specifications & technical docs
 - **Support QR** - Email & contact information
-
-See `qr-codes/` folder for printable assets.
-
 ---
 
 <div align="center">

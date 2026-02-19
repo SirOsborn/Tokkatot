@@ -16,6 +16,26 @@ The database is designed using normalized relational model (3NF) for transaction
 
 ---
 
+# Tokkatot 2.0: Database Design Specification
+
+**Document Version**: 2.0-FarmerCentric  
+**Last Updated**: February 2026  
+**Status**: Final Specification
+
+**Database System**: PostgreSQL (primary development)  
+**Time-Series DB**: InfluxDB (for sensor data)  
+**Cache Layer**: Redis (for sessions and cache)
+
+**Design Principle**: Simplified for farmers - no complex RBAC, phone number as registration option
+
+---
+
+## Overview
+
+The database is designed using normalized relational model (3NF) for transactional data with separate time-series database for sensor metrics. This specification defines all tables, relationships, and data constraints. All design decisions prioritize simplicity for elderly farmers with low digital literacy.
+
+---
+
 ## Primary Database Schema (PostgreSQL)
 
 ### 1. Users Table
@@ -23,25 +43,31 @@ The database is designed using normalized relational model (3NF) for transaction
 ```
 users
 ├── id (UUID, PK)
-├── email (TEXT, UNIQUE, NOT NULL)
+├── email (TEXT, UNIQUE NULLABLE)
+├── phone (TEXT, UNIQUE NULLABLE)
+├── phone_country_code (VARCHAR(5), NULLABLE)  -- "+855" for Cambodia
 ├── password_hash (TEXT, NOT NULL)
 ├── name (TEXT, NOT NULL)
-├── phone (TEXT, NULL)
 ├── language (VARCHAR(10), DEFAULT 'km')  -- 'km' or 'en'
 ├── timezone (VARCHAR(40), DEFAULT 'Asia/Phnom_Penh')
-├── role (ENUM: admin|manager|keeper|viewer, DEFAULT 'viewer')
 ├── avatar_url (TEXT, NULL)
 ├── is_active (BOOLEAN, DEFAULT TRUE)
-├── email_verified (BOOLEAN, DEFAULT FALSE)
-├── mfa_enabled (BOOLEAN, DEFAULT FALSE)
+├── contact_verified (BOOLEAN, DEFAULT FALSE)  -- email or phone verified
+├── verification_type (VARCHAR(10), NULL)  -- 'email' or 'phone'
 ├── last_login (TIMESTAMP, NULL)
 ├── created_at (TIMESTAMP, DEFAULT NOW())
 ├── updated_at (TIMESTAMP, DEFAULT NOW())
 └── deleted_at (TIMESTAMP, NULL)  -- soft delete
 ```
 
-**Indexes**: email (unique), created_at, role  
-**Constraints**: email format validation, password_hash not null  
+**Constraints**:
+- Either email OR phone required (one-to-one unique constraint)
+- NOT both required, NOT both NULL
+- password_hash: bcrypt hash (60+ chars)
+- contact_verified: Must be true before farm access
+
+**Indexes**: email (unique nullable), phone (unique nullable), created_at, language  
+**Notes**: MFA removed (only for Tokkatot admin, not farmers)
 
 ---
 
@@ -76,8 +102,9 @@ farm_users
 ├── id (UUID, PK)
 ├── farm_id (UUID, FK → farms.id, NOT NULL)
 ├── user_id (UUID, FK → users.id, NOT NULL)
-├── role (ENUM: admin|manager|keeper|viewer, NOT NULL)
+├── role (ENUM: owner|manager|viewer, NOT NULL)
 ├── invited_by (UUID, FK → users.id, NOT NULL)
+
 ├── is_active (BOOLEAN, DEFAULT TRUE)
 ├── created_at (TIMESTAMP, DEFAULT NOW())
 ├── updated_at (TIMESTAMP, DEFAULT NOW())
@@ -86,7 +113,14 @@ farm_users
 
 **Indexes**: farm_id, user_id, farm_id+user_id (composite, unique)  
 **Constraints**: farm_id and user_id must exist  
-**Purpose**: Many-to-many relationship between users and farms with role assignment  
+**Purpose**: Many-to-many relationship between users and farms with simplified role assignment
+
+**Simplified Role System (Farmer-Centric)**:
+- **owner**: Farm creator/owner - full access, manage other users
+- **manager**: Can control devices, create schedules, add viewers
+- **viewer**: Read-only access to monitoring and alerts
+
+No complex RBAC - three roles sufficient for all farm operations.
 
 ---
 
