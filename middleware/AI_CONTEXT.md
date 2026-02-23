@@ -1,26 +1,30 @@
 # 🤖 AI Context: Go API Gateway & Middleware
 
 **Directory**: `middleware/`  
-**Your Role**: HTTP API, authentication, authorization, device management, real-time communication  
-**Tech Stack**: Go 1.19+, PostgreSQL, MQTT, WebSocket  
+**Your Role**: HTTP API, authentication, device management, schedule automation  
+**Tech Stack**: Go 1.23+, Fiber v2, PostgreSQL/SQLite, JWT, WebSocket  
+
+**📖 Read First**: `../AI_INSTRUCTIONS.md` (project overview, business model, farmer context)
+
+**📖 Full Documentation**:
+- API Spec: `../docs/implementation/API.md` (66 endpoints)
+- Database: `../docs/implementation/DATABASE.md` (10 tables with schedules)
+- Security: `../docs/implementation/SECURITY.md` (JWT, registration keys)
+- Automation: `../docs/AUTOMATION_USE_CASES.md` (real-world farmer scenarios)
 
 ---
 
-## 🎯 What You're Building
+## 🎯 What This Component Does
 
-**RESTful API Gateway** (Port 6060)
-- **Authentication**: Email/Phone login, JWT tokens (24h expiry)
-- **Authorization**: 3-role system (Owner, Manager, Viewer)
-- **Device Management**: Control IoT devices (water pumps, lights, feeders, fans, heaters, conveyors)
-- **Scheduling**: Create cron-based automation rules
-- **Monitoring**: Real-time sensor data, alerts, event logs
-- **AI Integration**: Proxy predictions to FastAPI service (Port 8000)
+**RESTful API Gateway** serving 35 endpoints:
+- **Authentication**: Phone/Email login, JWT tokens, registration keys
+- **Farms & Coops**: Hierarchical management (Farm → Coop → Device)
+- **Device Control**: Real-time commands to IoT equipment via WebSocket
+- **Schedules**: 4 automation types (time_based, duration_based, condition_based, manual)
+- **AI Proxy**: Disease detection via Python FastAPI service
+- **WebSocket**: Real-time updates for device status, alerts, commands
 
-**Key Statistics**:
-- 66 REST endpoints documented in `IG_SPECIFICATIONS_API.md`
-- JWT token validation on all protected endpoints
-- Device state source of truth (syncs with local RPi agent via MQTT)
-- Real-time WebSocket for live updates to connected clients
+**Database**: PostgreSQL (production) + SQLite (development fallback)
 
 ---
 
@@ -28,416 +32,247 @@
 
 ```
 middleware/
-├── main.go               # HTTP server setup, port 6060
-├── go.mod               # Go module definition
-├── go.sum               # Dependency checksums
-├── .env                 # Database URL, secret keys (GITIGNORE'D)
-├── api/
-│   ├── authentication.go   # Login, signup, password reset, token refresh
-│   ├── data-handler.go     # Historical data, reports, analytics
-│   ├── disease-detection.go # AI service proxy endpoints
-│   ├── profiles.go         # User profile management
-│   └── ... (other endpoints)
+├── main.go                    Entry point, Fiber server setup, routes
+├── go.mod/go.sum             Go 1.23 dependencies
+├── .env                      DATABASE_URL, JWT_SECRET (GITIGNORE'D)
+│
+├── api/                      Endpoint handlers (35 routes total)
+│   ├── auth_handler.go       Login, signup, token refresh, verify, forgot/reset password
+│   ├── auth_middleware.go    JWT extraction & farm access checks (checkFarmAccess)
+│   ├── farm_handler.go       Farm CRUD (5 endpoints)
+│   ├── coop_handler.go       Coop CRUD (5 endpoints)
+│   ├── device_handler.go     Device control & commands (5 endpoints)
+│   ├── schedule_handler.go   Schedule automation (7 endpoints) ⭐
+│   ├── user_handler.go       User profile management (3 endpoints)
+│   └── websocket_handler.go  Real-time updates + /ws/stats
+│
 ├── database/
-│   └── sqlite3_db.go    # PostgreSQL queries, migrations
+│   ├── postgres.go           PostgreSQL schema (10 tables)
+│   └── sqlite.go             SQLite fallback schema
+│
+├── models/
+│   └── models.go             Data structures (User, Farm, Coop, Device, Schedule)
+│
 └── utils/
-    └── utils.go         # Helper functions (JWT signing, hashing, etc)
+    └── utils.go              JWT, bcrypt, error responses
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚜 Schedule Automation (CRITICAL - New Feb 2026)
 
-### Local Development
+**Purpose**: Automate conveyor belts, feeders, water pumps, climate control for farmers
 
-```bash
+### 4 Schedule Types
+
+| Type | Use Case | Key Fields | Example |
+|------|----------|-----------|---------|
+| **time_based** | Trigger at specific times | `cron_expression` + (`action_duration` OR `action_sequence`) | Feeder ON at 6AM, 12PM, 6PM for 15min |
+| **duration_based** | Continuous ON/OFF cycling | `on_duration`, `off_duration` | Conveyor ON 10min, OFF 15min, repeat |
+| **condition_based** | Sensor-driven | `condition_json` | Pump ON when water < 20%, OFF when > 90% |
+| **Manual** | Direct control | None | Farmer manually turns ON/OFF via app |
+
+### New Features (Feb 2026)
+
+**1. `action_duration` field** - Auto-turn-off after X seconds
+```json
+{
+  "schedule_type": "time_based",
+  "cron_expression": "0 6,12,18 * * *",  // 6AM, 12PM, 6PM
+  "action_duration": 900,  // Auto-OFF after 15 minutes
+  "action": "set_relay",
+  "action_value": "ON"
+}
+```
+**Farmer benefit**: "Feed chickens at 6AM for 15 minutes, then auto-stop"
+
+**2. `action_sequence` field** - Multi-step patterns
+```json
+{
+  "schedule_type": "time_based",
+  "cron_expression": "0 6,12,18 * * *",
+  "action_sequence": "[
+    {\"action\":\"ON\",\"duration\":30},
+    {\"action\":\"OFF\",\"duration\":10},
+    {\"action\":\"ON\",\"duration\":30},
+    {\"action\":\"OFF\",\"duration\":10}
+  ]",
+  "action": "set_relay"
+}
+```
+**Farmer benefit**: "Pulse feeding - motor ON 30sec, pause 10sec (chickens approach bowls), ON 30sec, pause 10sec"
+
+### Real-World Examples
+
+See `../docs/AUTOMATION_USE_CASES.md` for detailed JSON examples:
+- **Conveyor Cycling**: ON 10min, OFF 15min, repeat (60-75% electricity savings)
+- **Pulse Feeding**: Multi-step sequences prevent chicken congestion at feed bowls
+- **Sensor Pumps**: Auto refill water tank based on ultrasonic sensor readings
+- **Climate Control**: Fan ON when temp > 32°C, heater ON when temp < 18°C
+
+### Schedule Endpoints
+
+**File**: `api/schedule_handler.go` (7 endpoints)
+```
+POST   /v1/farms/:farm_id/schedules                          Create schedule
+GET    /v1/farms/:farm_id/schedules                          List schedules
+GET    /v1/farms/:farm_id/schedules/:schedule_id             Get single schedule
+PUT    /v1/farms/:farm_id/schedules/:schedule_id             Update schedule
+DELETE /v1/farms/:farm_id/schedules/:schedule_id             Delete schedule
+GET    /v1/farms/:farm_id/schedules/:schedule_id/executions  Execution history
+POST   /v1/farms/:farm_id/schedules/:schedule_id/execute-now Manual trigger
+```
+
+### Database Schema
+
+**Table**: `schedules` (in `database/postgres.go` and `database/sqlite.go`)
+
+Key fields:
+- `schedule_type`: time_based | duration_based | condition_based
+- `cron_expression`: "0 6,12,18 * * *" (minute hour day month weekday)
+- `on_duration` / `off_duration`: Seconds for duration_based cycling
+- `action_duration`: Seconds before auto-turn-off (time_based only)
+- `action_sequence`: JSONB array of {action, duration} steps
+- `condition_json`: Sensor rules like {"sensor":"water_level","operator":"<","threshold":20}
+- `priority`: 0-10, higher = more important (for conflict resolution)
+
+**See**: `../docs/implementation/DATABASE.md` (schedules table section)
+
+---
+
+## 🔐 Authentication Flow
+
+**Login** (`POST /v1/auth/login`):
+```json
+{
+  "phone": "012345678",  // OR "email": "user@example.com"
+  "password": "Farmer123"
+}
+```
+
+**JWT Token Validation** (all protected endpoints):
+1. Extract token from `Authorization: Bearer <token>` header
+2. Validate signature, expiry
+3. Set `c.Locals("user_id")` and `c.Locals("role")` for handlers
+4. Check farm access: `checkFarmAccess(userID, farmID, requiredRole)`
+
+**Roles**:
+- **Owner**: Full farm access (owns the farm)
+- **Manager**: Device control, schedules, can invite Viewers
+- **Viewer**: Read-only monitoring data
+
+---
+
+## 🗄️ Database Patterns
+
+**Connection**:
+```go
+// Production: PostgreSQL via DATABASE_URL
+database.DB.Query(`SELECT * FROM farms WHERE id = $1`, farmID)
+
+// Development: SQLite fallback (tokkatot.db file)
+```
+
+**Common Queries**:
+```go
+// Get user's farms
+db.Query(`SELECT f.* FROM farms f 
+  INNER JOIN farm_users fu ON f.id = fu.farm_id 
+  WHERE fu.user_id = $1`, userID)
+
+// Get active schedules for device
+db.Query(`SELECT * FROM schedules 
+  WHERE device_id = $1 AND is_active = true 
+  ORDER BY priority DESC, next_execution ASC`, deviceID)
+```
+
+---
+
+## 🌐 WebSocket Real-Time Updates
+
+**Connection**: `ws://localhost:3000/v1/ws?farm_id={id}&coop_id={id}`
+
+**Hub Manager** (`api/websocket_handler.go`):
+```go
+// Broadcast after state change
+BroadcastDeviceUpdate(farmID, coopID, device)
+BroadcastScheduleExecution(farmID, coopID, scheduleExecution)
+```
+
+**Message Types**:
+- `device_update`: Device state changed
+- `command_executed`: Device command completed
+- `alert_triggered`: Sensor alert (low water, high temp)
+- `schedule_executed`: Schedule ran successfully
+
+---
+
+## 🧪 Common Development Tasks
+
+### Add New Endpoint
+1. Create handler in `api/` (e.g., `CreateFarmHandler`)
+2. Add route in `main.go`: `v1.Post("/farms", api.CreateFarmHandler)`
+3. Add auth middleware if needed
+4. Update `../docs/implementation/API.md`
+
+### Add New Database Table
+1. Add struct to `models/models.go`
+2. Add CREATE TABLE in `database/postgres.go`
+3. Add CREATE TABLE in `database/sqlite.go` (SQLite syntax)
+4. Update `../docs/implementation/DATABASE.md`
+
+### Test Locally
+```powershell
+# Build and start backend (Windows)
 cd middleware
-
-# Set up environment
-echo "DB_CONNECTION_STRING=postgres://user:pass@localhost:5432/tokkatot" > .env
-echo "JWT_SECRET_KEY=your-secret-key-here" >> .env
-
-# Install dependencies
-go mod download
-
-# Build
-go build -o tokkatot.exe .
-
-# Run
-./tokkatot.exe
-# Server starts on http://localhost:6060
+go build -o backend.exe
+.\backend.exe   # Starts on http://localhost:3000
 ```
 
-### Testing
-
-```bash
-# All tests
-go test ./...
-
-# Specific test
-go test ./api -v
-
-# Test with coverage
-go test -cover ./...
+**Run all API tests** (single command, from repo root):
+```powershell
+.\test_all_endpoints.ps1             # login with email (default)
+.\test_all_endpoints.ps1 -UsePhone   # login with phone number
 ```
+
+The script tests all sections sequentially: Auth → Profile → Farm → Coop → Device → Schedules (incl. `action_sequence`/`action_duration`) → WebSocket → Logout and prints a pass/fail/skip summary.
+
+**Seeded test-data constants used by the script**:
+- Email: `farmer@tokkatot.com` / Password: `FarmerPass123`
+- Farm ID: `11111111-1111-1111-1111-111111111111`
+- Device ID: `33333333-3333-3333-3333-333333333333`
+- Schedule with `action_sequence`: `44444444-4444-4444-4444-444444444444`
+- Schedule with `action_duration`: `55555555-5555-5555-5555-555555555555`
 
 ---
 
-## 🔐 Authentication & Authorization
+## ⚠️ Critical Rules
 
-### JWT Token Flow
-
-1. **User Login** (`POST /auth/login`)
-   - Accept: email/phone + password + device_name
-   - Validate credentials against database
-   - Generate JWT tokens:
-     - Access token (24 hours expiry)
-     - Refresh token (30 days expiry)
-   - Return both tokens
-
-2. **Protected Endpoints**
-   - Extract token from `Authorization: Bearer <token>` header
-   - Validate signature and expiry
-   - Extract user_id, farm_ids, role from token
-   - Check role has permission for resource
-
-3. **Token Refresh** (`POST /auth/refresh`)
-   - Accept refresh_token
-   - Issue new access_token + refresh_token
-
-### Role System (Farmer-Centric)
-
-| Role | Permissions | Can... | Cannot... |
-|------|-------------|--------|-----------|
-| **Owner** | Full farm access | Create users, manage devices, view all data | Cannot delete farm |
-| **Manager** | Device control + delegation | Control devices, schedule tasks, invite keepers | Cannot invite other managers |
-| **Viewer** | Read-only | View monitoring data, see alerts | Cannot make changes |
-
-**Important**: Farmers cannot add/remove devices. Only Tokkatot team can add devices via admin-only endpoints.
+1. **Never commit `.env`** - contains secrets
+2. **Always validate input** - prevent SQL injection
+3. **Check farm access** - `checkFarmAccess()` before device control
+4. **Log device commands** - insert into `device_commands` table
+5. **Broadcast WebSocket** - after state changes
+6. **Use UTC timestamps** - timezone consistency
+7. **Consistent errors** - use `utils.BadRequest()`, `utils.NotFound()`
 
 ---
 
-## 📊 Core Endpoints
-
-### Authentication (8 endpoints)
-
-```go
-POST /auth/login                    // Email OR phone
-POST /auth/signup                   // Register new user
-POST /auth/logout                   // Invalidate session
-POST /auth/refresh                  // New tokens
-POST /auth/verify-email             // Email verification
-POST /auth/forgot-password          // Initiate reset
-POST /auth/reset-password           // Complete reset
-POST /auth/change-password          // User changes own password
-```
-
-### Device Management (10 endpoints)
-
-```go
-GET  /farms/{farm_id}/devices               // List all
-GET  /farms/{farm_id}/devices/{device_id}   // Single device
-POST /admin/devices                         // Add (Tokkatot team only)
-POST /farms/{farm_id}/devices/{device_id}/commands  // Control
-DELETE /admin/devices/{device_id}           // Remove (Tokkatot team only)
-GET  /farms/{farm_id}/devices/{device_id}/state     // Current state
-```
-
-### AI/Disease Detection (3 endpoints)
-
-```go
-GET  /api/ai/health                 // AI service health check
-POST /api/ai/predict                // Proxy prediction request
-POST /api/ai/predict/detailed       // Proxy detailed prediction
-```
-
-### Scheduling (7 endpoints)
-
-```go
-GET    /farms/{farm_id}/schedules           // List
-POST   /farms/{farm_id}/schedules           // Create
-PUT    /farms/{farm_id}/schedules/{id}      // Update
-DELETE /farms/{farm_id}/schedules/{id}      // Delete
-GET    /farms/{farm_id}/schedules/{id}/history // View executions
-```
-
-### Analytics & Reporting (5 endpoints)
-
-```go
-GET /farms/{farm_id}/reports/device-metrics
-GET /farms/{farm_id}/reports/device-usage
-GET /farms/{farm_id}/reports/farm-performance
-GET /farms/{farm_id}/reports/export
-GET /farms/{farm_id}/events
-```
-
----
-
-## 🛠️ Key Functions
-
-### `main.go`
-- `main()` - Start HTTP server, load config, initialize database
-- `setupRoutes()` - Register all endpoint handlers
-- `setupMiddleware()` - CORS, logging, rate limiting
-
-### `api/authentication.go`
-```go
-func Login(w http.ResponseWriter, r *http.Request)        // POST /auth/login
-func Signup(w http.ResponseWriter, r *http.Request)       // POST /auth/signup
-func RefreshToken(w http.ResponseWriter, r *http.Request) // POST /auth/refresh
-func ValidateJWT() MiddlewareFunc                          // JWT validation
-```
-
-### `api/disease-detection.go`
-```go
-func ProxyPrediction(w http.ResponseWriter, r *http.Request)        // POST /api/ai/predict
-func ProxyDetailedPrediction(w http.ResponseWriter, r *http.Request) // POST /api/ai/predict/detailed
-func ProxyHealthCheck(w http.ResponseWriter, r *http.Request)        // GET /api/ai/health
-```
-
-### `database/sqlite3_db.go`
-```go
-func GetUser(email string) (*User, error)
-func CreateUser(user *User) error
-func GetDevices(farmID string) ([]*Device, error)
-func SavePrediction(prediction *Prediction) error
-func LogEvent(event *Event) error
-```
-
----
-
-## 📝 Code Guidelines
-
-### ✅ DO:
-- Use PostgreSQL with parameterized queries (prepared statements)
-- Validate all user input (size, type, format)
-- Hash passwords with bcrypt
-- Check JWT token + role on every protected endpoint
-- Log all device commands (audit trail)
-- Return proper HTTP status codes (200, 201, 400, 401, 403, 404, 500)
-- Use `.env` for secrets (DB password, JWT secret)
-- Implement error handling with meaningful messages
-
-### ❌ DON'T:
-- Build SQL strings with string concatenation (SQL injection risk!)
-- Store passwords in plaintext
-- Trust headers without validation
-- Return internal error details to clients
-- Hardcode database URLs or API keys
-- Allow farmers to add/remove devices (team only)
-- Expose sensitive user information (phone numbers) in responses
-
----
-
-## 🔒 Security Checklist
-
-- ✅ Passwords hashed with bcrypt (cost ≥ 12)
-- ✅ JWT tokens signed with secret key
-- ✅ HTTPS enforced (reverse proxy handles TLS)
-- ✅ CORS restricted to frontend domain only
-- ✅ Rate limiting (10 auth/min, 100 device control/min per user)
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ CSRF protection on state-changing operations
-- ✅ Input validation on all endpoints
-- ✅ Access control checks on farm operations
-- ✅ Secrets in `.env` (never in code)
-
----
-
-## 💾 Database Schema
-
-**Key Tables** (See `IG_SPECIFICATIONS_DATABASE.md` for full schema):
-
-```
-users
-  - id (UUID)
-  - email (unique, optional if phone provided)
-  - phone (unique, optional if email provided)
-  - password_hash
-  - role (Owner/Manager/Viewer)
-  - created_at
-
-farms
-  - id (UUID)
-  - owner_id (FK users)
-  - name
-  - location
-  - created_at
-
-devices
-  - id (UUID)
-  - farm_id (FK farms)
-  - name
-  - device_type (Pump, Light, Feeder, etc)
-  - status (online/offline/error)
-  - last_heartbeat
-  - added_by (team member, not farmer)
-
-commands
-  - id (UUID)
-  - device_id (FK devices)
-  - command_type
-  - parameters
-  - executed_at
-  - result
-
-sensor_readings (InfluxDB)
-  - device_id
-  - sensor_type (temperature, humidity)
-  - value
-  - timestamp
-
-predictions
-  - id (UUID)
-  - user_id (FK users)
-  - device_id (FK devices, optional)
-  - disease
-  - confidence
-  - image_hash
-  - created_at
-
-event_logs
-  - id (UUID)
-  - farm_id (FK farms)
-  - event_type
-  - message
-  - timestamp
-```
-
----
-
-## 🔗 Integration Points
-
-### With AI Service (FastAPI, Port 8000)
-
-```go
-// When farmer submits image for disease detection:
-1. Receive image upload at POST /api/ai/predict
-2. Validate image (size, format)
-3. Forward to FastAPI: POST http://localhost:8000/predict
-4. Get response: {disease, confidence, recommendation}
-5. Store in PostgreSQL predictions table
-6. Broadcast to connected WebSocket clients
-7. Return JSON to user mobile app
-```
-
-### With Local Hub (Raspberry Pi, MQTT)
-
-```go
-// When farmer sends device command:
-1. Receive command at POST /devices/{id}/commands
-2. Validate user has permission
-3. Publish to MQTT: farm/{farm_id}/devices/{device_id}/command
-4. Local RPi receives and executes on ESP32
-5. ESP32 responds with status
-6. Local RPi sends status back via MQTT
-7. Go API receives status and broadcasts via WebSocket
-```
-
-### With Frontend (WebSocket)
-
-```go
-// Real-time updates:
-1. Client connects: WebSocket /ws?token=<jwt>
-2. Authenticate JWT token
-3. Subscribe client to farm updates
-4. When device state changes, broadcast to all connected clients
-5. Clients receive live updates (no polling needed)
-```
-
----
-
-## 🆘 Common Issues & Solutions
-
-### Issue: Database connection fails
-```
-Error: connection refused
-```
-**Fix**: Check `.env` has correct DB_CONNECTION_STRING, PostgreSQL is running
-
-### Issue: JWT validation fails
-```
-Error: invalid token
-```
-**Fix**: Ensure JWT_SECRET_KEY in `.env` matches token generation, check token expiry
-
-### Issue: SQL injection warning
-```
-ERROR: Possible SQL injection detected
-```
-**Fix**: Always use prepared statements: `db.Prepare("SELECT * FROM users WHERE id = ?")` with args
-
-### Issue: Rate limiting blocks legitimate traffic
-```
-Error: 429 Too Many Requests
-```
-**Fix**: Adjust rate limit in middleware, check if client is making duplicate requests
-
----
-
-## 📚 Key Documents
-
-- `IG_SPECIFICATIONS_API.md` - All 66 endpoints specifications
-- `IG_SPECIFICATIONS_DATABASE.md` - PostgreSQL schema
-- `IG_SPECIFICATIONS_SECURITY.md` - Authentication/authorization details
-- `01_SPECIFICATIONS_ARCHITECTURE.md` - How middleware fits in overall system
-
----
-
-## 🧪 Testing Checklist
-
-- ✅ Unit tests for authentication logic
-- ✅ Integration tests for database operations
-- ✅ API endpoint tests (happy path + error cases)
-- ✅ JWT token validation tests
-- ✅ Authorization tests (role checks)
-- ✅ Database migration tests
-- ✅ Load tests (rate limiting)
-
----
-
-## 📋 Environment Variables
-
-```ini
-# .env file (GITIGNORE'D)
-
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=tokkatot
-DB_USER=postgres
-DB_PASSWORD=secure_password
-
-# JWT
-JWT_SECRET_KEY=very_long_random_secret_key_here
-JWT_EXPIRY_HOURS=24
-REFRESH_TOKEN_EXPIRY_DAYS=30
-
-# Server
-SERVER_PORT=6060
-ENVIRONMENT=development
-
-# AI Service
-AI_SERVICE_URL=http://localhost:8000
-AI_SERVICE_TIMEOUT_SECONDS=30
-
-# MQTT (local hub)
-MQTT_BROKER=localhost:1883
-MQTT_USERNAME=mqtt_user
-MQTT_PASSWORD=mqtt_password
-```
-
----
-
-## 🎯 Your Next Tasks
-
-1. **Implement endpoints** according to `IG_SPECIFICATIONS_API.md`
-2. **Set up database** - Create schema, run migrations
-3. **Implement authentication** - Login, signup, token refresh
-4. **Connect to AI service** - Proxy endpoints to FastAPI
-5. **Test thoroughly** - Unit tests, integration tests, security tests
-6. **Document integration** - How endpoints connect
-
----
-
-**Happy coding! 🚀 If unexpected issues arise, check the database schema and API spec first.**
+## 📚 Documentation Map
+
+**Component AI Context Files** (read for specific tech stack):
+- `../middleware/AI_CONTEXT.md` ← YOU ARE HERE (Go API)
+- `../frontend/AI_CONTEXT.md` (Vue.js 3 PWA, UI components)
+- `../ai-service/AI_CONTEXT.md` (PyTorch disease detection)
+- `../embedded/AI_CONTEXT.md` (ESP32 firmware, MQTT)
+
+**Implementation Guides** (read before coding):
+- `../docs/implementation/API.md` - Complete API spec
+- `../docs/implementation/DATABASE.md` - Full schema
+- `../docs/implementation/SECURITY.md` - Auth & authorization
+- `../docs/AUTOMATION_USE_CASES.md` - Real farmer scenarios ⭐
+
+**Project Context** (read first):
+- `../AI_INSTRUCTIONS.md` - Master guide (business model, farmer-centric design)
+
+**End of middleware/AI_CONTEXT.md**

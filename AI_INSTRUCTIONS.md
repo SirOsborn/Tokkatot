@@ -1,7 +1,7 @@
 # 🤖 AI Agent Instructions for Tokkatot 2.0
 
 **Last Updated**: February 23, 2026  
-**Version**: 2.1 (Updated with Registration Key System & Coop Architecture)  
+**Version**: 2.2 (Updated with accurate DB schema: devices coop_id/is_main_controller, device_commands field names, event_logs structure, schedule_executions status enum)  
 **Purpose**: Guide for AI agents assisting with Tokkatot development
 
 ---
@@ -40,6 +40,118 @@
 ```
 
 **Key Point**: NO EMAIL/SMS VERIFICATION NEEDED! Registration key proves legitimacy.
+
+---
+
+## 🚨 **MANDATORY: Self-Documentation After Building Features**
+
+**CRITICAL REQUIREMENT**: Whenever you complete building a significant feature, you MUST update documentation AND AI context files immediately.
+
+### Why This Matters
+
+Future AI sessions need to know:
+- ✅ What features exist (e.g., `action_sequence` for multi-step automation)
+- ✅ How things were implemented (Go patterns, Vue.js components, ESP32 code)
+- ✅ Why decisions were made (farmer needs, technical constraints)
+- ✅ Where to find examples (API requests, database queries, UI components)
+
+**Without documentation updates, knowledge is lost between sessions!**
+
+### When You MUST Update Docs
+
+**Update docs when you complete**:
+- ✅ New feature (e.g., pulse feeding automation, disease detection API)
+- ✅ Database schema change (added table, added fields like `action_sequence`)
+- ✅ New API endpoint or modified endpoint behavior
+- ✅ New automation pattern (schedule types, sensor triggers)
+- ✅ New UI component (schedule builder, device control panel)
+- ✅ Architecture decision (SQLite fallback, JWT auth flow)
+- ✅ Integration work (Go → FastAPI → PyTorch, MQTT protocol)
+
+**Don't update for**:
+- ❌ Minor bug fixes (typo corrections, null checks)
+- ❌ Code refactoring without functional changes
+- ❌ Variable/function renames
+- ❌ Comment additions
+- ❌ Formatting/linting changes
+
+### What You MUST Update
+
+**Every significant feature requires updating**:
+
+1. **Implementation specs** (`docs/implementation/*.md`):
+   - `API.md` - If you added/modified endpoints (show full request/response examples)
+   - `DATABASE.md` - If you changed schema (show CREATE TABLE, explain new fields)
+   - `FRONTEND.md` - If you added UI (show Vue.js code, CSS, user flow)
+   - `EMBEDDED.md` - If you changed firmware (show C code, MQTT topics)
+   - `AI_SERVICE.md` - If you changed AI model (show PyTorch code, FastAPI endpoints)
+
+2. **AI context files** (teach future AI sessions):
+   - `middleware/AI_CONTEXT.md` - If you added Go patterns, database queries, endpoints
+   - `frontend/AI_CONTEXT.md` - If you added Vue.js components, API calls, UI patterns
+   - `ai-service/AI_CONTEXT.md` - If you changed model architecture, preprocessing
+   - `embedded/AI_CONTEXT.md` - If you changed MQTT protocol, GPIO control, sensors
+   - `AI_INSTRUCTIONS.md` (this file) - If you added major system concept (rarely)
+
+3. **Use case documentation**:
+   - `docs/AUTOMATION_USE_CASES.md` - If you solved a real farmer problem (show scenario, JSON example, benefit)
+
+### How to Judge "It's Time to Update"
+
+**Ask yourself**:
+1. ✅ "Would a future AI be confused about what I just built?" → Update now
+2. ✅ "Did I just solve a real farmer problem?" → Document the solution
+3. ✅ "Did I create a reusable pattern?" → Add to AI_CONTEXT.md
+4. ✅ "Have I made 3-5 related changes?" → Time to consolidate into docs
+5. ✅ "Am I switching to a different component?" → Document current work first
+
+**Timing Rule (Goldilocks Zone)**:
+- ⏱️ **Too fast**: Don't update after every single function (causes noise)
+- ⏱️ **Too slow**: Don't wait weeks for "perfect time" (knowledge gets lost)
+- ✅ **Just right**: Update after 30-60 minutes of significant work OR when feature is complete OR before switching components
+
+### Update Checklist (Copy This)
+
+```markdown
+After completing significant work, verify:
+
+[ ] Did I change database schema? → Update docs/implementation/DATABASE.md
+[ ] Did I add/modify API endpoints? → Update docs/implementation/API.md  
+[ ] Did I add UI components? → Update docs/implementation/FRONTEND.md
+[ ] Did I change firmware behavior? → Update docs/implementation/EMBEDDED.md
+[ ] Did I solve a farmer problem? → Update docs/AUTOMATION_USE_CASES.md
+[ ] Did I add reusable patterns? → Update component AI_CONTEXT.md files
+[ ] Did I test all examples? → Verify JSON/SQL/code compiles and runs
+[ ] Did I add cross-references? → Link related docs together
+```
+
+### Real Example: action_sequence Feature
+
+**What was built**: Multi-step automation for pulse feeding (ON 30s, pause 10s, repeat)
+
+**Documentation updated** (same session):
+1. ✅ `docs/implementation/DATABASE.md` - Added `action_sequence JSONB` field spec
+2. ✅ `docs/implementation/API.md` - Updated 4 schedule endpoints with field examples
+3. ✅ `docs/implementation/FRONTEND.md` - Added Action Sequence Builder UI (300+ lines)
+4. ✅ `docs/implementation/EMBEDDED.md` - Added ESP32 execution code (200+ lines)
+5. ✅ `docs/AUTOMATION_USE_CASES.md` - Created 500+ line guide with farmer scenarios
+6. ✅ `middleware/AI_CONTEXT.md` - Added schedule automation section
+7. ✅ `AI_INSTRUCTIONS.md` - Added automation & schedules overview
+
+**Result**: Future AI sessions know this feature exists, how to use it, and can build on it.
+
+**If not documented**: Future AI would reinvent the feature or never discover it exists.
+
+### Enforcement
+
+**Before ending your session**:
+1. Review what you built today
+2. Identify which docs need updates
+3. Update ALL relevant docs (don't skip any)
+4. Verify examples work (compile code, test JSON, run queries)
+5. Add version history entry in `docs/README.md` if major feature
+
+**This is not optional - it's how we maintain institutional knowledge!**
 
 ---
 
@@ -216,6 +328,12 @@ When working on Tokkatot, you are a **professional software engineer and technic
 - `IG_SPECIFICATIONS_EMBEDDED.md` - ESP32 firmware, MQTT protocol
 - `IG_SPECIFICATIONS_AI_SERVICE.md` - PyTorch ensemble (99% accuracy)
 
+**Use Case Guides**:
+- `AUTOMATION_USE_CASES.md` - **🚜 Real-world farmer automation scenarios** (conveyors, feeders, pumps, climate control)
+  - **READ THIS** for understanding schedule types in real farming context
+  - Detailed examples: Pulse feeding, cycling conveyors, sensor-driven pumps
+  - Multi-step sequences (`action_sequence` field usage)
+
 **Operational Guides** (OG_*):
 - `OG_SPECIFICATIONS_DEPLOYMENT.md` - Docker, infrast architecture
 - `OG_SPECIFICATIONS_TECHNOLOGY_STACK.md` - Tech selections & versions
@@ -227,6 +345,47 @@ When working on Tokkatot, you are a **professional software engineer and technic
 - ✅ After modifying database schema → Update IG_SPECIFICATIONS_DATABASE.md
 - ✅ After adding features → Update 02_SPECIFICATIONS_REQUIREMENTS.md
 - ✅ After changing architecture → Update 01_SPECIFICATIONS_ARCHITECTURE.md & data flow diagrams
+
+---
+
+## 🤖 Automation & Schedules (Critical Farmer Feature)
+
+**Real-World Equipment**:
+1. **Conveyor Belt** - Manure removal (motor rotates scraper chain)
+2. **Feeder Motor** - Spiral auger feed dispenser (stainless steel spiral in tube pushes feed pellets)
+3. **Water Pump** - Tank refill (gravity-fed to coop pipes)
+4. **Climate Control** - Fans (cooling) + Heaters (warming)
+
+**4 Schedule Types**:
+
+| Type | Use Case | Key Fields | Example |
+|------|----------|-----------|---------|
+| **Manual** | Always ON/OFF | None | "I want conveyor running 24/7" |
+| **time_based** | Trigger at specific times | `cron_expression`, `action_duration` | "Turn ON feeder at 6AM, 12PM, 6PM for 15min each" |
+| **time_based + sequence** | Multi-step pattern at specific times | `cron_expression`, `action_sequence` | "At 6AM: motor ON 30sec, pause 10sec, ON 30sec, pause 10sec" |
+| **duration_based** | Continuous ON/OFF cycling | `on_duration`, `off_duration` | "Conveyor ON 10min, OFF 15min, repeat forever" |
+| **condition_based** | Sensor-driven automation | `condition_json` | "Pump ON when water < 20%, OFF when > 90%" |
+
+**New Feature - Multi-Step Sequences** (`action_sequence` field):
+```json
+{
+  "cron_expression": "0 6,12,18 * * *",  // Trigger at 6AM, 12PM, 6PM
+  "action_sequence": "[
+    {\"action\":\"ON\",\"duration\":30},   // Step 1: ON for 30 seconds
+    {\"action\":\"OFF\",\"duration\":10},  // Step 2: Pause 10 seconds
+    {\"action\":\"ON\",\"duration\":30},   // Step 3: ON for 30 seconds
+    {\"action\":\"OFF\",\"duration\":10}   // Step 4: Pause 10 seconds
+  ]"
+}
+// Total: 80 seconds per feeding, then device stays OFF until next trigger
+```
+
+**Why This Matters**:
+- **Pulse Feeding**: Chickens need time between feed bursts to approach bowls (prevents aggressive eaters from dominating)
+- **Electricity Savings**: `duration_based` cycling reduces conveyor runtime by 60-75%
+- **Automation**: Farmers can leave farm - schedules handle feeding/cleaning/watering
+
+**👉 See `docs/AUTOMATION_USE_CASES.md` for detailed farmer scenarios with exact JSON examples**
 
 ---
 
@@ -415,8 +574,17 @@ When working on Tokkatot, you are a **professional software engineer and technic
 **Git & CI/CD**:
 - Model files in `.gitignore` (don't push to GitHub)
 - Secrets in `.env` files (don't push to GitHub)
+- Build artifacts in `.gitignore`: `middleware/backend.exe`, `middleware/*.exe`, `middleware/*.exe~`
+- Temporary test files in `.gitignore`: `test_token.txt`
 - Pull requests must include documentation updates
 - GitHub Actions can run tests/linting on PR
+
+**Testing** (middleware API — PowerShell, from repo root):
+```powershell
+.\test_all_endpoints.ps1             # all endpoints, email login
+.\test_all_endpoints.ps1 -UsePhone   # all endpoints, phone login
+```
+Covers: Auth, Profile, Farm, Coop, Device, Schedules (action_sequence + action_duration), WebSocket, Logout.
 
 ---
 
@@ -455,7 +623,108 @@ When reviewing AI-generated PRs, check:
 
 ---
 
-## 💬 Communication Style
+## � AI Context Files (Component-Specific Guides)
+
+**Each service folder has an AI_CONTEXT.md** for component-specific implementation details.
+
+### **Purpose**: Deep-dive into specific tech stack, file structure, common patterns
+
+**Component AI Context Files**:
+
+1. **`middleware/AI_CONTEXT.md`** - Go API Gateway
+   - File structure, endpoint handlers, database patterns
+   - Schedule automation implementation (action_duration, action_sequence)
+   - WebSocket broadcasting, JWT auth flow
+   - Common development tasks (add endpoint, add table, test locally)
+
+2. **`frontend/AI_CONTEXT.md`** - Vue.js 3 PWA
+   - Component structure, page organization, CSS patterns
+   - Farmer accessibility (48px fonts, high contrast, Khmer support)
+   - WebSocket client, API integration
+   - Mobile-first responsive design
+
+3. **`ai-service/AI_CONTEXT.md`** - PyTorch Disease Detection
+   - Model architecture (EfficientNetB0 + DenseNet121 ensemble)
+   - FastAPI endpoints (/predict, /health)
+   - Training pipeline, evaluation metrics
+   - Docker deployment
+
+4. **`embedded/AI_CONTEXT.md`** - ESP32 Firmware
+   - Sensor drivers (DHT22, ultrasonic, relay control)
+   - MQTT protocol, message formats
+   - FreeRTOS tasks, memory management
+   - OTA updates
+
+5. **`docs/AI_CONTEXT.md`** - Documentation Maintenance
+   - When to update which docs
+   - Documentation standards (farmer-first language, concrete examples)
+   - Workflow: code change → identify affected docs → update with examples
+   
+**Reading Order**:
+1. **First**: Read `/AI_INSTRUCTIONS.md` (this file) for project overview
+2. **Then**: Read component `AI_CONTEXT.md` for specific tech implementation
+3. **Reference**: `docs/implementation/*.md` for complete API/DB/Security specs
+
+---
+## 📝 Advanced: Documentation Update Details
+
+**This section provides additional context** on the documentation update requirement explained earlier. See "MANDATORY: Self-Documentation After Building Features" section for main instructions.
+
+### Documentation File Structure
+
+**Implementation Specs** (`docs/implementation/*.md`):
+- `API.md` - All 35+ REST endpoints with request/response examples
+- `DATABASE.md` - Complete schema (10 tables, all fields, indexes)
+- `FRONTEND.md` - Vue.js 3 pages, components, routing, API integration
+- `AI_SERVICE.md` - PyTorch models, FastAPI endpoints, preprocessing
+- `EMBEDDED.md` - ESP32 firmware, MQTT protocol, GPIO pins, sensors
+- `SECURITY.md` - JWT auth, input validation, rate limiting
+
+**AI Knowledge Files**:
+- `AI_INSTRUCTIONS.md` (this file) - Master guide for entire project
+- `middleware/AI_CONTEXT.md` - Go patterns, schedule automation, database queries
+- `frontend/AI_CONTEXT.md` - Vue.js components, mobile-first design, API calls
+- `ai-service/AI_CONTEXT.md` - PyTorch ensemble, preprocessing, FastAPI health checks
+- `embedded/AI_CONTEXT.md` - MQTT command execution, sensor reading, safety logic
+
+**Use Case Documentation**:
+- `docs/AUTOMATION_USE_CASES.md` - Real farmer scenarios (Sokha's pulse feeding, Dara's climate control) with JSON examples and benefits
+
+### Cross-Referencing Example
+
+**When documenting `action_sequence` feature**:
+1. `DATABASE.md` shows field type: `action_sequence JSONB`
+2. `API.md` shows endpoint usage: `POST /farms/{id}/schedules` with JSON example
+3. `FRONTEND.md` shows Action Sequence Builder UI component
+4. `EMBEDDED.md` shows ESP32 execution code for multi-step patterns
+5. `AUTOMATION_USE_CASES.md` shows Farmer Sokha's pulse feeding scenario
+6. Each file links to the others using `[docs/AUTOMATION_USE_CASES.md](AUTOMATION_USE_CASES.md)` syntax
+
+### Documentation Verification
+
+**Before marking work complete, verify**:
+- ✅ All JSON examples are valid (paste into validator)
+- ✅ All SQL queries work (test in psql/sqlite)
+- ✅ All code snippets compile (Go: `go build`, Python: `python -m py_compile`)
+- ✅ All links work (click every `[text](path.md)` link)
+- ✅ Examples use real data (not placeholders like `<farm_id>`)
+
+### Version History Tracking
+
+**After major features, update `docs/README.md`**:
+```markdown
+## Version History
+
+### v2.0 (Current)
+- **Multi-step automation**: action_sequence field for pulse feeding, conveyor operations
+- **Auto-turn-off timers**: action_duration for water pumps, lights
+- **AI documentation consolidation**: Removed 2,310 lines of duplication across 5 files
+```
+
+This provides timeline context for future developers.
+
+---
+## �💬 Communication Style
 
 - **Document everything** - If code is unclear, it's not production-ready
 - **Update specs first** - Write API spec before coding the endpoint

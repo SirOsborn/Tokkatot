@@ -66,6 +66,10 @@ func main() {
 		log.Printf("⚠️  Frontend directory not found at: %s (continuing without frontend)", frontendPath)
 	}
 
+	// Start WebSocket hub (for real-time updates)
+	go api.WSHub.RunHub()
+	log.Println("✅ WebSocket hub started")
+
 	// Setup routes
 	setupRoutes(app, frontendPath)
 
@@ -93,10 +97,48 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	// Protected routes (require authentication)
 	protected := v1.Group("")
 	protected.Use(api.AuthMiddleware)
-	// Protected endpoints will be added here:
-	// protected.Get("/users/me", api.GetCurrentUserHandler)
-	// protected.Get("/farms", api.ListFarmsHandler)
-	// etc.
+
+	// User profile endpoints
+	protected.Get("/users/me", api.GetCurrentUserHandler)
+	protected.Put("/users/me", api.UpdateProfileHandler)
+	protected.Post("/users/me/change-password", api.ChangePasswordHandler)
+
+	// Farm management endpoints
+	protected.Get("/farms", api.ListFarmsHandler)
+	protected.Post("/farms", api.CreateFarmHandler)
+	protected.Get("/farms/:farm_id", api.GetFarmHandler)
+	protected.Put("/farms/:farm_id", api.UpdateFarmHandler)
+	protected.Delete("/farms/:farm_id", api.DeleteFarmHandler)
+
+	// Coop management endpoints
+	protected.Get("/farms/:farm_id/coops", api.ListCoopsHandler)
+	protected.Post("/farms/:farm_id/coops", api.CreateCoopHandler)
+	protected.Get("/farms/:farm_id/coops/:coop_id", api.GetCoopHandler)
+	protected.Put("/farms/:farm_id/coops/:coop_id", api.UpdateCoopHandler)
+	protected.Delete("/farms/:farm_id/coops/:coop_id", api.DeleteCoopHandler)
+
+	// Device management endpoints
+	protected.Get("/farms/:farm_id/devices", api.ListDevicesHandler)
+	protected.Get("/farms/:farm_id/devices/:device_id", api.GetDeviceHandler)
+	protected.Post("/farms/:farm_id/devices/:device_id/commands", api.SendDeviceCommandHandler)
+	protected.Get("/farms/:farm_id/devices/:device_id/commands/:command_id", api.GetDeviceCommandStatusHandler)
+	protected.Get("/farms/:farm_id/devices/:device_id/commands", api.ListDeviceCommandsHandler)
+
+	// Schedule management endpoints
+	protected.Post("/farms/:farm_id/schedules", api.CreateScheduleHandler)
+	protected.Get("/farms/:farm_id/schedules", api.ListSchedulesHandler)
+	protected.Get("/farms/:farm_id/schedules/:schedule_id", api.GetScheduleHandler)
+	protected.Put("/farms/:farm_id/schedules/:schedule_id", api.UpdateScheduleHandler)
+	protected.Delete("/farms/:farm_id/schedules/:schedule_id", api.DeleteScheduleHandler)
+	protected.Get("/farms/:farm_id/schedules/:schedule_id/executions", api.GetScheduleExecutionHistoryHandler)
+	protected.Post("/farms/:farm_id/schedules/:schedule_id/execute-now", api.ExecuteScheduleNowHandler)
+
+	// WebSocket for real-time updates (requires authentication)
+	protected.Get("/ws", api.WebSocketUpgradeHandler)
+	protected.Get("/ws/stats", api.GetWebSocketStatsHandler)
+
+	// Device heartbeat (for IoT devices - no AuthMiddleware, uses device key)
+	v1.Post("/devices/:hardware_id/heartbeat", api.UpdateDeviceHeartbeatHandler)
 
 	// ===== FRONTEND STATIC ROUTES =====
 	// Serve static files

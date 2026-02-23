@@ -1,25 +1,7 @@
 # Tokkatot 2.0: Database Design Specification
 
-**Document Version**: 2.0  
-**Last Updated**: February 2026  
-**Status**: Final Specification
-
-**Database System**: PostgreSQL (primary development)  
-**Time-Series DB**: InfluxDB (for sensor data)  
-**Cache Layer**: Redis (for sessions and cache)  
-
----
-
-## Overview
-
-The database is designed using normalized relational model (3NF) for transactional data with separate time-series database for sensor metrics. This specification defines all tables, relationships, and data constraints.
-
----
-
-# Tokkatot 2.0: Database Design Specification
-
-**Document Version**: 2.0-FarmerCentric  
-**Last Updated**: February 2026  
+**Document Version**: 2.1  
+**Last Updated**: February 23, 2026  
 **Status**: Final Specification
 
 **Database System**: PostgreSQL (primary development)  
@@ -130,10 +112,12 @@ No complex RBAC - three roles sufficient for all farm operations.
 devices
 ├── id (UUID, PK)
 ├── farm_id (UUID, FK → farms.id, NOT NULL)
-├── device_id (VARCHAR(50), UNIQUE, NOT NULL)  -- hardware ID from device
+├── coop_id (UUID, FK → coops.id, NULL)          -- which coop this device belongs to
+├── device_id (VARCHAR(50), UNIQUE, NOT NULL)     -- hardware ID from device
 ├── name (TEXT, NOT NULL)
 ├── type (ENUM: gpio|relay|pwm|adc|servo|sensor, NOT NULL)
 ├── model (TEXT, NULL)  -- e.g., "ESP32-WROOM-32"
+├── is_main_controller (BOOLEAN, DEFAULT FALSE)   -- true if this is the Raspberry Pi for the coop
 ├── firmware_version (VARCHAR(20), NOT NULL)
 ├── hardware_id (TEXT, UNIQUE, NOT NULL)  -- serial number
 ├── location (TEXT, NULL)  -- "Room 1", "Water Tank", etc
@@ -143,12 +127,12 @@ devices
 ├── last_command_status (VARCHAR(50), NULL)  -- success|failed|timeout
 ├── last_command_at (TIMESTAMP, NULL)
 ├── created_at (TIMESTAMP, DEFAULT NOW())
-├── updated_at (TIMESTAMP, DEFAULT NOW())
-└── deleted_at (TIMESTAMP, NULL)
+└── updated_at (TIMESTAMP, DEFAULT NOW())
 ```
 
-**Indexes**: farm_id, device_id (unique), is_active, is_online  
-**Relationships**: Many devices per farm  
+**Indexes**: farm_id, coop_id, device_id (unique), is_active, is_online, (coop_id, is_main_controller)  
+**Relationships**: Many devices per farm; each device optionally scoped to a coop  
+**Key field**: `is_main_controller = true` identifies the Raspberry Pi controller for each coop  
 
 ---
 
@@ -182,27 +166,44 @@ device_configs
 schedules
 ├── id (UUID, PK)
 ├── farm_id (UUID, FK → farms.id, NOT NULL)
+├── coop_id (UUID, FK → coops.id, NULL)
 ├── device_id (UUID, FK → devices.id, NOT NULL)
 ├── name (TEXT, NOT NULL)
 ├── schedule_type (ENUM: time_based|duration_based|condition_based, NOT NULL)
-├── cron_expression (TEXT, NULL)  -- "0 6 * * *" for 6am daily
-├── start_time (TIME, NULL)  -- for simpler time-based schedules
-├── end_time (TIME, NULL)
-├── on_duration (INTEGER, NULL)  -- seconds
-├── off_duration (INTEGER, NULL)  -- seconds
-├── repeat_count (INTEGER, NULL)  -- NULL = infinite
-├── condition_json (JSONB, NULL)  -- {"type":"temperature","operator":">","value":30}
-├── action (ENUM: on|off|toggle, NOT NULL)
-├── is_enabled (BOOLEAN, DEFAULT TRUE)
-├── priority (INTEGER, DEFAULT 0)  -- for conflict resolution: higher = higher priority
+├── cron_expression (TEXT, NULL)  -- "0 6,12,18 * * *" for 6am, 12pm, 6pm daily
+├── on_duration (INTEGER, NULL)  -- For duration_based: seconds to stay ON
+├── off_duration (INTEGER, NULL)  -- For duration_based: seconds to stay OFF
+├── condition_json (JSONB, NULL)  -- For condition_based: {"sensor":"temperature","operator":">","threshold":30}
+├── action (VARCHAR(20), NOT NULL)  -- "on", "off", "set_value"
+├── action_value (TEXT, NULL)  -- Optional value (e.g., PWM duty cycle)
+├── action_duration (INTEGER, NULL)  -- For time_based: auto-turn-off after X seconds
+├── action_sequence (JSONB, NULL)  -- For time_based: multi-step pattern [{"action":"ON","duration":30},{"action":"OFF","duration":10}]
+├── priority (INTEGER, DEFAULT 0)  -- 0-10, higher = more important (conflict resolution)
+├── is_active (BOOLEAN, DEFAULT TRUE)
+├── next_execution (TIMESTAMP, NULL)  -- Calculated next run time for time_based
+├── last_execution (TIMESTAMP, NULL)  -- Last successful execution
+├── execution_count (INTEGER, DEFAULT 0)  -- Total times executed
 ├── created_by (UUID, FK → users.id, NOT NULL)
 ├── created_at (TIMESTAMP, DEFAULT NOW())
 ├── updated_at (TIMESTAMP, DEFAULT NOW())
 └── deleted_at (TIMESTAMP, NULL)
 ```
 
-**Indexes**: farm_id, device_id, is_enabled  
+**Field Purpose**:
+- **time_based**: Uses `cron_expression` + optionally `action_duration` (simple auto-off) OR `action_sequence` (multi-step pattern)
+- **duration_based**: Uses `on_duration` and `off_duration` for continuous cycling (e.g., conveyor ON 10min, OFF 15min, repeat)
+- **condition_based**: Uses `condition_json` for sensor-driven automation (e.g., pump ON when water < 20%)
+
+**New Fields (Feb 2026)**:
+- `action_duration`: Time-based schedules can auto-turn-off after X seconds (e.g., feeder ON at 6AM, auto-off after 15 minutes)
+- `action_sequence`: Multi-step patterns for pulse operations (e.g., feeder: ON 30sec, pause 10sec, ON 30sec, pause 10sec)
+  - Format: `[{"action":"ON","duration":30},{"action":"OFF","duration":10},{"action":"ON","duration":30},{"action":"OFF","duration":10}]`
+  - Maximum 20 steps per sequence
+  - After sequence completes, device returns to OFF state until next cron trigger
+
+**Indexes**: farm_id, device_id, is_active, next_execution, schedule_type  
 **Relationships**: Many schedules per device  
+**Use Cases**: See `docs/AUTOMATION_USE_CASES.md` for detailed farmer scenarios  
 
 ---
 
@@ -215,16 +216,14 @@ schedule_executions
 ├── device_id (UUID, FK → devices.id, NOT NULL)
 ├── scheduled_time (TIMESTAMP, NOT NULL)
 ├── actual_execution_time (TIMESTAMP, NULL)
-├── status (ENUM: pending|executed|failed|timeout|skipped, NOT NULL)
-├── command_sent (JSONB, NOT NULL)  -- what was sent to device
-├── device_response (JSONB, NULL)  -- device's response
-├── error_message (TEXT, NULL)
+├── status (ENUM: executed|failed|skipped, NOT NULL)
 ├── execution_duration_ms (INTEGER, NULL)  -- milliseconds
-├── created_at (TIMESTAMP, DEFAULT NOW())
-└── deleted_at (TIMESTAMP, NULL)
+├── device_response (JSONB, NULL)  -- raw response from device
+├── error_message (TEXT, NULL)
+└── created_at (TIMESTAMP, DEFAULT NOW())
 ```
 
-**Indexes**: schedule_id, device_id, scheduled_time  
+**Indexes**: schedule_id, (scheduled_time DESC), status  
 **Purpose**: Audit trail of all schedule executions  
 **Retention**: 5 years  
 
@@ -235,23 +234,22 @@ schedule_executions
 ```
 device_commands
 ├── id (UUID, PK)
-├── farm_id (UUID, FK → farms.id, NOT NULL)
 ├── device_id (UUID, FK → devices.id, NOT NULL)
-├── command_type (VARCHAR(50), NOT NULL)  -- "on", "off", "set_value"
-├── command_params (JSONB, NULL)
-├── requested_by (UUID, FK → users.id, NOT NULL)
-├── status (ENUM: queued|sent|executing|completed|failed|timeout, NOT NULL)
-├── response_data (JSONB, NULL)
-├── error_message (TEXT, NULL)
-├── requested_at (TIMESTAMP, DEFAULT NOW())
-├── sent_at (TIMESTAMP, NULL)
-├── completed_at (TIMESTAMP, NULL)
-├── created_at (TIMESTAMP, DEFAULT NOW())
-└── deleted_at (TIMESTAMP, NULL)
+├── farm_id (UUID, FK → farms.id, NOT NULL)
+├── coop_id (UUID, FK → coops.id, NULL)            -- coop the command targets
+├── issued_by (UUID, FK → users.id, NOT NULL)       -- who sent the command
+├── command_type (VARCHAR(50), NOT NULL)             -- "on", "off", "set_value", "status", "reboot"
+├── command_value (TEXT, NULL)                       -- optional value (e.g., PWM duty cycle)
+├── status (ENUM: pending|success|failed|timeout, NOT NULL, DEFAULT 'pending')
+├── response (TEXT, NULL)                            -- raw device response
+├── issued_at (TIMESTAMP, DEFAULT NOW())
+├── executed_at (TIMESTAMP, NULL)
+└── created_at (TIMESTAMP, DEFAULT NOW())
 ```
 
-**Indexes**: device_id, status, requested_by, created_at  
-**Purpose**: Track all user-initiated commands to devices  
+**Indexes**: device_id, farm_id, coop_id, status, (created_at DESC)  
+**Purpose**: Track all user-initiated commands to IoT devices  
+**Valid command_types**: `on`, `off`, `set_value`, `status`, `reboot`  
 
 ---
 
@@ -259,23 +257,20 @@ device_commands
 
 ```
 event_logs
-├── id (BIGSERIAL, PK)  -- use BIGSERIAL for very high volume
+├── id (UUID, PK)
 ├── farm_id (UUID, FK → farms.id, NOT NULL)
-├── device_id (UUID, FK → devices.id, NULL)
-├── user_id (UUID, FK → users.id, NULL)
-├── event_type (VARCHAR(50), NOT NULL)  -- "device_online", "command_executed", "schedule_triggered"
-├── event_category (VARCHAR(20), NOT NULL)  -- "device", "user", "system"
-├── severity (ENUM: info|warning|error|critical, NOT NULL)
-├── message (TEXT, NOT NULL)
-├── event_data (JSONB, NULL)
-├── ip_address (INET, NULL)
-├── user_agent (TEXT, NULL)
-├── created_at (TIMESTAMP, DEFAULT NOW())
-└── deleted_at (TIMESTAMP, NULL)
+├── user_id (UUID, FK → users.id, NOT NULL)
+├── event_type (VARCHAR(50), NOT NULL)  -- "login", "device_control", "schedule_update"
+├── resource_id (UUID, NULL)             -- the affected farm/coop/device/schedule UUID
+├── old_value (JSONB, NULL)              -- state before the change
+├── new_value (JSONB, NULL)              -- state after the change
+├── ip_address (VARCHAR(45), NULL)
+└── created_at (TIMESTAMP, DEFAULT NOW())
 ```
 
-**Indexes**: farm_id, device_id, user_id, event_type, created_at  
-**Partitioning**: Consider partition by farm_id or date for massive farms  
+**Indexes**: (farm_id, user_id), (created_at DESC)  
+**Purpose**: Lightweight audit trail of user actions (device control, schedule changes, logins)  
+**Pattern**: `old_value` / `new_value` JSONB diff pattern — store the before/after JSON for any resource change  
 **Purpose**: Immutable audit trail  
 **Retention**: 5 years, immutable, searchable  
 

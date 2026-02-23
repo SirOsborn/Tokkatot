@@ -613,6 +613,374 @@ const t = (key) => translations[currentLang][key]
 
 ---
 
+## Schedule/Automation UI (NEW in v2.0)
+
+**Purpose**: Allow farmers to create multi-step automation sequences for feeders, conveyors, pumps.
+
+**Real Farmer Need**: "I want my feeder to pulse: ON 30 seconds, pause 10 seconds, repeat 2 times, then turn OFF until next feeding time" (prevents chicken crowding at feed bowl)
+
+### Schedule Pages
+
+**`frontend/pages/schedules.html`** - Schedule management
+- List all schedules with current state (enabled/disabled, next execution time)
+- Create new schedule button (leads to create form)
+- Edit/delete existing schedules
+- Manual "Execute Now" button
+
+**`frontend/pages/schedule-create.html`** - Create/Edit schedule form
+
+### Action Sequence Builder Component
+
+**Visual Multi-Step Pattern Editor** (inspired by automation tools like IFTTT)
+
+```html
+<!-- frontend/components/action-sequence-builder.js -->
+<template>
+  <div class="sequence-builder">
+    <h3>បង្កើតលំដាប់សកម្មភាព (Action Sequence)</h3>
+    <p class="help-text">
+      បង្កើតលំដាប់ជាបន្តបន្ទាប់: បើក → ផ្អាក → បើក → ផ្អាក → បិទ<br>
+      Create multi-step pattern: ON → pause → ON → pause → OFF
+    </p>
+    
+    <!-- List of steps -->
+    <div v-for="(step, index) in actionSequence" :key="index" class="step-row">
+      <span class="step-number">{{ index + 1 }}</span>
+      
+      <!-- Action type dropdown -->
+      <select v-model="step.action" class="action-select">
+        <option value="ON">បើក (ON)</option>
+        <option value="OFF">បិទ (OFF)</option>
+      </select>
+      
+      <!-- Duration input -->
+      <input 
+        type="number" 
+        v-model="step.duration" 
+        min="0" 
+        placeholder="រយៈពេល (វិនាទី)"
+        class="duration-input"
+      />
+      <span class="unit">វិនាទី (seconds)</span>
+      
+      <!-- Remove step button -->
+      <button @click="removeStep(index)" class="btn-remove" :disabled="actionSequence.length <= 1">
+        ✕
+      </button>
+    </div>
+    
+    <!-- Add step button -->
+    <button @click="addStep" class="btn-add-step">
+      + បន្ថែមមួយជំហានទៀត (Add Step)
+    </button>
+    
+    <!-- Visual timeline preview -->
+    <div class="timeline-preview">
+      <h4>មើលមុន (Preview)</h4>
+      <div class="timeline">
+        <div v-for="(step, index) in actionSequence" 
+             :key="index"
+             :class="['timeline-block', step.action === 'ON' ? 'on' : 'off']"
+             :style="{ width: getStepWidth(step.duration) }">
+          <span class="timeline-label">{{ step.action }}</span>
+          <span class="timeline-duration">{{ step.duration }}s</span>
+        </div>
+      </div>
+      <p class="total-time">សរុប (Total): {{ totalDuration }}s ({{ formatMinutes(totalDuration) }})</p>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      actionSequence: [
+        { action: 'ON', duration: 30 },
+        { action: 'OFF', duration: 10 }
+      ]
+    }
+  },
+  
+  computed: {
+    totalDuration() {
+      return this.actionSequence.reduce((sum, step) => {
+        return sum + (step.duration === 0 ? 0 : parseInt(step.duration))
+      }, 0)
+    }
+  },
+  
+  methods: {
+    addStep() {
+      this.actionSequence.push({ action: 'ON', duration: 10 })
+    },
+    
+    removeStep(index) {
+      if (this.actionSequence.length > 1) {
+        this.actionSequence.splice(index, 1)
+      }
+    },
+    
+    getStepWidth(duration) {
+      if (duration === 0) return '50px'  // "Until next schedule" step
+      const maxDuration = Math.max(...this.actionSequence.map(s => s.duration))
+      return `${(duration / maxDuration) * 200}px`
+    },
+    
+    formatMinutes(seconds) {
+      const mins = Math.floor(seconds / 60)
+      const secs = seconds % 60
+      return mins > 0 ? `${mins}នាទី ${secs}វិនាទី` : `${secs}វិនាទី`
+    },
+    
+    getSequenceJSON() {
+      // Return JSON for API submission
+      return JSON.stringify(this.actionSequence)
+    }
+  }
+}
+</script>
+```
+
+### Create Schedule Form
+
+**Full schedule creation UI** with action sequence builder:
+
+```javascript
+// frontend/pages/schedule-create.html
+createApp({
+  data() {
+    return {
+      scheduleType: 'time_based',
+      deviceId: null,
+      scheduleName: '',
+      cronExpression: '0 6 * * *',  // 6 AM daily
+      actionValue: 'on',
+      actionDuration: null,       // Simple auto-off (if not using sequence)
+      actionSequence: null,       // Multi-step pattern (if using)
+      useSequence: false,         // Toggle between simple/sequence
+      priority: 5,
+      devices: []
+    }
+  },
+  
+  async mounted() {
+    // Load available devices
+    const farmId = localStorage.getItem('selected_farm_id')
+    const response = await fetch(`/api/farms/${farmId}/devices`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    })
+    this.devices = await response.json()
+  },
+  
+  methods: {
+    async createSchedule() {
+      const payload = {
+        device_id: this.deviceId,
+        name: this.scheduleName,
+        schedule_type: this.scheduleType,
+        cron_expression: this.cronExpression,
+        action_value: this.actionValue,
+        priority: this.priority,
+        is_enabled: true
+      }
+      
+      // Add simple auto-off OR multi-step sequence (mutually exclusive)
+      if (!this.useSequence && this.actionDuration) {
+        payload.action_duration = parseInt(this.actionDuration)
+      } else if (this.useSequence && this.$refs.sequenceBuilder) {
+        payload.action_sequence = this.$refs.sequenceBuilder.getSequenceJSON()
+      }
+      
+      const farmId = localStorage.getItem('selected_farm_id')
+      const response = await fetch(`/api/farms/${farmId}/schedules`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      
+      if (response.ok) {
+        alert('កាលវិភាគត្រូវបានបង្កើតដោយជោគជ័យ! (Schedule created successfully!)')
+        window.location.href = '/pages/schedules.html'
+      } else {
+        const error = await response.json()
+        alert(`កំហុស: ${error.message}`)
+      }
+    }
+  }
+})
+```
+
+### CSS for Schedule UI
+
+```css
+/* frontend/css/styleSchedules.css */
+
+.sequence-builder {
+  background: #F9FAFB;
+  padding: 24px;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.step-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.step-number {
+  font-size: 20px;
+  font-weight: bold;
+  color: #6B7280;
+  min-width: 32px;
+}
+
+.action-select {
+  font-size: 18px;
+  padding: 12px;
+  min-height: 48px;  /* Farmer accessibility */
+  border: 2px solid #D1D5DB;
+  border-radius: 4px;
+  flex: 1;
+}
+
+.duration-input {
+  font-size: 18px;
+  padding: 12px;
+  min-height: 48px;
+  width: 120px;
+  border: 2px solid #D1D5DB;
+  border-radius: 4px;
+}
+
+.btn-remove {
+  min-width: 48px;
+  min-height: 48px;
+  background: #EF4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.btn-add-step {
+  min-height: 48px;
+  width: 100%;
+  background: #10B981;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 18px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+/* Timeline preview */
+.timeline-preview {
+  margin-top: 24px;
+  padding: 16px;
+  background: white;
+  border-radius: 4px;
+}
+
+.timeline {
+  display: flex;
+  gap: 4px;
+  margin: 16px 0;
+  height: 60px;
+  align-items: center;
+}
+
+.timeline-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.timeline-block.on {
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: white;
+}
+
+.timeline-block.off {
+  background: linear-gradient(135deg, #6B7280, #4B5563);
+  color: white;
+}
+
+.timeline-label {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.timeline-duration {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.total-time {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1F2937;
+  margin-top: 8px;
+}
+```
+
+### Example Use Cases (See `docs/AUTOMATION_USE_CASES.md`)
+
+**Pulse Feeding** (Prevents chicken crowding):
+- 6 AM: Motor ON 30s → pause 10s → ON 30s → pause 10s → OFF
+- 12 PM: Same pattern
+- 6 PM: Same pattern
+
+**Conveyor Belt Cleaning** (Prevents clogging):
+- ON 2 minutes → pause 30s → ON 2 minutes → OFF
+- Runs every 6 hours
+
+**Climate Control** (Gradual temperature change):
+- Fan 25% → wait 5min → 50% → wait 5min → 75% → stay until temp < 30°C
+
+### API Integration
+
+**Submit schedule with action_sequence**:
+```javascript
+POST /api/farms/{farm_id}/schedules
+{
+  "device_id": "feeder_uuid",
+  "name": "Pulse Feeding - Morning",
+  "schedule_type": "time_based",
+  "cron_expression": "0 6 * * *",
+  "action_value": "on",
+  "action_sequence": [
+    {"action": "ON", "duration": 30},
+    {"action": "OFF", "duration": 10},
+    {"action": "ON", "duration": 30},
+    {"action": "OFF", "duration": 10},
+    {"action": "OFF", "duration": 0}  // Stay OFF until next schedule
+  ],
+  "priority": 5
+}
+```
+
+**Backend validates**:
+- Maximum 20 steps per sequence
+- Each step has `action` (ON/OFF) and `duration` (0-3600 seconds)
+- Total duration < 1 hour (prevents runaway sequences)
+
+---
+
 ## Migration Checklist
 
 **Phase 1: CDN Setup**

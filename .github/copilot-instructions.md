@@ -8,6 +8,12 @@
 **Repository Type**: Full-stack web + embedded IoT system with AI inference  
 **Key Requirement**: Farmer-centric design (simple 3-role system, mobile-first, Khmer language support)
 
+**Recent Major Features (v2.0)**:
+- Multi-step automation sequences (`action_sequence`) for pulse feeding, conveyor belt operations
+- Auto-turn-off timers (`action_duration`) for water pumps, lights
+- Consolidated AI documentation structure (AI_INSTRUCTIONS.md + component AI_CONTEXT.md files)
+- **Mandatory documentation protocol** for AI agents (see AI_INSTRUCTIONS.md "MANDATORY: Self-Documentation After Building Features")
+
 ## Project Structure & Layout
 
 ```
@@ -84,11 +90,12 @@ echo "JWT_SECRET=dev-secret-key-min-32-chars-long" >> .env
 # Download dependencies
 go mod download
 
-# Build binary
-go build -o middleware  # Output: middleware/middleware binary
+# Build binary (output: backend.exe on Windows, backend on Linux)
+go build -o backend.exe   # Windows
+go build -o backend       # Linux (CI/CD)
 
 # Verify build succeeded
-ls -la middleware && file middleware
+ls -la backend.exe
 
 # Clean (if needed)
 go clean
@@ -190,8 +197,9 @@ cd ..
 
 ### Database Connection:
 - Middleware uses SQLite in development (`database/sqlite3_db.go`)
-- Production target: PostgreSQL (schema in `docs/IG_SPECIFICATIONS_DATABASE.md`)
+- Production target: PostgreSQL (schema in `docs/implementation/DATABASE.md`)
 - No automatic migrations - schema defined in specification, not in code
+- Recent schema updates: `action_duration` and `action_sequence` fields in schedules table (v2.0)
 
 ### Authentication:
 - JWT tokens issued by `middleware/api/authentication.go`
@@ -205,11 +213,84 @@ cd ..
 - Request format: image file upload, returns `{disease, confidence, recommendations}`
 - Timeout: 3 seconds (CPU) or <500ms (GPU) for disease prediction
 
+### Schedule Automation (NEW in v2.0):
+- **action_duration**: Simple auto-turn-off (e.g., pump ON at 6AM, auto-off after 15 min)
+- **action_sequence**: Multi-step patterns for pulse operations (feeder: ON 30s, pause 10s, repeat)
+- See `docs/AUTOMATION_USE_CASES.md` for real farmer scenarios
+- Frontend schedule builder UI documented in `docs/implementation/FRONTEND.md`
+
 ### File Exclusions (NEVER PUSH):
 - `ai-service/outputs/` - Proprietary model files (*.pth)
 - `middleware/.env` - JWT_SECRET, credentials
 - `ai-service/.env` - Configuration secrets
 - `.vscode/settings.json` - Local user preferences
 - `*/build/` directories - Build artifacts
+- `middleware/backend.exe`, `middleware/*.exe`, `middleware/*.exe~` - Go build outputs (gitignored + untracked)
+- `test_token.txt` - Temporary token file created during manual testing
+
+### Documentation Structure:
+- **Master guide**: `AI_INSTRUCTIONS.md` (read first - business model, farmer context)
+- **Component guides**: `middleware/AI_CONTEXT.md`, `frontend/AI_CONTEXT.md`, `ai-service/AI_CONTEXT.md`, `embedded/AI_CONTEXT.md`
+- **Implementation specs**: `docs/implementation/*.md` (API.md, DATABASE.md, FRONTEND.md, etc.)
+- **Use cases**: `docs/AUTOMATION_USE_CASES.md` (real farmer scenarios with benefits)
 
 **Trust this guide** - use grep/find/search tools ONLY if instructions are incomplete or found to be in error.
+
+## 🚨 MANDATORY: Documentation Updates
+
+**CRITICAL REQUIREMENT**: Documentation is NOT optional. When you complete significant work, you MUST update documentation immediately as part of task completion.
+
+### What You MUST Update
+
+**Immediate updates** (same session, within minutes):
+- ✅ `docs/implementation/DATABASE.md` - MUST update if schema changed (add CREATE statement, explain all fields)
+- ✅ `docs/implementation/API.md` - MUST update if endpoints added/modified (show full request/response examples)
+- ✅ `docs/implementation/SECURITY.md` - MUST update if auth/security changed
+
+**End-of-feature updates** (before ending session):
+- ✅ Component `AI_CONTEXT.md` - MUST update if new patterns added (middleware/, frontend/, ai-service/, embedded/)
+- ✅ `docs/AUTOMATION_USE_CASES.md` - MUST update if new farmer scenario solved (real examples with benefits)
+- ✅ `AI_INSTRUCTIONS.md` - MUST update if major system concept added (rarely needed)
+
+### Significance Filter (When to Update)
+
+**DO update documentation**:
+✅ New feature (pulse feeding, disease detection)
+✅ Database schema change (new table, new fields like `action_sequence`)
+✅ API modification (new endpoints, changed behavior)
+✅ New automation pattern (multi-step sequences)
+✅ Architecture decision (SQLite fallback, JWT flow)
+
+**DON'T update for**:
+❌ Bug fixes (unless they reveal missing docs)
+❌ Refactoring without functional changes
+❌ Variable renames, formatting, comments
+
+### Enforcement Checklist
+
+**Before marking work complete, verify**:
+```markdown
+[ ] Changed database schema? → Updated DATABASE.md
+[ ] Added/modified API endpoints? → Updated API.md  
+[ ] Added UI components? → Updated FRONTEND.md
+[ ] Changed firmware? → Updated EMBEDDED.md
+[ ] Solved farmer problem? → Updated AUTOMATION_USE_CASES.md
+[ ] Added reusable pattern? → Updated component AI_CONTEXT.md
+[ ] Tested all examples? → Code compiles, JSON validates, SQL runs
+```
+
+### Real Example: action_sequence Feature
+
+**What was built**: Multi-step automation for pulse feeding
+
+**Documentation REQUIRED** (all completed same session):
+1. ✅ Updated `DATABASE.md` - Added field spec with JSONB schema
+2. ✅ Updated `API.md` - Added field to all schedule endpoints with examples
+3. ✅ Created `AUTOMATION_USE_CASES.md` - 500+ lines of farmer scenarios
+4. ✅ Updated `middleware/AI_CONTEXT.md` - Added schedule automation section
+5. ✅ Updated `AI_INSTRUCTIONS.md` - Added automation & schedules section
+
+**Result**: Future AI sessions immediately know this feature exists and how to use it.
+
+**See**: `AI_INSTRUCTIONS.md` "MANDATORY: Self-Documentation After Building Features" section for complete instructions.
+

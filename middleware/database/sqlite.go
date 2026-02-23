@@ -132,16 +132,46 @@ func CreateSchemaSQLite() error {
 	CREATE TABLE IF NOT EXISTS schedules (
 		id TEXT PRIMARY KEY,
 		farm_id TEXT NOT NULL,
+		coop_id TEXT,
 		device_id TEXT NOT NULL,
 		name TEXT NOT NULL,
-		rule TEXT NOT NULL,
+		schedule_type TEXT NOT NULL CHECK(schedule_type IN ('time_based', 'duration_based', 'condition_based')),
+		cron_expression TEXT,
+		on_duration INTEGER,
+		off_duration INTEGER,
+		condition_json TEXT,
+		action TEXT NOT NULL,
+		action_value TEXT,
+		action_duration INTEGER,
+		action_sequence TEXT,
+		priority INTEGER DEFAULT 0,
 		is_active INTEGER DEFAULT 1,
+		next_execution DATETIME,
+		last_execution DATETIME,
+		execution_count INTEGER DEFAULT 0,
 		created_by TEXT NOT NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (farm_id) REFERENCES farms(id),
+		FOREIGN KEY (coop_id) REFERENCES coops(id),
 		FOREIGN KEY (device_id) REFERENCES devices(id),
 		FOREIGN KEY (created_by) REFERENCES users(id)
+	);
+
+	-- Schedule executions (audit trail for scheduled tasks)
+	CREATE TABLE IF NOT EXISTS schedule_executions (
+		id TEXT PRIMARY KEY,
+		schedule_id TEXT NOT NULL,
+		device_id TEXT NOT NULL,
+		scheduled_time DATETIME NOT NULL,
+		actual_execution_time DATETIME,
+		status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'executed', 'failed', 'skipped')),
+		execution_duration_ms INTEGER,
+		device_response TEXT,
+		error_message TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (schedule_id) REFERENCES schedules(id),
+		FOREIGN KEY (device_id) REFERENCES devices(id)
 	);
 
 	-- Event logs (audit trail)
@@ -168,6 +198,10 @@ func CreateSchemaSQLite() error {
 	CREATE INDEX IF NOT EXISTS idx_devices_farm_id ON devices(farm_id);
 	CREATE INDEX IF NOT EXISTS idx_devices_device_id ON devices(device_id);
 	CREATE INDEX IF NOT EXISTS idx_schedules_farm_device ON schedules(farm_id, device_id);
+	CREATE INDEX IF NOT EXISTS idx_schedules_next_execution ON schedules(next_execution);
+	CREATE INDEX IF NOT EXISTS idx_schedules_schedule_type ON schedules(schedule_type);
+	CREATE INDEX IF NOT EXISTS idx_schedule_executions_schedule_id ON schedule_executions(schedule_id);
+	CREATE INDEX IF NOT EXISTS idx_schedule_executions_scheduled_time ON schedule_executions(scheduled_time);
 	CREATE INDEX IF NOT EXISTS idx_event_logs_farm_user ON event_logs(farm_id, user_id);
 	`
 

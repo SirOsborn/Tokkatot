@@ -1,11 +1,42 @@
 package models
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 )
+
+// NullRawMessage is a json.RawMessage that can be scanned from a nullable SQL JSONB column.
+// It handles NULL values gracefully and serializes as inline JSON (not a string).
+type NullRawMessage []byte
+
+func (n *NullRawMessage) Scan(src interface{}) error {
+	if src == nil {
+		*n = nil
+		return nil
+	}
+	switch v := src.(type) {
+	case []byte:
+		data := make([]byte, len(v))
+		copy(data, v)
+		*n = data
+	case string:
+		*n = []byte(v)
+	default:
+		return fmt.Errorf("NullRawMessage: unsupported type %T", src)
+	}
+	return nil
+}
+
+func (n NullRawMessage) MarshalJSON() ([]byte, error) {
+	if len(n) == 0 {
+		return []byte("null"), nil
+	}
+	return json.RawMessage(n).MarshalJSON()
+}
 
 // User represents a farmer or team member
 type User struct {
@@ -110,16 +141,42 @@ type DeviceCommand struct {
 
 // Schedule represents an automated task
 type Schedule struct {
-	ID        uuid.UUID  `json:"id"`
-	FarmID    uuid.UUID  `json:"farm_id"`
-	CoopID    *uuid.UUID `json:"coop_id,omitempty"` // Which coop this schedule applies to
-	DeviceID  uuid.UUID  `json:"device_id"`
-	Name      string     `json:"name"`
-	Rule      string     `json:"rule"` // JSON containing cron expression, conditions
-	IsActive  bool       `json:"is_active"`
-	CreatedBy uuid.UUID  `json:"created_by"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID             uuid.UUID      `json:"id"`
+	FarmID         uuid.UUID      `json:"farm_id"`
+	CoopID         *uuid.UUID     `json:"coop_id,omitempty"` // Which coop this schedule applies to
+	DeviceID       uuid.UUID      `json:"device_id"`
+	Name           string         `json:"name"`
+	ScheduleType   string         `json:"schedule_type"`             // "time_based", "duration_based", "condition_based"
+	CronExpression *string        `json:"cron_expression,omitempty"` // For time_based: "0 6 * * *"
+	OnDuration     *int           `json:"on_duration,omitempty"`     // For duration_based: seconds (how long to stay ON)
+	OffDuration    *int           `json:"off_duration,omitempty"`    // For duration_based: seconds (how long to stay OFF)
+	ConditionJSON  *string        `json:"condition_json,omitempty"`  // For condition_based: {"sensor":"temp","threshold":30}
+	Action         string         `json:"action"`                    // "on", "off", "set_value"
+	ActionValue    *string        `json:"action_value,omitempty"`    // Optional value (e.g., "75" for PWM)
+	ActionDuration *int           `json:"action_duration,omitempty"` // For time_based: auto-turn-off after X seconds
+	ActionSequence NullRawMessage `json:"action_sequence,omitempty"` // For time_based: multi-step pattern [{"action":"ON","duration":30},{"action":"OFF","duration":10}]
+	Priority       int            `json:"priority"`                  // 0-10, higher = more important
+	IsActive       bool           `json:"is_active"`
+	NextExecution  *time.Time     `json:"next_execution,omitempty"`
+	LastExecution  *time.Time     `json:"last_execution,omitempty"`
+	ExecutionCount int            `json:"execution_count"`
+	CreatedBy      uuid.UUID      `json:"created_by"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+}
+
+// ScheduleExecution represents a log of schedule execution
+type ScheduleExecution struct {
+	ID                  uuid.UUID  `json:"id"`
+	ScheduleID          uuid.UUID  `json:"schedule_id"`
+	DeviceID            uuid.UUID  `json:"device_id"`
+	ScheduledTime       time.Time  `json:"scheduled_time"`
+	ActualExecutionTime *time.Time `json:"actual_execution_time,omitempty"`
+	Status              string     `json:"status"` // "executed", "failed", "skipped"
+	ExecutionDurationMs *int       `json:"execution_duration_ms,omitempty"`
+	DeviceResponse      *string    `json:"device_response,omitempty"` // JSON response from device
+	ErrorMessage        *string    `json:"error_message,omitempty"`
+	CreatedAt           time.Time  `json:"created_at"`
 }
 
 // EventLog represents an audit trail entry

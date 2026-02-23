@@ -278,7 +278,7 @@ func LoginHandler(c *fiber.Ctx) error {
 		_, err := database.DB.Exec(`
 		INSERT INTO farms (id, owner_id, name, timezone, created_at, updated_at)
 		VALUES ($1, $2, $3, 'Asia/Phnom_Penh', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		`, farmID, user.ID)
+		`, farmID, user.ID, user.Name+"'s Farm")
 
 		if err != nil {
 			log.Printf("Farm creation error: %v", err)
@@ -289,7 +289,7 @@ func LoginHandler(c *fiber.Ctx) error {
 		_, err = database.DB.Exec(`
 		INSERT INTO farm_users (id, farm_id, user_id, role, invited_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-		`, uuid.New(), farmID, user.ID, role)
+		`, uuid.New(), farmID, user.ID, role, user.ID)
 
 		if err != nil {
 			log.Printf("Farm user creation error: %v", err)

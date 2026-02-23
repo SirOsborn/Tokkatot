@@ -1,8 +1,10 @@
-# 🤖 AI Context: Documentation & Specifications
+# 🤖 AI Context: Documentation Maintenance
 
 **Directory**: `docs/`  
-**Your Role**: Keep all specifications in sync with code, maintain architecture, document requirements  
+**Your Role**: Keep specifications in sync with code, maintain architecture documentation  
 **File Format**: Markdown (.md)  
+
+**📖 Read First**: `../AI_INSTRUCTIONS.md` (project overview)
 
 ---
 
@@ -16,471 +18,266 @@ Purpose:
 - Reference for architectural decisions
 - Record of farmer-centric requirements
 
-Golden Rule: **If code exists but spec doesn't, spec is incomplete. If spec exists but code doesn't match, code is wrong.**
+**Golden Rule**: If code exists but spec doesn't, spec is incomplete. If spec exists but code doesn't match, code is wrong.
 
 ---
 
-## 📁 File Hierarchy (Read in this order)
+## 📁 Documentation Structure
 
-### Core Specifications (00_, 01_, 02_)
-
-**Start here** - Read these before any implementation:
-
-1. **`00_SPECIFICATIONS_INDEX.md`**
-   - Overview of Tokkatot project
-   - How to navigate other docs
-   - Quick reference of all 14 spec files
-   - Farmer-centric principles
-
-2. **`01_SPECIFICATIONS_ARCHITECTURE.md`**
-   - System design (3-tier: Client/API/Data)
-   - Microservices descriptions
-   - Data flow patterns (5 patterns: device control, sensors, schedules, sync, AI)
-   - Integration points with Go/Python/JavaScript/C
-
-3. **`02_SPECIFICATIONS_REQUIREMENTS.md`**
-   - Functional requirements (FR1-FR2)
-   - Non-functional requirements (performance, security, compatibility)
-   - User stories for farmers
-   - Acceptance criteria
-
-### Implementation Guides (IG_*)
-
-**How to build components** - Read these per component:
-
-- **`IG_SPECIFICATIONS_API.md`** (66 endpoints)
-  - Authentication (8 endpoints)
-  - User management (5)
-  - Farm management (8)
-  - Device management (10)
-  - Device control (8)
-  - Scheduling (7)
-  - Monitoring & alerts (8)
-  - Analytics & reporting (5)
-  - AI endpoints (3)
-  - WebSocket, error handling, rate limiting
-
-- **`IG_SPECIFICATIONS_DATABASE.md`**
-  - PostgreSQL schema (13 tables)
-  - Table relationships, constraints
-  - Data types, indexes
-  - Migration strategy
-
-- **`IG_SPECIFICATIONS_SECURITY.md`**
-  - Authentication flow (Email/Phone JWT)
-  - Authorization (3-role system)
-  - Password hashing, token expiry
-  - Input validation, SQL injection prevention
-  - No MFA for farmers (optional for admins)
-
-- **`IG_SPECIFICATIONS_FRONTEND.md`**
-  - Vue.js 3 UI specifications
-  - Page layouts (dashboard, disease detection, profile, settings)
-  - Accessibility (48px+ fonts, WCAG AAA, Khmer/English)
-  - Mobile-first responsiveness
-  - WebSocket integration
-
-- **`IG_SPECIFICATIONS_EMBEDDED.md`**
-  - ESP32 firmware architecture
-  - GPIO pinout, MQTT topics
-  - Sensor reading intervals
-  - OTA update mechanism
-  - Local Raspberry Pi agent
-
-- **`IG_SPECIFICATIONS_AI_SERVICE.md`**
-  - PyTorch ensemble model (99% accuracy)
-  - 3 FastAPI endpoints
-  - Disease classes, input/output formats
-  - Performance metrics
-  - Docker deployment
-
-- **`IG_TOKKATOT_2.0_FARMER_CENTRIC_SPECIFICATIONS.md`**
-  - Design principles for elderly farmers
-  - Accessibility standards
-  - Multilingual requirements
-  - Device setup process (team-only)
-
-### Operational Guides (OG_*)
-
-**How to run/deploy** - Operational reference:
-
-- **`OG_SPECIFICATIONS_DEPLOYMENT.md`** - Infrastructure, Docker, CI/CD
-- **`OG_SPECIFICATIONS_TECHNOLOGY_STACK.md`** - Why Go/Vue/PyTorch/PostgreSQL
-- **`OG_PROJECT_TIMELINE.md`** - 27-35 week schedule
-- **`OG_TEAM_STRUCTURE.md`** - Roles, responsibilities, team size
-- **`OG_RISK_MANAGEMENT.md`** - Risks and mitigation strategies
+```
+docs/
+├── README.md                    Navigation hub START HERE
+├── ARCHITECTURE.md              System design, data flows, user journeys
+├── TECH_STACK.md                Technology choices (Go, Vue.js, PostgreSQL)
+├── AUTOMATION_USE_CASES.md      Real farmer scenarios (schedules) ⭐ NEW
+│
+├── guides/
+│   └── SETUP.md                 Complete setup guide (PostgreSQL, Go, build)
+│
+├── implementation/              Component specs (read before coding)
+│   ├── API.md                   66 REST endpoints, WebSocket
+│   ├── DATABASE.md              PostgreSQL schema (10 tables)
+│   ├── FRONTEND.md              Vue.js 3 PWA, farmer accessibility
+│   ├── AI_SERVICE.md            PyTorch disease detection, FastAPI
+│   ├── EMBEDDED.md              ESP32 firmware, MQTT
+│   └── SECURITY.md              JWT auth, registration keys
+│
+└── troubleshooting/             Problem solving
+    ├── DATABASE.md              Connection issues, schema fixes
+    └── API_TESTING.md           Test endpoints, debug tokens
+```
 
 ---
 
-## 📝 When to Update Documentation
+## ✅ When to Update Documentation
 
-### Update Immediately
+### After API changes
+- **File to update**: `implementation/API.md`
+- **What to add**: New endpoint spec, request/response examples, error codes
+- **Example**: Added 7 schedule endpoints → Update API.md with full spec
 
-✅ **Add new endpoint** → Document in `IG_SPECIFICATIONS_API.md`
-- Endpoint path, method, parameters, response format
-- Example request/response (JSON)
-- Error cases and HTTP status codes
-- Which role can access (Owner/Manager/Viewer)
+### After database schema changes
+- **File to update**: `implementation/DATABASE.md`
+- **What to add**: New table CREATE statement, field explanations, indexes, relationships
+- **Recent example**: Added `action_duration` and `action_sequence` fields to schedules table
 
-✅ **Change database schema** → Document in `IG_SPECIFICATIONS_DATABASE.md`
-- New table or new column
-- Data types, constraints, indexes
-- Foreign key relationships
-- Migration strategy
+### After adding new features
+- **File to update**: `AUTOMATION_USE_CASES.md` (if schedule-related), `ARCHITECTURE.md` (if major feature)
+- **What to add**: User story, real-world scenario, JSON examples, farmer benefits
+- **Recent example**: Multi-step sequences for pulse feeding → Added to AUTOMATION_USE_CASES.md
 
-✅ **Change architecture** → Document in `01_SPECIFICATIONS_ARCHITECTURE.md`
-- Add microservice diagram
-- Update data flow pattern
-- Document integration points
-- Update component descriptions
-
-✅ **Add feature requirement** → Document in `02_SPECIFICATIONS_REQUIREMENTS.md`
-- Feature description (FR#)
-- Acceptance criteria
-- User story perspective
-- Non-functional implications
-
-✅ **Fix farm-facing issue** → Update `IG_TOKKATOT_2.0_FARMER_CENTRIC_SPECIFICATIONS.md`
-- Accessibility considerations
-- Farmer education
-- Multilingual implications
+### After architecture changes
+- **File to update**: `ARCHITECTURE.md`, `TECH_STACK.md`
+- **What to add**: Data flow diagrams, component diagrams, design decisions
+- **Example**: Changed from microservices to monolith → Update ARCHITECTURE.md
 
 ---
 
-## 🔄 Specification Template Examples
+## 🚨 MANDATORY: Update Docs After Building Features
 
-### API Endpoint Template
+**CRITICAL REQUIREMENT**: Documentation is NOT optional. When you complete significant work, you MUST update documentation immediately.
+
+### Why This Matters
+
+**Without documentation updates**:
+- ❌ Future AI sessions rediscover features by reading code (slow, error-prone)
+- ❌ Knowledge is lost between sessions (no institutional memory)
+- ❌ New developers can't understand system without digging through implementation
+- ❌ Features become "forgotten" and get re-implemented differently
+
+**With documentation updates**:
+- ✅ Future AI sessions read specs and understand instantly
+- ✅ Knowledge persists across sessions (institutional memory)
+- ✅ New developers read docs and start contributing immediately
+- ✅ Features are discoverable and consistent
+
+### When You MUST Update Docs
+
+**Update documentation when you complete**:
+- ✅ New feature (e.g., pulse feeding automation, disease detection API)
+- ✅ Database schema change (new table, new fields like `action_sequence`)
+- ✅ New API endpoint or modified endpoint behavior
+- ✅ New automation pattern (schedule types, sensor triggers)
+- ✅ New UI component (schedule builder, device control panel)
+- ✅ Architecture decision (SQLite fallback, JWT auth flow)
+- ✅ Integration work (Go → FastAPI → PyTorch, MQTT protocol)
+
+**Don't update for**:
+- ❌ Minor bug fixes (unless they reveal missing documentation)
+- ❌ Code refactoring without functional changes
+- ❌ Variable/function renames
+- ❌ Comment additions, formatting/linting changes
+
+### Which Files You MUST Update
+
+**Implementation specs** (`docs/implementation/*.md`) - Update when code changes:
+
+| File | Update When | What to Add |
+|------|-------------|-------------|
+| `API.md` | New/modified endpoint | Full request/response examples, error codes |
+| `DATABASE.md` | Schema changed | CREATE statement, explain all fields |
+| `FRONTEND.md` | New UI component | Vue.js code, user flow, screenshots |
+| `AI_SERVICE.md` | Model/API changed | PyTorch architecture, FastAPI endpoints |
+| `EMBEDDED.md` | Firmware behavior changed | C code, MQTT topics, GPIO pins |
+
+**AI knowledge files** - Update to teach future AI sessions:
+
+| File | Update When | What to Add |
+|------|-------------|-------------|
+| `middleware/AI_CONTEXT.md` | Added Go pattern | Code examples, function signatures, gotchas |
+| `frontend/AI_CONTEXT.md` | Added Vue.js component | Component structure, API calls, styling |
+| `ai-service/AI_CONTEXT.md` | Changed model/preprocessing | PyTorch code, data flow, performance notes |
+| `embedded/AI_CONTEXT.md` | Added MQTT topic/GPIO | C code, protocol spec, safety checks |
+| `AI_INSTRUCTIONS.md` | Added major system concept | High-level overview, business context |
+
+**Use case docs** - Update when solving farmer problems:
+
+| File | Update When | What to Add |
+|------|-------------|-------------|
+| `AUTOMATION_USE_CASES.md` | Solved real farmer scenario | Complete scenario, JSON example, benefits |
+
+### Update Timing (Goldilocks Rule)
+
+**⏱️ TOO FAST** (don't do this):
+- ❌ Updating after every single function (creates noise)
+- ❌ Updating after variable renames (not significant)
+
+**⏱️ TOO SLOW** (don't do this):
+- ❌ Waiting weeks for "perfect time" (knowledge gets lost)
+- ❌ Building 10 features before documenting any (overwhelming)
+
+**⏱️ JUST RIGHT** (do this):
+- ✅ Update after 30-60 minutes of significant work
+- ✅ Update when feature is complete (end of session)
+- ✅ Update before switching to different component
+- ✅ Update after 3-5 related changes (consolidate)
+
+### Mandatory Update Checklist
+
+**Before ending your session, verify**:
 
 ```markdown
-#### 64. Get AI Service Health
-\`\`\`
-GET /ai/health
-Authorization: Bearer {access_token}
-
-Response (200):
-{
-  "status": "healthy",
-  "model_loaded": true,
-  "device": "cuda",
-  "timestamp": "2026-02-19T10:30:00Z"
-}
-
-Requires: user role >= Viewer
-Data Source: AI Service (FastAPI)
-\`\`\`
+[ ] Did I change database schema? → MUST update docs/implementation/DATABASE.md
+[ ] Did I add/modify API endpoints? → MUST update docs/implementation/API.md  
+[ ] Did I add UI components? → MUST update docs/implementation/FRONTEND.md
+[ ] Did I change firmware behavior? → MUST update docs/implementation/EMBEDDED.md
+[ ] Did I solve a farmer problem? → MUST update docs/AUTOMATION_USE_CASES.md
+[ ] Did I add reusable patterns? → MUST update component AI_CONTEXT.md files
+[ ] Did I test all examples? → Verify JSON/SQL/code compiles and runs
+[ ] Did I add cross-references? → Link related docs together
 ```
 
-### Database Schema Template
+**This is how we maintain institutional knowledge - it's not optional!**
 
-```markdown
-#### predictions table
-- **id** (UUID, Primary Key)
-- **user_id** (UUID, Foreign Key → users)
-- **device_id** (UUID, Foreign Key → devices, nullable)
-- **disease** (VARCHAR(50): Coccidiosis|Newcastle|Salmonella|Healthy)
-- **confidence** (FLOAT: 0.0-1.0)
-- **image_hash** (VARCHAR(64): SHA256 hash)
-- **created_at** (TIMESTAMP)
+### Example: action_sequence Feature Documentation
 
-**Indexes**:
-- INDEX ON (user_id, created_at DESC)
-- INDEX ON (farm_id, created_at DESC)
+**What was built**: Multi-step automation for pulse feeding (ON 30s, pause 10s, repeat)
 
-**Constraints**:
-- confidence >= 0 AND confidence <= 1
-```
+**Documentation updates REQUIRED** (completed same session):
+1. ✅ `docs/implementation/DATABASE.md` - Added `action_sequence JSONB` field spec with schema
+2. ✅ `docs/implementation/API.md` - Updated 4 schedule endpoints with field examples
+3. ✅ `docs/implementation/FRONTEND.md` - Added Action Sequence Builder UI (300+ lines)
+4. ✅ `docs/implementation/EMBEDDED.md` - Added ESP32 execution code (200+ lines)
+5. ✅ `docs/AUTOMATION_USE_CASES.md` - Created 500+ line guide with 3 farmer scenarios
+6. ✅ `middleware/AI_CONTEXT.md` - Added schedule automation section with Go code
+7. ✅ `AI_INSTRUCTIONS.md` - Added automation & schedules overview section
 
-### Requirement Template
+**Result**: Future AI sessions immediately understand this feature exists, how it works, why farmers need it, and how to build on it.
 
-```markdown
-### FR38: Disease Detection Prediction (AI Service)
-
-**User Story**: As a farmer, I want to upload a chicken feces image and get instant AI-powered disease prediction so I can take treatment action quickly.
-
-**Acceptance Criteria**:
-- [ ] Farmer can upload PNG/JPEG image via web app
-- [ ] Image size max 5MB, auto-rejects larger
-- [ ] Prediction returns within 3 seconds (CPU) or <500ms (GPU)
-- [ ] Result shows disease name + confidence percentage
-- [ ] Result shows treatment recommendations (step-by-step)
-- [ ] Result saved to database for history
-- [ ] If confidence < 50%, return "uncertain" with guidance to retake
-
-**Non-Functional**:
-- Accuracy: 99% (ensemble voting)
-- Language: Khmer + English
-- Accessibility: Text readable on 48px font
-```
+**If not documented**: Future AI sessions would never discover this feature or would reinvent it differently, wasting time and creating inconsistency.
 
 ---
 
-## ✅ Sync Checklist (Before Submitting PR)
+## 📁 Documentation Structure
+- **Trigger**: Completed multi-step schedule automation
+- **Updates made**:
+  1. ✅ `DATABASE.md` - Added action_sequence field schema
+  2. ✅ `API.md` - Added field to schedule endpoints
+  3. ✅ `AUTOMATION_USE_CASES.md` - Created 500+ line guide with farmer scenarios
+  4. ✅ `middleware/AI_CONTEXT.md` - Added schedule automation section
+  5. ✅ `AI_INSTRUCTIONS.md` - Added automation & schedules section
+- **Result**: Future AI knows about pulse feeding, conveyor belt sequences
 
-When making code changes, verify documentation is current:
-
-- [ ] Core spec files reference updated components (`01_SPECIFICATIONS_ARCHITECTURE.md`)
-- [ ] API spec matches code endpoints (`IG_SPECIFICATIONS_API.md`)
-- [ ] Database schema matches code migrations (`IG_SPECIFICATIONS_DATABASE.md`)
-- [ ] Requirements still match code behavior (`02_SPECIFICATIONS_REQUIREMENTS.md`)
-- [ ] If Python code changed, AI spec updated (`IG_SPECIFICATIONS_AI_SERVICE.md`)
-- [ ] If frontend changed, UI spec updated (`IG_SPECIFICATIONS_FRONTEND.md`)
-- [ ] If embedded code changed, firmware spec updated (`IG_SPECIFICATIONS_EMBEDDED.md`)
-- [ ] README.md still accurate for setup instructions
-
----
-
-## 📊 DocStrings in Code
-
-**Python (FastAPI)**:
-```python
-async def predict(file: UploadFile = File(...)) -> PredictionResponse:
-    """
-    Predict disease from fecal image (simple response).
-    
-    SPEC: See IG_SPECIFICATIONS_API.md Endpoint 65
-    
-    Args:
-        file: PNG/JPEG image, max 5MB
-    
-    Returns:
-        PredictionResponse with disease, confidence, recommendation
-    
-    Raises:
-        HTTPException(400): Invalid image format/size
-        HTTPException(503): Model not loaded
-    """
-```
-
-**Go**:
-```go
-// AuthLogin handles POST /auth/login
-// SPEC: See IG_SPECIFICATIONS_API.md Endpoint 1
-//
-// Accepts: {"email": "...", "password": "..."}
-// Returns: {"access_token": "...", "refresh_token": "..."}
-func AuthLogin(w http.ResponseWriter, r *http.Request) {
-```
-
-**JavaScript**:
-```javascript
-/**
- * Predict disease from image
- * SPEC: See IG_SPECIFICATIONS_API.md Endpoint 65
- * 
- * @param {File} imageFile - PNG/JPEG image, max 5MB
- * @returns {Promise<Object>} {disease, confidence, recommendation}
- */
-async function predictDisease(imageFile) {
-```
+**Example 2**: AI Documentation Consolidation (Feb 2026)
+- **Trigger**: User noticed overlapping AI docs, requested cleanup
+- **Updates made**:
+  1. ✅ Rewrote all 5 `AI_CONTEXT.md` files (removed duplication)
+  2. ✅ Added cross-references to `docs/` folder
+  3. ✅ Updated `AI_INSTRUCTIONS.md` with AI context file index
+  4. ✅ Updated `docs/AI_CONTEXT.md` with self-documentation guidance
+- **Result**: Clear doc hierarchy, no overlap, future AI knows where to find info
 
 ---
 
-## 🔗 Cross-References
+## 🔄 Documentation Update Workflow
 
-**Always link between specs**:
-
-In `IG_SPECIFICATIONS_API.md`:
-```markdown
-For database schema, see [IG_SPECIFICATIONS_DATABASE.md](IG_SPECIFICATIONS_DATABASE.md)
-For security, see [IG_SPECIFICATIONS_SECURITY.md](IG_SPECIFICATIONS_SECURITY.md)
-```
-
-In code comments:
-```go
-// SPEC: IG_SPECIFICATIONS_API.md Endpoint 65 (Predict Disease)
-// SPEC: IG_SPECIFICATIONS_DATABASE.md table "predictions"
-```
+1. **Code change made** (e.g., added `action_sequence` field to schedules)
+2. **Identify affected docs**:
+   - Database schema change → `implementation/DATABASE.md`
+   - New API field → `implementation/API.md`
+   - Farmer use case → `AUTOMATION_USE_CASES.md`
+3. **Update all affected files** (don't skip any)
+4. **Add real-world examples** (JSON, cron expressions, SQL queries)
+5. **Cross-reference** (e.g., "See AUTOMATION_USE_CASES.md for examples")
 
 ---
 
-## 📚 Markdown Best Practices
+## 📝 Documentation Standards
 
-### Document Structure
+### Writing Style
+- **Farmer-first language**: "Turn feeder ON at 6AM for 15 minutes" (not "Execute scheduled job")
+- **Concrete examples**: Show actual JSON, not abstract schemas
+- **Visual hierarchy**: Use tables, lists, code blocks generously
+- **Cross-references**: Link to related docs
 
-```markdown
-# Main Title (H1)
+### Code Examples
+- **Include full context**: Not just the new field, but the whole request/response
+- **Show realistic data**: Use farmer names (Sokha), phone numbers (012345678), real cron expressions
+- **Comment complex logic**: Explain WHY, not just WHAT
 
-## Section (H2)
-
-### Subsection (H3)
-
-#### Detail (H4)
-
-- Bullet point
-- Another point
-  - Indent for sub-point
-
-| Column 1 | Column 2 |
-|----------|----------|
-| Data     | Data     |
-
-\`\`\`code
-code block
-\`\`\`
-```
-
-### Emphasis
-
-```markdown
-**Bold** - Important concepts
-*Italic* - Emphasis
-`Code` - Function names, variables
-> Quote - Important callouts
-```
+### Recent Updates (Feb 2026)
+- ✅ Created `AUTOMATION_USE_CASES.md` - 500+ lines of real farmer scenarios
+- ✅ Updated `DATABASE.md` - schedules table with new fields
+- ✅ Updated `README.md` - added AUTOMATION_USE_CASES.md to navigation
+- ✅ Updated `AI_INSTRUCTIONS.md` - added schedule automation section
 
 ---
 
-## 🆘 Common Spec Issues & Fixes
+## 🚫 What NOT to Include
 
-### Issue: Endpoint documented but not implemented
-```
-ERROR: API spec says POST /farms/{id}/devices but code missing
-```
-**Fix**: Either implement the endpoint immediately or remove from spec
+**Don't duplicate**:
+- ❌ Business model details (already in `/AI_INSTRUCTIONS.md`)
+- ❌ Tech stack rationale (already in `TECH_STACK.md`)
+- ❌ Setup instructions (already in `guides/SETUP.md`)
+- ❌ Component-specific patterns (already in `middleware/AI_CONTEXT.md`, `frontend/AI_CONTEXT.md`, etc.)
 
-### Issue: Database table exists but not documented
-```
-ERROR: Code has "prediction_logs" table but IG_SPECIFICATIONS_DATABASE.md missing
-```
-**Fix**: Add full table documentation with schema
-
-### Issue: Spec says 3-second response time but code takes 10 seconds
-```
-ERROR: Performance spec violated
-```
-**Fix**: Either update code to meet spec OR update spec with new target + justification
-
-### Issue: UI spec says 48px buttons but code has 32px
-```
-ERROR: Accessibility spec violated
-```
-**Fix**: Update UI to match accessibility spec
+**Keep docs/ focused on**:
+- ✅ System architecture
+- ✅ API specifications
+- ✅ Database schemas
+- ✅ User journeys
+- ✅ Real farmer use cases
 
 ---
 
-## 📈 Documentation Structure
+## 📚 Component AI Context Files
 
-**Each spec file should have**:
+**These exist in each service folder** (don't duplicate in docs/):
+- `middleware/AI_CONTEXT.md` - Go API specifics, file structure, common patterns
+- `frontend/AI_CONTEXT.md` - Vue.js components, UI patterns, accessibility
+- `ai-service/AI_CONTEXT.md` - PyTorch model, FastAPI endpoints, training
+- `embedded/AI_CONTEXT.md` - ESP32 firmware, MQTT protocol, sensor drivers
 
-1. **Title & Metadata**
-   - Document version
-   - Last updated date
-   - Status (Draft/Final/Deprecated)
-
-2. **Overview** (0.5-1 page)
-   - What this component does
-   - Key features
-   - Context in larger system
-
-3. **Details** (5-10 pages typical)
-   - Specifications
-   - Schemas
-   - Endpoints
-   - Formats
-
-4. **Cross-References**
-   - Links to related specs
-   - Links to code files
-   - Links to other documentation
-
-5. **Examples**
-   - JSON request/response
-   - Code examples
-   - Usage patterns
+**docs/AI_CONTEXT.md** (this file) only covers documentation maintenance, not implementation.
 
 ---
 
-## 🎯 Your Responsibilities
+## ⚠️ Critical Rules
 
-### You Own Documentation For:
-- Keeping specs current with code changes
-- Updating examples when outputs change
-- Maintaining cross-references (not broken links)
-- Ensuring farmer-centric language
-- Recording architectural decisions
+1. **Update docs IMMEDIATELY after code changes** - don't let them drift
+2. **Test examples before documenting** - all JSON should be valid and tested
+3. **Keep examples real** - use farmer scenarios, not abstract theoretical cases
+4. **Cross-reference extensively** - help readers navigate between related docs
+5. **Version history** - add "Updated: [date]" at top when making changes
 
-### You Should Ask Before:
-- Major architectural changes (spec implications) → Ask tech lead
-- Database schema changes (migration complexity) → Ask DBA
-- Breaking API changes → Ask product owner
-- Deleting/deprecating endpoints → Discuss with team
-
----
-
-## 📞 When Something is Unclear
-
-1. **First**: Check if spec is unclear (ambiguous wording)
-   - If yes: Update spec to be clearer
-   - If no: Code implementation is wrong
-
-2. **Second**: Check if spec is outdated
-   - If yes: Update spec to match code or vice versa
-   - If no: Proceed with implementation
-
-3. **Third**: Ask the team
-   - Spec gap → Product owner
-   - Implementation gap → Relevant developer
-   - Architecture gap → Tech lead
-
----
-
-## ✨ Example: Adding New Endpoint
-
-**Scenario**: Add `POST /api/farms/{id}/photos` to upload farm photos
-
-**Steps**:
-
-1. **Document in IG_SPECIFICATIONS_API.md**:
-   ```markdown
-   #### 67. Upload Farm Photo
-   \`\`\`
-   POST /farms/{farm_id}/photos
-   Authorization: Bearer {access_token}
-   
-   Request:
-   - photo: Image file (PNG/JPEG, max 10MB)
-   - title: String (optional)
-   
-   Response (201):
-   {
-     "photo_id": "uuid",
-     "url": "https://cdn.tokkatot.local/photos/...",
-     "created_at": "2026-02-19T10:30:00Z"
-   }
-   \`\`\`
-   ```
-
-2. **Update IG_SPECIFICATIONS_DATABASE.md**:
-   ```markdown
-   #### photos table
-   - id (UUID, Primary Key)
-   - farm_id (FK farms)
-   - title (VARCHAR)
-   - url (VARCHAR)
-   - created_at (TIMESTAMP)
-   ```
-
-3. **Update 02_SPECIFICATIONS_REQUIREMENTS.md**:
-   ```markdown
-   ### FR40: Farm Photo Upload
-   
-   Farmer can upload photos of farm/equipment for documentation
-   ```
-
-4. **Implement in Go** (middleware):
-   ```go
-   // SPEC: IG_SPECIFICATIONS_API.md Endpoint 67
-   func UploadFarmPhoto(w http.ResponseWriter, r *http.Request) {
-   ```
-
-5. **Implement database**:
-   ```go
-   // Add to IG_SPECIFICATIONS_DATABASE.md migration
-   CREATE TABLE photos (...)
-   ```
-
----
-
-**Documentation is code. Treat it with same care. Outdated docs = team confusion = bugs.** 🎯
-
-Now go keep those specs current! 📚✨
+**End of docs/AI_CONTEXT.md**
