@@ -182,27 +182,44 @@ device_configs
 schedules
 ├── id (UUID, PK)
 ├── farm_id (UUID, FK → farms.id, NOT NULL)
+├── coop_id (UUID, FK → coops.id, NULL)
 ├── device_id (UUID, FK → devices.id, NOT NULL)
 ├── name (TEXT, NOT NULL)
 ├── schedule_type (ENUM: time_based|duration_based|condition_based, NOT NULL)
-├── cron_expression (TEXT, NULL)  -- "0 6 * * *" for 6am daily
-├── start_time (TIME, NULL)  -- for simpler time-based schedules
-├── end_time (TIME, NULL)
-├── on_duration (INTEGER, NULL)  -- seconds
-├── off_duration (INTEGER, NULL)  -- seconds
-├── repeat_count (INTEGER, NULL)  -- NULL = infinite
-├── condition_json (JSONB, NULL)  -- {"type":"temperature","operator":">","value":30}
-├── action (ENUM: on|off|toggle, NOT NULL)
-├── is_enabled (BOOLEAN, DEFAULT TRUE)
-├── priority (INTEGER, DEFAULT 0)  -- for conflict resolution: higher = higher priority
+├── cron_expression (TEXT, NULL)  -- "0 6,12,18 * * *" for 6am, 12pm, 6pm daily
+├── on_duration (INTEGER, NULL)  -- For duration_based: seconds to stay ON
+├── off_duration (INTEGER, NULL)  -- For duration_based: seconds to stay OFF
+├── condition_json (JSONB, NULL)  -- For condition_based: {"sensor":"temperature","operator":">","threshold":30}
+├── action (VARCHAR(20), NOT NULL)  -- "on", "off", "set_value"
+├── action_value (TEXT, NULL)  -- Optional value (e.g., PWM duty cycle)
+├── action_duration (INTEGER, NULL)  -- For time_based: auto-turn-off after X seconds
+├── action_sequence (JSONB, NULL)  -- For time_based: multi-step pattern [{"action":"ON","duration":30},{"action":"OFF","duration":10}]
+├── priority (INTEGER, DEFAULT 0)  -- 0-10, higher = more important (conflict resolution)
+├── is_active (BOOLEAN, DEFAULT TRUE)
+├── next_execution (TIMESTAMP, NULL)  -- Calculated next run time for time_based
+├── last_execution (TIMESTAMP, NULL)  -- Last successful execution
+├── execution_count (INTEGER, DEFAULT 0)  -- Total times executed
 ├── created_by (UUID, FK → users.id, NOT NULL)
 ├── created_at (TIMESTAMP, DEFAULT NOW())
 ├── updated_at (TIMESTAMP, DEFAULT NOW())
 └── deleted_at (TIMESTAMP, NULL)
 ```
 
-**Indexes**: farm_id, device_id, is_enabled  
+**Field Purpose**:
+- **time_based**: Uses `cron_expression` + optionally `action_duration` (simple auto-off) OR `action_sequence` (multi-step pattern)
+- **duration_based**: Uses `on_duration` and `off_duration` for continuous cycling (e.g., conveyor ON 10min, OFF 15min, repeat)
+- **condition_based**: Uses `condition_json` for sensor-driven automation (e.g., pump ON when water < 20%)
+
+**New Fields (Feb 2026)**:
+- `action_duration`: Time-based schedules can auto-turn-off after X seconds (e.g., feeder ON at 6AM, auto-off after 15 minutes)
+- `action_sequence`: Multi-step patterns for pulse operations (e.g., feeder: ON 30sec, pause 10sec, ON 30sec, pause 10sec)
+  - Format: `[{"action":"ON","duration":30},{"action":"OFF","duration":10},{"action":"ON","duration":30},{"action":"OFF","duration":10}]`
+  - Maximum 20 steps per sequence
+  - After sequence completes, device returns to OFF state until next cron trigger
+
+**Indexes**: farm_id, device_id, is_active, next_execution, schedule_type  
 **Relationships**: Many schedules per device  
+**Use Cases**: See `docs/AUTOMATION_USE_CASES.md` for detailed farmer scenarios  
 
 ---
 

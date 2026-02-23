@@ -1071,14 +1071,33 @@ POST /farms/{farm_id}/schedules
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
-Request:
+Request (Simple time-based):
 {
   "device_id": "device_uuid",
   "name": "Morning Water",
   "schedule_type": "time_based",
   "cron_expression": "0 6 * * *",
   "action": "on",
+  "action_duration": 900,  // Auto-turn-off after 15 minutes (optional)
   "priority": 0,
+  "is_enabled": true
+}
+
+Request (Multi-step pulse sequence - NEW in v2.0):
+{
+  "device_id": "feeder_uuid",
+  "name": "Pulse Feeding - Morning",
+  "schedule_type": "time_based",
+  "cron_expression": "0 6 * * *",
+  "action": "on",
+  "action_sequence": [
+    {"action": "ON", "duration": 30},   // Motor ON 30 seconds
+    {"action": "OFF", "duration": 10},  // Pause 10 seconds
+    {"action": "ON", "duration": 30},   // Motor ON 30 seconds
+    {"action": "OFF", "duration": 10},  // Pause 10 seconds
+    {"action": "OFF", "duration": 0}    // Stay OFF until next schedule
+  ],
+  "priority": 5,
   "is_enabled": true
 }
 
@@ -1090,15 +1109,24 @@ Response (201):
   "schedule_type": "time_based",
   "cron_expression": "0 6 * * *",
   "action": "on",
+  "action_duration": 900,
+  "action_sequence": null,  // Or array if multi-step
   "next_execution": "2026-02-20T06:00:00Z",
   "created_by": "user_uuid",
   "created_at": "2026-02-19T10:30:00Z"
 }
 
 Schedule Types:
-- 'time_based': Uses cron_expression (0 6 * * * = 6am daily)
-- 'duration_based': Uses on_duration/off_duration
+- 'time_based': Uses cron_expression (0 6 * * * = 6am daily) + optional action_duration OR action_sequence
+- 'duration_based': Uses on_duration/off_duration (repeating pattern)
 - 'condition_based': Uses condition_json (temp > 30)
+- 'manual': User-triggered only
+
+New Fields (v2.0):
+- action_duration (int): Auto-turn-off after X seconds for simple schedules
+- action_sequence (JSON array): Multi-step patterns for pulse operations (feeders, conveyors)
+
+See: docs/AUTOMATION_USE_CASES.md for real farmer scenarios
 
 Permission: User role >= 'manager'
 ```
@@ -1119,10 +1147,26 @@ Response (200):
       "schedule_type": "time_based",
       "cron_expression": "0 6 * * *",
       "action": "on",
+      "action_duration": 900,
+      "action_sequence": null,
       "is_enabled": true,
       "next_execution": "2026-02-20T06:00:00Z",
       "last_execution": "2026-02-19T06:00:00Z",
       "execution_count": 45
+    },
+    {
+      "id": "schedule_uuid_2",
+      "device_id": "feeder_uuid",
+      "device_name": "Feeder 1",
+      "name": "Pulse Feeding",
+      "schedule_type": "time_based",
+      "cron_expression": "0 6,12,18 * * *",
+      "action": "on",
+      "action_duration": null,
+      "action_sequence": [{"action":"ON","duration":30},{"action":"OFF","duration":10},{"action":"ON","duration":30}],
+      "is_enabled": true,
+      "next_execution": "2026-02-20T06:00:00Z",
+      "execution_count": 132
     }
   ],
   "total": 12
@@ -1142,6 +1186,8 @@ Response (200):
   "schedule_type": "time_based",
   "cron_expression": "0 6 * * *",
   "action": "on",
+  "action_duration": 900,
+  "action_sequence": null,
   "is_enabled": true,
   "priority": 0,
   "next_execution": "2026-02-20T06:00:00Z",
@@ -1159,17 +1205,30 @@ PUT /farms/{farm_id}/schedules/{schedule_id}
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
-Request:
+Request (Update timing):
 {
   "name": "Early Morning Water",
   "cron_expression": "0 5 * * *",
   "is_enabled": false
 }
 
+Request (Update to multi-step sequence):
+{
+  "action_sequence": [
+    {"action": "ON", "duration": 45},
+    {"action": "OFF", "duration": 15},
+    {"action": "ON", "duration": 45}
+  ]
+}
+
 Response (200):
 {
   "id": "schedule_uuid",
-  ...updated fields...
+  "name": "Early Morning Water",
+  "cron_expression": "0 5 * * *",
+  "action_sequence": [{"action":"ON","duration":45},{"action":"OFF","duration":15},{"action":"ON","duration":45}],
+  "is_enabled": false,
+  ...other fields...
 }
 
 Permission: User role >= 'manager'

@@ -40,22 +40,31 @@ This checklist ensures all PRs to Tokkatot maintain quality, security, and consi
 
 ## 📚 Documentation Checks
 
-- [ ] **Specs are in sync**
-  - API endpoints documented in `IG_SPECIFICATIONS_API.md` ✓
-  - Database schema matches `IG_SPECIFICATIONS_DATABASE.md` ✓
-  - Architecture changes reflected in `01_SPECIFICATIONS_ARCHITECTURE.md` ✓
-  - Requirements updated in `02_SPECIFICATIONS_REQUIREMENTS.md` ✓
+- [ ] **Specs are in sync** (CRITICAL - see AI_INSTRUCTIONS.md "Documentation Update Protocol")
+  - API endpoints documented in `docs/implementation/API.md` ✓
+  - Database schema matches `docs/implementation/DATABASE.md` ✓
+  - Architecture changes reflected in `docs/ARCHITECTURE.md` ✓
+  - Requirements updated in `docs/02_SPECIFICATIONS_REQUIREMENTS.md` ✓
+  - Automation use cases in `docs/AUTOMATION_USE_CASES.md` (if schedule-related) ✓
+
+- [ ] **AI Context files updated** (for significant changes only)
+  - Component `AI_CONTEXT.md` updated if new patterns added (middleware/, frontend/, ai-service/, embedded/)
+  - `AI_INSTRUCTIONS.md` updated if major system concept added
+  - Examples tested and working (JSON valid, code compiles)
+  - Cross-references added between related docs
 
 - [ ] **Code is documented**
   - Functions have comments explaining purpose
   - Complex business logic explained (especially around "farmer-centric" logic)
   - Error messages are user-friendly
+  - Inline comments for non-obvious code
 
 - [ ] **PR description is clear**
-  - What problem does this solve?
+  - What problem does this solve? (farmer problem preferred)
   - How was it tested?
   - Any breaking changes?
   - Link to related issue (if any)
+  - Which docs were updated? (list files)
 
 ---
 
@@ -69,9 +78,11 @@ This checklist ensures all PRs to Tokkatot maintain quality, security, and consi
 
 - [ ] **Database changes**
   - Schema migration included (if any)
-  - Changes reflected in `IG_SPECIFICATIONS_DATABASE.md`
+  - Changes reflected in `docs/implementation/DATABASE.md` (with examples)
+  - API.md updated with new fields in request/response examples
   - No breaking changes without deprecation period
   - Foreign key relationships maintained
+  - Indexes added for new query patterns
 
 - [ ] **API design**
   - Endpoints follow REST conventions

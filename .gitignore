@@ -41,9 +41,13 @@ yarn-error.log*
 # System Files
 .DS_Store
 Thumbs.db
+test_token.txt
 
 /middleware/middleware
 /middleware/middleware.exe
+/middleware/backend.exe
+/middleware/*.exe
+/middleware/*.exe~
 /middleware/users.db
 
 .idea/

@@ -24,6 +24,7 @@
 docs/
 ├── ARCHITECTURE.md          ← START HERE! System design
 ├── TECH_STACK.md            Technology decisions
+├── AUTOMATION_USE_CASES.md  🚜 Real-world farmer scenarios
 ├── README.md                This file
 │
 ├── guides/                  Setup & Installation
@@ -51,6 +52,7 @@ docs/
 |----------|-------------------|
 | **[ARCHITECTURE.md](ARCHITECTURE.md)** | Coop-centric design, physical infrastructure, User→Farm→Coop→Device hierarchy, user journey flows, device control examples |
 | **[TECH_STACK.md](TECH_STACK.md)** | Go vs Node.js comparison, Vue.js 3 CDN strategy, PostgreSQL schema design, single VPS deployment (not microservices) |
+| **[AUTOMATION_USE_CASES.md](AUTOMATION_USE_CASES.md)** | 🚜 **Real-world farmer automation scenarios**: Conveyor cycling, pulse feeding (multi-step sequences), sensor-driven water pumps, climate control. Detailed JSON examples for all 4 schedule types. **CRITICAL for understanding schedule feature design.** |
 
 ---
 
@@ -153,10 +155,12 @@ docs/
 - **See the database schema** → [implementation/DATABASE.md](implementation/DATABASE.md)
 - **Understand coop-device relationship** → [ARCHITECTURE.md](ARCHITECTURE.md) (Physical Infrastructure & Data Hierarchy sections)
 - **Know the tech choices** → [TECH_STACK.md](TECH_STACK.md)
+- **🚜 Understand farmer automation (schedules)** → [AUTOMATION_USE_CASES.md](AUTOMATION_USE_CASES.md) - **Conveyor cycles, pulse feeding, multi-step sequences, sensor-driven pumps**
 
 #### 🔨 Implement Features
 - **Add new API endpoint** → [implementation/API.md](implementation/API.md)
 - **Add new database table** → [implementation/DATABASE.md](implementation/DATABASE.md)
+- **Work on schedules/automation** → [AUTOMATION_USE_CASES.md](AUTOMATION_USE_CASES.md) + [implementation/DATABASE.md](implementation/DATABASE.md) (schedules table)
 - **Work on disease detection** → [implementation/AI_SERVICE.md](implementation/AI_SERVICE.md)
 - **Build frontend pages** → [implementation/FRONTEND.md](implementation/FRONTEND.md)
 - **Program ESP32/Raspberry Pi** → [implementation/EMBEDDED.md](implementation/EMBEDDED.md)
@@ -186,6 +190,7 @@ docs/
 - ✅ Created TECH_STACK.md (Go vs Node.js, Vue.js 3 strategy)
 - ✅ Created implementation/FRONTEND.md (Vue.js 3 migration guide)
 - ✅ Moved troubleshooting guides to dedicated folder
+- ✅ **NEW: AUTOMATION_USE_CASES.md** - Real-world farmer scenarios (conveyor cycling, pulse feeding, multi-step sequences, sensor-driven pumps)
 
 ### v1.0 (Legacy)
 - Flat file structure (23 files in docs/)

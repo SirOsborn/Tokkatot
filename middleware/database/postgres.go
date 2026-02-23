@@ -161,11 +161,37 @@ func CreateSchema() error {
 		coop_id UUID REFERENCES coops(id),
 		device_id UUID NOT NULL REFERENCES devices(id),
 		name TEXT NOT NULL,
-		rule JSONB NOT NULL,
+		schedule_type VARCHAR(20) NOT NULL CHECK (schedule_type IN ('time_based', 'duration_based', 'condition_based')),
+		cron_expression TEXT,
+		on_duration INTEGER,
+		off_duration INTEGER,
+		condition_json JSONB,
+		action VARCHAR(20) NOT NULL CHECK (action IN ('on', 'off', 'set_value')),
+		action_value TEXT,
+		action_duration INTEGER,
+		action_sequence JSONB,
+		priority INTEGER DEFAULT 0,
 		is_active BOOLEAN DEFAULT true,
+		next_execution TIMESTAMP,
+		last_execution TIMESTAMP,
+		execution_count INTEGER DEFAULT 0,
 		created_by UUID NOT NULL REFERENCES users(id),
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);
+
+	-- Schedule executions (execution history)
+	CREATE TABLE IF NOT EXISTS schedule_executions (
+		id UUID PRIMARY KEY,
+		schedule_id UUID NOT NULL REFERENCES schedules(id),
+		device_id UUID NOT NULL REFERENCES devices(id),
+		scheduled_time TIMESTAMP NOT NULL,
+		actual_execution_time TIMESTAMP,
+		status VARCHAR(20) NOT NULL CHECK (status IN ('executed', 'failed', 'skipped')),
+		execution_duration_ms INTEGER,
+		device_response JSONB,
+		error_message TEXT,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
 
 	-- Event logs (audit trail)
@@ -239,6 +265,12 @@ func CreateSchema() error {
 	CREATE INDEX IF NOT EXISTS idx_schedules_farm_device ON schedules(farm_id, device_id);
 	CREATE INDEX IF NOT EXISTS idx_schedules_coop_id ON schedules(coop_id);
 	CREATE INDEX IF NOT EXISTS idx_schedules_is_active ON schedules(is_active);
+	CREATE INDEX IF NOT EXISTS idx_schedules_next_execution ON schedules(next_execution);
+
+	-- Schedule executions indexes
+	CREATE INDEX IF NOT EXISTS idx_schedule_executions_schedule_id ON schedule_executions(schedule_id);
+	CREATE INDEX IF NOT EXISTS idx_schedule_executions_time ON schedule_executions(scheduled_time DESC);
+	CREATE INDEX IF NOT EXISTS idx_schedule_executions_status ON schedule_executions(status);
 
 	-- Event logs indexes
 	CREATE INDEX IF NOT EXISTS idx_event_logs_farm_user ON event_logs(farm_id, user_id);
