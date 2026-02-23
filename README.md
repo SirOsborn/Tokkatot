@@ -71,8 +71,8 @@
 
 ## � Version
 
-- **Current Release:** v1.0 (Prototype)
-- **In Development:** v2.0 (Production) - See [docs/00_SPECIFICATIONS_INDEX.md](docs/00_SPECIFICATIONS_INDEX.md)
+- **Current Release:** v1.0 (Prototype - Raspberry Pi local mode)
+- **In Development:** v2.0 (Production - Cloud-based) - See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/README.md](docs/README.md)
 
 ---
 
@@ -109,16 +109,20 @@ bash scripts/deploy-all.sh
 
 ### v2.0 (Production - Cloud-Based)
 
-**Status:** In development - See [docs/00_SPECIFICATIONS_INDEX.md](docs/00_SPECIFICATIONS_INDEX.md)
+**Status:** In development - See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/guides/SETUP.md](docs/guides/SETUP.md)
 
-v2.0 will add:
-- ☁️ Cloud connectivity (DigitalOcean)
+v2.0 adds:
+- ☁️ Cloud connectivity (DigitalOcean + Kubernetes)
 - 🌍 Multi-farm support  
-- 📱 Mobile app + PWA
-- 🔔 Push notifications
-- 📊 Advanced analytics
+- 📱 Mobile PWA (Vue.js 3 CDN)
+- 🔔 Real-time updates (WebSocket)
+- 📊 Advanced analytics (InfluxDB)
 - 🇰🇭 Khmer/English language support
-- ♿ Accessibility for elderly farmers
+- ♿ Accessibility for elderly farmers (48px+ touch targets, WCAG AAA)
+- 🔑 FREE registration (key system, no SMS costs)
+
+**Tech Stack:** Go 1.23 + Fiber v2, PostgreSQL 17, Vue.js 3 (CDN), Python 3.12 + PyTorch  
+**Details:** [docs/TECH_STACK.md](docs/TECH_STACK.md)
 
 ---
 
@@ -199,68 +203,72 @@ v2.0 will add:
 
 ```
 tokkatot/
-├── docs/                        # Documentation & Specifications (v2.0)
-│   ├── 00_SPECIFICATIONS_INDEX.md           # Start here - navigation hub
-│   ├── 01_SPECIFICATIONS_ARCHITECTURE.md    # System design & architecture
-│   ├── 02_SPECIFICATIONS_REQUIREMENTS.md    # Functional & non-functional requirements
-│   ├── IG_SPECIFICATIONS_DATABASE.md        # Database schema (PostgreSQL)
-│   ├── IG_SPECIFICATIONS_API.md             # Backend API (58 endpoints)
-│   ├── IG_SPECIFICATIONS_FRONTEND.md        # Frontend UI/UX for farmers
-│   ├── IG_SPECIFICATIONS_EMBEDDED.md        # ESP32 firmware architecture
-│   ├── IG_SPECIFICATIONS_SECURITY.md        # Authentication & security
-│   ├── IG_TOKKATOT_2.0_FARMER_CENTRIC_SPECIFICATIONS.md  # Farmer accessibility
-│   ├── OG_SPECIFICATIONS_TECHNOLOGY_STACK.md # Technology selections
-│   ├── OG_SPECIFICATIONS_DEPLOYMENT.md      # Cloud infrastructure
-│   ├── OG_PROJECT_TIMELINE.md               # Development phases & milestones
-│   ├── OG_TEAM_STRUCTURE.md                 # Team roles & responsibilities
-│   └── OG_RISK_MANAGEMENT.md                # Risk analysis & mitigation
+├── docs/                        # Documentation (v2.0 - Organized)
+│   ├── ARCHITECTURE.md          # ← START HERE! System design, coop-centric model
+│   ├── TECH_STACK.md            # Technology choices (Go, Vue.js, PostgreSQL)
+│   ├── README.md                # Documentation navigation hub
+│   │
+│   ├── guides/                  # Setup & Installation
+│   │   └── SETUP.md             # Complete setup guide (PostgreSQL, Go, frontend)
+│   │
+│   ├── implementation/          # Component Development
+│   │   ├── API.md               # Backend API (Go + Fiber, 66 endpoints)
+│   │   ├── DATABASE.md          # Database schema (PostgreSQL, 8 tables)
+│   │   ├── FRONTEND.md          # Frontend (Vue.js 3 migration guide)
+│   │   ├── AI_SERVICE.md        # AI service (Python + PyTorch, disease detection)
+│   │   ├── EMBEDDED.md          # ESP32 firmware (C/ESP-IDF)
+│   │   └── SECURITY.md          # Authentication & security (JWT, registration keys)
+│   │
+│   └── troubleshooting/         # Problem Solving
+│       ├── DATABASE.md          # Database connection issues
+│       └── API_TESTING.md       # Test backend endpoints
 │
-├── frontend/                    # Progressive Web App (v1.0)
-│   ├── pages/                   # HTML pages
-│   ├── js/                      # JavaScript modules
-│   ├── css/                     # Stylesheets
-│   ├── components/              # Reusable components
+├── frontend/                    # Vue.js 3 PWA (Progressive Web App)
+│   ├── pages/                   # HTML pages (login, dashboard, coops)
+│   ├── components/              # Vue components (navbar, header, coop-card)
+│   ├── js/                      # Vue apps, API helpers, WebSocket
+│   ├── css/                     # Styles (mobile-first, 48px+ touch targets)
 │   ├── assets/                  # Images, fonts, icons
 │   ├── manifest.json            # PWA manifest
-│   └── sw.js                    # Service worker
+│   └── sw.js                    # Service worker (offline support)
 │
-├── middleware/                  # Go backend server (v1.0)
-│   ├── main.go                  # Entry point
-│   ├── api/                     # API handlers
-│   │   ├── authentication.go    # Auth logic
+├── middleware/                  # Go backend (REST API + JWT auth)
+│   ├── main.go                  # Server entry point
+│   ├── api/                     # HTTP handlers
+│   │   ├── authentication.go    # Login, signup, registration keys
 │   │   ├── profiles.go          # User profiles
-│   │   ├── data-handler.go      # IoT data proxy
-│   │   └── disease-detection.go # AI integration
+│   │   ├── data-handler.go      # IoT sensor data
+│   │   └── disease-detection.go # AI integration (calls ai-service)
 │   ├── database/                # Database layer
-│   │   └── sqlite3_db.go        # SQLite operations
-│   ├── utils/                   # Utilities
-│   ├── go.mod                   # Go dependencies
-│   └── .env                     # Configuration
+│   │   └── sqlite3_db.go        # SQLite wrapper (production: PostgreSQL)
+│   ├── utils/                   # JWT, validation, response helpers
+│   ├── go.mod                   # Go 1.23, Fiber v2.52, JWT v4.5
+│   ├── .env.example             # Environment template (COMMIT THIS!)
+│   └── .env                     # Secrets file (NEVER COMMIT!)
 │
-├── ai-service/                  # Python AI service (v1.0)
-│   ├── app.py                   # Flask application
-│   ├── model/                   # Trained models
-│   │   ├── *.h5                 # Keras model
-│   │   └── *.pkl                # Label encoder
-│   └── requirements.txt         # Python dependencies
+├── ai-service/                  # Python AI service (FastAPI + PyTorch)
+│   ├── app.py                   # FastAPI server (port 8000)
+│   ├── inference.py             # ChickenDiseaseDetector (ensemble model)
+│   ├── models.py                # EfficientNetB0 + DenseNet121
+│   ├── data_utils.py            # Image preprocessing, class definitions
+│   ├── outputs/                 # PROPRIETARY: Model files (*.pth)
+│   │   └── ensemble_model.pth   # 47.2 MB trained model (NOT in git)
+│   ├── docker-compose.yml       # Docker deployment
+│   ├── Dockerfile               # Python 3.12-slim image
+│   └── requirements.txt         # PyTorch, FastAPI, Uvicorn
 │
-├── embedded/                    # ESP32 firmware (v2.0 in progress)
-│   ├── main/                    # ESP-IDF main component
-│   ├── components/              # Custom components (DHT, servo)
-│   ├── CMakeLists.txt           # Build config
-│   └── sdkconfig                # ESP-IDF settings
+├── embedded/                    # ESP32 firmware (C/ESP-IDF)
+│   ├── main/                    # Device boot, MQTT client
+│   │   └── main.c               # Entry point
+│   ├── components/              # Custom components
+│   │   └── dht/                 # DHT22 sensor driver
+│   ├── CMakeLists.txt           # ESP-IDF build config
+│   └── sdkconfig                # ESP-IDF configuration
 │
-├── scripts/                     # Deployment automation (v1.0)
-│   ├── deploy-all.sh            # Master deployment
-│   ├── setup-access-point.sh    # WiFi AP setup
-│   ├── setup-middleware-service.sh
-│   ├── setup-github-runner.sh
-│   ├── verify-system.sh         # System health check
-│   └── README.md                # Script documentation
-│
-├── certs/                       # SSL certificates
+├── certs/                       # SSL certificates (self-signed)
 ├── generate-cert.sh             # Certificate generation script
-├── LICENSE                      # MIT License
+├── AI_INSTRUCTIONS.md           # Master AI agent guide
+├── LICENSE                      # Proprietary license
 └── README.md                    # This file
 ```
 
@@ -268,36 +276,48 @@ tokkatot/
 
 ## 📚 Documentation
 
-### Version 2.0 Specifications (Production Release - In Development)
+### 🎯 Start Here - New Developer Onboarding
 
-**Farmer-Centric Smart Poultry System** - Designed for elderly Cambodian farmers with low digital literacy
+**New to the project?** Read these in order:
 
-**Start here:** [docs/00_SPECIFICATIONS_INDEX.md](docs/00_SPECIFICATIONS_INDEX.md) - Complete navigation guide
+1. **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Understand the coop-centric system design
+2. **[docs/TECH_STACK.md](docs/TECH_STACK.md)** - Why Go, Vue.js 3, PostgreSQL, PyTorch
+3. **[docs/guides/SETUP.md](docs/guides/SETUP.md)** - Install PostgreSQL, build backend, run frontend
 
-#### Core Specifications (Read in Order)
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| [01_SPECIFICATIONS_ARCHITECTURE.md](docs/01_SPECIFICATIONS_ARCHITECTURE.md) | System design, 3-tier architecture, data flow | Tech Lead, Backend, DevOps |
-| [02_SPECIFICATIONS_REQUIREMENTS.md](docs/02_SPECIFICATIONS_REQUIREMENTS.md) | Functional requirements, farmer-centric design | All team members |
+### 📖 Documentation Structure
 
-#### Implementation Guides (IG_*)
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| [IG_SPECIFICATIONS_DATABASE.md](docs/IG_SPECIFICATIONS_DATABASE.md) | PostgreSQL schema (13 tables), simplified roles | Backend, DevOps |
-| [IG_SPECIFICATIONS_API.md](docs/IG_SPECIFICATIONS_API.md) | Backend API (58 endpoints), simplified for farmers | Backend, Frontend |
-| [IG_SPECIFICATIONS_FRONTEND.md](docs/IG_SPECIFICATIONS_FRONTEND.md) | UI/UX for farmers (48px+ fonts, WCAG AAA, Khmer/English) | Frontend, Design |
-| [IG_SPECIFICATIONS_EMBEDDED.md](docs/IG_SPECIFICATIONS_EMBEDDED.md) | ESP32 firmware, Tokkatot team manages setup | Embedded |
-| [IG_SPECIFICATIONS_SECURITY.md](docs/IG_SPECIFICATIONS_SECURITY.md) | Authentication (email/phone), simplified roles, encryption | Security, Backend |
-| [IG_TOKKATOT_2.0_FARMER_CENTRIC_SPECIFICATIONS.md](docs/IG_TOKKATOT_2.0_FARMER_CENTRIC_SPECIFICATIONS.md) | Phone/Email registration, accessibility for elderly farmers | All team members |
+Documentation is organized by purpose (not file naming conventions):
 
-#### Operational Guides (OG_*)
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| [OG_SPECIFICATIONS_TECHNOLOGY_STACK.md](docs/OG_SPECIFICATIONS_TECHNOLOGY_STACK.md) | Tech selections (Go, Python, PostgreSQL, DigitalOcean) | Tech Lead, all devs |
-| [OG_SPECIFICATIONS_DEPLOYMENT.md](docs/OG_SPECIFICATIONS_DEPLOYMENT.md) | Cloud infrastructure, Docker, CI/CD pipelines | DevOps |
-| [OG_PROJECT_TIMELINE.md](docs/OG_PROJECT_TIMELINE.md) | 10 phases, 27-35 weeks, milestones | Project Manager |
-| [OG_TEAM_STRUCTURE.md](docs/OG_TEAM_STRUCTURE.md) | Team roles, responsibilities, handoff procedures | Management |
-| [OG_RISK_MANAGEMENT.md](docs/OG_RISK_MANAGEMENT.md) | 10 identified risks, mitigation strategies | Project Manager, Tech Lead |
+#### 🔑 Core Concepts
+| Document | What You'll Learn |
+|----------|-------------------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Coop-centric design, data hierarchy (User→Farm→Coop→Device), physical infrastructure, user flows |
+| [TECH_STACK.md](docs/TECH_STACK.md) | Technology decisions (Go vs Node.js, Vue.js vs React), deployment strategy (single VPS, not microservices) |
+
+#### 🚀 Setup & Installation
+| Document | What You'll Learn |
+|----------|-------------------|
+| [guides/SETUP.md](docs/guides/SETUP.md) | Install prerequisites (Go, PostgreSQL), configure `.env`, build backend, test API, troubleshooting |
+
+#### 💻 Component Development
+| Document | What You'll Learn |
+|----------|-------------------|
+| [implementation/API.md](docs/implementation/API.md) | Backend API endpoints (66 total), JWT authentication, request/response formats |
+| [implementation/DATABASE.md](docs/implementation/DATABASE.md) | PostgreSQL schema (8 tables), indexes, migrations, performance tuning |
+| [implementation/FRONTEND.md](docs/implementation/FRONTEND.md) | Vue.js 3 migration guide (3 phases), component patterns, WebSocket real-time, accessibility for farmers |
+| [implementation/AI_SERVICE.md](docs/implementation/AI_SERVICE.md) | Disease detection service (Python + PyTorch), ensemble model, API integration |
+| [implementation/EMBEDDED.md](docs/implementation/EMBEDDED.md) | ESP32 firmware (C/ESP-IDF), sensor drivers (DHT22), MQTT communication |
+| [implementation/SECURITY.md](docs/implementation/SECURITY.md) | JWT authentication, registration key system, RBAC (Owner/Manager/Viewer) |
+
+#### 🔧 Troubleshooting
+| Document | What You'll Learn |
+|----------|-------------------|
+| [troubleshooting/DATABASE.md](docs/troubleshooting/DATABASE.md) | Fix connection errors, schema sync issues, migration failures |
+| [troubleshooting/API_TESTING.md](docs/troubleshooting/API_TESTING.md) | Test backend endpoints, debug API errors, PowerShell scripts |
+
+### 📋 Complete Documentation Index
+
+**See [docs/README.md](docs/README.md) for full navigation** (includes all guides, legacy docs, project management)
  
 ---
 
@@ -399,24 +419,24 @@ This project is **proprietary software** developed for Tokkatot Startup. See the
 - ✅ ESP32 sensor integration
 
 ### Version 2.0 🚀 (In Development - Production)
-- 🔄 **Phase 1-2:** Backend API architecture (Go + PostgreSQL + InfluxDB)
-- 🔄 **Phase 3:** Frontend v2 (Vue.js 3, WCAG AAA accessibility, offline support)
-- 🔄 **Phase 4:** Embedded v2 (ESP32 OTA updates, MQTT, better reliability)
-- 🔄 **Phase 5:** Cloud integration (DigitalOcean, Kubernetes)
-- 🔄 **Phase 6-8:** Testing, deployment, rollout
+- 🔄 **Backend:** Go REST API (66 endpoints, JWT auth, PostgreSQL)
+- 🔄 **Frontend:** Vue.js 3 (CDN build, WCAG AAA, Khmer language)
+- 🔄 **AI Service:** PyTorch ensemble (EfficientNetB0 + DenseNet121)
+- 🔄 **Embedded:** ESP32 firmware (MQTT, OTA updates)
+- 🔄 **Cloud:** DigitalOcean deployment (Kubernetes, Docker)
 
-**Changes from v1.0 → v2.0:**
-- Cloud-connected (not just local)
+**Major v1.0 → v2.0 Changes:**
+- Cloud-connected (not just local WiFi AP)
 - Multi-farm support (not single farm only)
 - Real-time monitoring (WebSocket + MQTT)
-- Remote device control
+- Remote device control (from anywhere)
 - OTA firmware updates (no farm visits)
-- In-app alerts & message log (dashboard only)
-- Farmer-centric UI (large text, Khmer language, accessibility)
+- Farmer-centric UI (48px+ fonts, high contrast, Khmer language)
+- Registration key system (FREE verification, no SMS costs)
 - 99.5% uptime target
 - 5-year data retention
 
-**Timeline:** 27-35 weeks (6-8 months) - See [docs/OG_PROJECT_TIMELINE.md](docs/OG_PROJECT_TIMELINE.md)
+**Documentation:** See [docs/README.md](docs/README.md) for complete v2.0 specifications, project timeline, and team structure
 
 ---
 

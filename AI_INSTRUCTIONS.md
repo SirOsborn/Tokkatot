@@ -1,21 +1,186 @@
 # 🤖 AI Agent Instructions for Tokkatot 2.0
 
-**Last Updated**: February 19, 2026  
-**Version**: 2.0  
+**Last Updated**: February 23, 2026  
+**Version**: 2.1 (Updated with Registration Key System & Coop Architecture)  
 **Purpose**: Guide for AI agents assisting with Tokkatot development
 
 ---
 
 ## 📋 Project Overview
 
-**Tokkatot 2.0** is a cloud-based smart farming IoT system designed for elderly Cambodian farmers with low digital literacy.
+**Tokkatot 2.0** is a cloud-based smart farming IoT system designed for Cambodian poultry farmers.
 
 **Key Context:**
-- **Target Users**: Elderly Cambodian farmers (Khmer/English, simple UI)
-- **Main Hardware**: ESP32 microcontrollers (devices), Raspberry Pi 4B (local hub)
-- **Cloud Stack**: Go (API), Vue.js 3 (Frontend), PostgreSQL (Data), InfluxDB (Time-series), Python FastAPI (AI)
-- **Primary Feature**: Remote device control + AI disease detection from chicken feces images
-- **Architecture**: 3-tier (Client/API/Data) + Edge computing (offline capability)
+- **Target Users**: Cambodian chicken farmers (Khmer/English, mobile-first UI)
+- **Business Model**: On-site installation by Tokkatot staff, FREE verification using registration keys
+- **Main Hardware**: Raspberry Pi (main controller per coop), ESP32 sensors, AI cameras
+- **Cloud Stack**: Go 1.23+ (API), Vue.js 3 (PWA), PostgreSQL (Data), Python FastAPI (AI disease detection)
+- **Primary Features**: 
+  - Coop-specific device control (water pumps, conveyor belts, sensors)
+  - AI-powered disease detection from chicken feces images (camera above manure conveyor belt)
+  - Real-time monitoring (water levels, temperature, humidity)
+  - Automated alerts (disease outbreak, low water, equipment failure)
+- **Architecture**: Farm → Coops → Devices (hierarchical, farmer can own multiple farms)
+
+---
+
+## 🐔 **CRITICAL: System Architecture Understanding**
+
+### **Business Model & Setup Process**
+```
+1. Farmer purchases Tokkatot service
+2. Tokkatot team visits farm location (on-site installation)
+3. Team installs hardware (Raspberry Pi, sensors, cameras, pumps)
+4. Team registers farmer's account using:
+   - Phone number (required)
+   - Password (set on-site)
+   - Registration key (pre-generated, tied to farm location)
+5. Account is AUTO-VERIFIED (no email/SMS costs) ✅
+6. Farmer logs in immediately
+```
+
+**Key Point**: NO EMAIL/SMS VERIFICATION NEEDED! Registration key proves legitimacy.
+
+---
+
+### **Data Hierarchy: Farm → Coop → Device**
+
+```
+User (Farmer Sokha)
+  ├─ Phone: 012345678 (login credential)
+  ├─ Password: (set during on-site registration)
+  │
+  ├─ Farm 1: "Kandal Province Farm"
+  │   ├─ Location: Kandal Province, Cambodia
+  │   ├─ Registration Key: XXXXX-XXXXX-XXXXX (used once)
+  │   │
+  │   ├─ Coop 1 (500 layer chickens)
+  │   │   ├─ Raspberry Pi (main controller: RaspberryPi-001)
+  │   │   ├─ AI Camera (above manure conveyor belt)
+  │   │   ├─ Water Tank Sensor (ultrasonic, outside coop)
+  │   │   ├─ Water Pump Motor (fills THIS coop's tank)
+  │   │   ├─ Conveyor Belt Motor (automated manure removal)
+  │   │   └─ Water Pipes (through coop, feeds chickens)
+  │   │
+  │   └─ Coop 2 (300 broiler chickens)
+  │       ├─ Raspberry Pi (main controller: RaspberryPi-002)
+  │       ├─ AI Camera
+  │       ├─ Water Tank Sensor
+  │       ├─ Water Pump Motor
+  │       ├─ Conveyor Belt Motor
+  │       └─ Water Pipes
+  │
+  └─ Farm 2: "Kampong Cham Farm"
+      └─ Coop 1 (400 mixed chickens)
+          ├─ Raspberry Pi (main controller: RaspberryPi-003)
+          ├─ AI Camera
+          ├─ Water Tank Sensor
+          ├─ Water Pump Motor
+          ├─ Conveyor Belt Motor
+          └─ Water Pipes
+```
+
+**IMPORTANT NOTES:**
+1. **Each coop is SELF-CONTAINED** - Has its own water pump, camera, sensors
+2. **NO farm-level devices** - All devices belong to specific coops
+3. **farm_id purpose**: Organizational grouping (multi-province support), NOT device control
+4. **Multi-farm support**: Farmers can own farms in different provinces
+
+---
+
+### **Device Details (Per Coop)**
+
+| Device | Location | Purpose | Critical? |
+|--------|----------|---------|-----------|
+| **AI Camera** | Above manure conveyor belt | Monitors chicken feces texture/pattern for disease detection | ✅ YES |
+| **Water Tank Sensor** | Outside coop (on water tank) | Ultrasonic sensor measures water level | ✅ YES |
+| **Water Pump Motor** | Connected to farm's main water source | Automatically fills coop's water tank when sensor detects low level | ✅ YES |
+| **Conveyor Belt Motor** | Inside coop (under chicken cages) | Automated manure removal system | ⚠️ Important |
+| **Water Pipes** | Throughout coop | Delivers water to chickens 24/7 | ✅ YES |
+| **Raspberry Pi** | Main controller for THIS coop | Coordinates all coop devices (is_main_controller=true) | ✅ YES |
+
+**System Logic Example:**
+```
+Coop 1 water tank sensor: "Water level 15%" (LOW!)
+  → System checks: coop_id → finds Coop 1's water pump
+  → Activates Coop 1's pump motor
+  → Pump fills Coop 1's tank from farm's main water source
+  → Sensor reads 95% → Pump stops
+  → Water flows through Coop 1's pipes to chickens 24/7
+```
+
+---
+
+## 🔐 **Authentication & Verification System**
+
+### **Registration (On-Site by Staff)**
+
+**Required Fields:**
+- `phone`: Cambodian phone number (e.g., "012345678")
+- `password`: Set by staff with farmer present
+- `name`: Farmer's name
+- `registration_key`: Pre-generated key (e.g., "ZKJFA-ZIVMC-HOUGG-XQSRW-ITDYH")
+
+**Optional Fields:**
+- `email`: Not required (farmers may not have email)
+- `language`: "km" (Khmer) or "en" (default: "km")
+
+**Registration Flow:**
+```json
+POST /v1/auth/signup
+{
+  "phone": "012345678",
+  "password": "Farmer123",
+  "name": "Sokha",
+  "registration_key": "ZKJFA-ZIVMC-HOUGG-XQSRW-ITDYH"
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "user_id": "uuid-here",
+    "contact_verified": true  // ✅ Auto-verified by registration key!
+  },
+  "message": "Account created and verified"
+}
+```
+
+**Why Registration Keys?**
+- ✅ **FREE** - No SMS/email costs
+- ✅ **Secure** - Keys expire in 90 days, single-use only
+- ✅ **Farmer-friendly** - Staff handles everything on-site
+- ✅ **Offline-capable** - Works during installation without internet
+
+### **Login (Farmer Self-Service)**
+
+```json
+POST /v1/auth/login
+{
+  "phone": "012345678",
+  "password": "Farmer123"
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "access_token": "jwt-token-24h",
+    "refresh_token": "jwt-token-30d",
+    "user": {
+      "id": "uuid",
+      "phone": "012345678",
+      "name": "Sokha"
+    },
+    "farms": [
+      {"id": "farm-uuid-1", "name": "Kandal Farm", "coop_count": 2},
+      {"id": "farm-uuid-2", "name": "Kampong Cham Farm", "coop_count": 1}
+    ]
+  }
+}
+```
+
+**Login → Select Farm → Select Coop → Control Dashboard**
 
 ---
 

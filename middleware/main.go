@@ -6,160 +6,122 @@ import (
 	"path/filepath"
 
 	"middleware/api"
+	"middleware/config"
 	"middleware/database"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Load environment variables from .env file
-	// Check if we're in tokkatot directory, then look for .env in middleware subdirectory
-	currentDir, _ := os.Getwd()
-	var envPath string
+	// Load configuration
+	cfg := config.LoadConfig()
+	log.Printf("✅ Configuration loaded - Environment: %s", cfg.Environment)
 
-	if filepath.Base(currentDir) == "middleware" {
-		envPath = ".env"
+	// Initialize database (try PostgreSQL, fallback to SQLite for testing)
+	_, err := database.InitDB()
+	if err != nil {
+		log.Printf("⚠️  PostgreSQL connection failed: %v", err)
+		log.Println("🔄 Falling back to SQLite for testing...")
+
+		_, sqliteErr := database.InitDBSQLite()
+		if sqliteErr != nil {
+			log.Fatalf("❌ Failed to initialize SQLite fallback: %v", sqliteErr)
+		}
+
+		// Create SQLite schema
+		if err := database.CreateSchemaSQLite(); err != nil {
+			log.Fatalf("❌ Failed to create SQLite schema: %v", err)
+		}
 	} else {
-		envPath = "middleware/.env"
+		defer database.CloseDB()
+
+		// Create PostgreSQL schema
+		if err := database.CreateSchema(); err != nil {
+			log.Fatalf("❌ Failed to create database schema: %v", err)
+		}
 	}
 
-	if err := godotenv.Load(envPath); err != nil {
-		log.Printf("No .env file found at %s, using system environment variables", envPath)
-	} else {
-		log.Printf("Loaded environment variables from %s", envPath)
-	}
+	// Create Fiber app with optimized settings
+	app := fiber.New(fiber.Config{
+		Prefork:       false,
+		CaseSensitive: false,
+		Immutable:     true,
+		BodyLimit:     10 * 1024 * 1024, // 10MB for image uploads
+	})
 
-	// Get absolute paths for frontend files
-	// First get the current working directory
+	// Get frontend path
 	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Fatal("Could not get current working directory:", err)
 	}
 
-	log.Println("Current working directory:", currentDir)
-
-	// Check if we're in the middleware directory or the parent tokkatot directory
 	var frontendPath string
 	if filepath.Base(currentDir) == "middleware" {
-		// We're in middleware, go up one level to tokkatot, then into frontend
 		frontendPath = filepath.Join(filepath.Dir(currentDir), "frontend")
 	} else {
-		// We're likely in the tokkatot directory already, just add frontend
 		frontendPath = filepath.Join(currentDir, "frontend")
 	}
 
-	log.Println("Calculated frontend path:", frontendPath)
-
-	// Verify the path exists
 	if _, err := os.Stat(frontendPath); os.IsNotExist(err) {
-		log.Fatal("Frontend directory not found at: ", frontendPath)
+		log.Printf("⚠️  Frontend directory not found at: %s (continuing without frontend)", frontendPath)
 	}
 
-	log.Println("Frontend path resolved successfully to:", frontendPath)
+	// Setup routes
+	setupRoutes(app, frontendPath)
 
-	app := fiber.New()
+	// Start server
+	log.Printf("✅ Server starting on %s:%s", cfg.ServerHost, cfg.ServerPort)
+	if err := app.Listen(cfg.ServerHost + ":" + cfg.ServerPort); err != nil {
+		log.Fatalf("❌ Server failed: %v", err)
+	}
+}
 
-	// Initialize database
-	api.DB = database.InitDB()
+func setupRoutes(app *fiber.App, frontendPath string) {
+	// ===== API ROUTES (v1) =====
+	v1 := app.Group("/v1")
 
-	// Serve static files with absolute paths
+	// Authentication routes (no auth required)
+	auth := v1.Group("/auth")
+	auth.Post("/signup", api.SignupHandler)
+	auth.Post("/login", api.LoginHandler)
+	auth.Post("/verify", api.VerifyContactHandler) // Email/Phone verification
+	auth.Post("/refresh", api.RefreshTokenHandler)
+	auth.Post("/logout", api.LogoutHandler)
+	auth.Post("/forgot-password", api.ForgotPasswordHandler)
+	auth.Post("/reset-password", api.ResetPasswordHandler)
+
+	// Protected routes (require authentication)
+	protected := v1.Group("")
+	protected.Use(api.AuthMiddleware)
+	// Protected endpoints will be added here:
+	// protected.Get("/users/me", api.GetCurrentUserHandler)
+	// protected.Get("/farms", api.ListFarmsHandler)
+	// etc.
+
+	// ===== FRONTEND STATIC ROUTES =====
+	// Serve static files
 	app.Static("/assets", filepath.Join(frontendPath, "assets"))
 	app.Static("/components", filepath.Join(frontendPath, "components"))
 	app.Static("/css", filepath.Join(frontendPath, "css"))
 	app.Static("/js", filepath.Join(frontendPath, "js"))
 
-	// Authentication and static page routes
+	// Static page routes
 	app.Get("/login", func(c *fiber.Ctx) error {
-		if api.ValidateCookie(c) == nil {
-			return c.Redirect("/")
-		}
 		return c.SendFile(filepath.Join(frontendPath, "pages", "login.html"))
 	})
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		if api.ValidateCookie(c) != nil {
-			return c.Redirect("/login")
-		}
-		return c.SendFile(filepath.Join(frontendPath, "pages", "index.html"))
-	})
-
 	app.Get("/register", func(c *fiber.Ctx) error {
-		if api.ValidateCookie(c) == nil {
-			return c.Redirect("/")
-		}
 		return c.SendFile(filepath.Join(frontendPath, "pages", "signup.html"))
 	})
 
-	app.Get("/profile", func(c *fiber.Ctx) error {
-		if api.ValidateCookie(c) != nil {
-			return c.Redirect("/login")
-		}
-		return c.SendFile(filepath.Join(frontendPath, "pages", "profile.html"))
-	})
-
-	app.Get("/settings", func(c *fiber.Ctx) error {
-		if api.ValidateCookie(c) != nil {
-			return c.Redirect("/login")
-		}
-		return c.SendFile(filepath.Join(frontendPath, "pages", "settings.html"))
-	})
-
-	app.Get("/disease-detection", func(c *fiber.Ctx) error {
-		if api.ValidateCookie(c) != nil {
-			return c.Redirect("/login")
-		}
-		return c.SendFile(filepath.Join(frontendPath, "pages", "disease-detection.html"))
-	})
-
-	// User authentication routes
-	app.Post("/register", api.RegisterHandler)
-	app.Post("/login", api.LoginHandler)
-
-	// API routes (protected by authentication)
-	apiRoutes := app.Group("/api", func(c *fiber.Ctx) error {
-		if api.ValidateCookie(c) != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized access"})
-		}
-		return c.Next()
-	})
-
-	// Profile routes
-	apiRoutes.Get("/profile", api.GetProfileHandler)
-	apiRoutes.Post("/profile", api.UpdateProfileHandler)
-
-	// Poultry system sensor data retrieval
-	apiRoutes.Get("/get-initial-state", api.GetInitialStateHandler)
-	apiRoutes.Get("/get-current-data", api.GetCurrentDataHandler)
-	apiRoutes.Get("/get-historical-data", api.GetHistoricalDataHandler)
-
-	// Poultry system control routes
-	apiRoutes.Get("/toggle-auto", api.ToggleAutoHandler)
-	apiRoutes.Get("/toggle-belt", api.ToggleBeltHandler)
-	apiRoutes.Get("/toggle-fan", api.ToggleFanHandler)
-	apiRoutes.Get("/toggle-bulb", api.ToggleBulbHandler)
-	apiRoutes.Get("/toggle-feeder", api.ToggleFeederHandler)
-	apiRoutes.Get("/toggle-pump", api.TogglePumpHandler)
-
-	// AI Disease Detection routes
-	apiRoutes.Get("/ai/health", api.AIHealthCheckHandler)
-	apiRoutes.Post("/ai/predict-disease", api.PredictDiseaseHandler)
-	apiRoutes.Get("/ai/disease-info", api.GetDiseaseInfoHandler)
-
-	// Schedule management routes
-	/* apiRoutes.Post("/schedule", api.SaveScheduleHandler)      // Save schedule
-	apiRoutes.Get("/toggle-schedule", api.GetScheduleHandler) // Retrieve schedule
-	*/
-
 	// 404 Handler
 	app.Use(func(c *fiber.Ctx) error {
-		return c.Status(fiber.StatusNotFound).SendFile("../frontend/pages/404.html")
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    "not_found",
+				"message": "Endpoint not found",
+			},
+		})
 	})
-
-	// Close the database connection when the application shuts down
-	defer api.DB.Close()
-
-	// Start the server
-	log.Println("Server is running on port 443")
-	log.Fatal(app.ListenTLS(":443", os.Getenv("TLS_CERT"), os.Getenv("TLS_KEY")))
 }
