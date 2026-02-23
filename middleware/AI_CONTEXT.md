@@ -36,15 +36,15 @@ middleware/
 ├── go.mod/go.sum             Go 1.23 dependencies
 ├── .env                      DATABASE_URL, JWT_SECRET (GITIGNORE'D)
 │
-├── api/                      Endpoint handlers (35 total)
-│   ├── authentication.go     Login, signup, token refresh
+├── api/                      Endpoint handlers (35 routes total)
+│   ├── auth_handler.go       Login, signup, token refresh, verify, forgot/reset password
+│   ├── auth_middleware.go    JWT extraction & farm access checks (checkFarmAccess)
 │   ├── farm_handler.go       Farm CRUD (5 endpoints)
-│   ├── coop_handler.go       Coop CRUD (6 endpoints)
-│   ├── device_handler.go     Device control (6 endpoints)
+│   ├── coop_handler.go       Coop CRUD (5 endpoints)
+│   ├── device_handler.go     Device control & commands (5 endpoints)
 │   ├── schedule_handler.go   Schedule automation (7 endpoints) ⭐
-│   ├── profile_handler.go    User profile management (4 endpoints)
-│   ├── disease_handler.go    AI service proxy (2 endpoints)
-│   └── websocket_handler.go  Real-time updates
+│   ├── user_handler.go       User profile management (3 endpoints)
+│   └── websocket_handler.go  Real-time updates + /ws/stats
 │
 ├── database/
 │   ├── postgres.go           PostgreSQL schema (10 tables)

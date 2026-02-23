@@ -1,7 +1,7 @@
 # 🤖 AI Agent Instructions for Tokkatot 2.0
 
 **Last Updated**: February 23, 2026  
-**Version**: 2.1 (Updated with Registration Key System & Coop Architecture)  
+**Version**: 2.2 (Updated with accurate DB schema: devices coop_id/is_main_controller, device_commands field names, event_logs structure, schedule_executions status enum)  
 **Purpose**: Guide for AI agents assisting with Tokkatot development
 
 ---
