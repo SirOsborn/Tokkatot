@@ -278,22 +278,24 @@ h5 { font-size: var(--font-size-base); font-weight: 600; }
 }
 
 .lang-toggle {
+  width: 36px;
   height: 36px;
-  min-width: 36px;
-  padding: 0 10px;
-  font-size: var(--font-size-sm);
+  padding: 0;
+  font-size: 13px;
   font-weight: 700;
   color: var(--color-primary);
   border: 2px solid var(--color-primary);
-  border-radius: var(--radius-full);
+  border-radius: 50%;
   background: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  letter-spacing: 0.02em;
   white-space: nowrap;
+  overflow: hidden;
+  flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
+  line-height: 1;
 }
 .lang-toggle:active {
   background: var(--color-primary-light);

@@ -47,7 +47,15 @@
     var btn = document.getElementById('lang-toggle-btn');
     if (!btn) return;
     var lang = window.i18n ? window.i18n.getLang() : 'km';
-    btn.textContent = lang === 'km' ? 'ខ្មែរ' : 'EN';
+    if (lang === 'km') {
+      btn.textContent = 'ខ្មែរ';
+      btn.style.fontSize = '9px';
+      btn.style.letterSpacing = '0';
+    } else {
+      btn.textContent = 'EN';
+      btn.style.fontSize = '13px';
+      btn.style.letterSpacing = '0.05em';
+    }
   }
 
   function updateAvatarImg() {
