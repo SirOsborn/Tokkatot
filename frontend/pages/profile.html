@@ -91,13 +91,6 @@
             <div v-if="user.province" class="list-item-subtitle" style="margin-top:2px;">{{ user.province }}</div>
           </div>
         </div>
-        <div class="list-item">
-          <div class="list-item-icon"><span class="material-symbols-outlined">translate</span></div>
-          <div class="list-item-content">
-            <div class="list-item-subtitle">{{ lang === 'km' ? 'ភាសា' : 'Language' }}</div>
-            <div class="list-item-title">{{ user.language === 'en' ? 'English' : 'ខ្មែរ' }}</div>
-          </div>
-        </div>
         <!-- Farmer ID — share this with workers so they can self-register -->
         <div class="list-item">
           <div class="list-item-icon"><span class="material-symbols-outlined">fingerprint</span></div>
@@ -118,16 +111,6 @@
           <div class="form-input-icon">
             <span class="input-icon material-symbols-outlined">person</span>
             <input class="form-input" type="text" v-model="editName" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang === 'km' ? 'ខ្មែរ' : 'Language' }}</label>
-          <div class="form-input-icon">
-            <span class="input-icon material-symbols-outlined">translate</span>
-            <select class="form-input" v-model="editLanguage">
-              <option value="km">ខ្មែរ</option>
-              <option value="en">English</option>
-            </select>
           </div>
         </div>
         <!-- Farm fields (only for farmers who own a farm) -->
@@ -193,7 +176,7 @@ createApp({
   data() {
     return {
       loading: true, saving: false, editing: false,
-      user: {}, editName: '', editPhone: '', editLanguage: '',
+      user: {}, editName: '', editPhone: '',
       editFarmName: '', editProvince: '',
       copiedID: false, avatarLoaded: null,
       lang: window.i18n ? window.i18n.getLang() : 'km',
@@ -228,7 +211,6 @@ createApp({
         this.user = (data && data.data && data.data.user) ? data.data.user : (data && data.data ? data.data : {});
         this.editName     = this.user.name     || '';
         this.editPhone    = this.user.phone    || '';
-        this.editLanguage = this.user.language || 'km';
         this.editFarmName = this.user.farm_name || '';
         this.editProvince = this.user.province  || '';
         this.avatarLoaded = null; // reset so img retries
@@ -239,12 +221,10 @@ createApp({
       this.errorMsg = ''; this.successMsg = ''; this.saving = true;
       try {
         const data = await window.API.put('/v1/users/me', {
-          name: this.editName,
-          language: this.editLanguage
+          name: this.editName
         });
         if (data && data.success) {
-          this.user.name     = this.editName;
-          this.user.language = this.editLanguage;
+          this.user.name = this.editName;
           // Also update farm if farmer changed farm fields
           if (this.user.farm_id && this.user.role === 'farmer' &&
               (this.editFarmName !== this.user.farm_name || this.editProvince !== (this.user.province || ''))) {

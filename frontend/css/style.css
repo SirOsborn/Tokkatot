@@ -277,27 +277,6 @@ h5 { font-size: var(--font-size-base); font-weight: 600; }
   border: 2px solid var(--color-surface);
 }
 
-.lang-toggle {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  color: var(--color-text-secondary);
-  border: none;
-  outline: none;
-  border-radius: 50%;
-  background: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
-}
-.lang-toggle:focus { outline: none; }
-.lang-toggle:active {
-  background: var(--color-bg);
-}
-
 /* --------------------------------------------------------------------------
    Bottom Navigation Bar
    -------------------------------------------------------------------------- */

@@ -43,10 +43,6 @@
     });
   }
 
-  function updateLangButton() {
-    /* icon-only button — nothing to update */
-  }
-
   function updateAvatarImg() {
     var img = document.getElementById('header-avatar-img');
     if (!img) return;
@@ -97,7 +93,6 @@
 
     /* Post-inject setup */
     highlightActiveNav();
-    updateLangButton();
     updateAvatarImg();
     loadFarmName();
 
@@ -114,15 +109,6 @@
 
     if (window.i18n && window.i18n.applyAll) {
       window.i18n.applyAll();
-    }
-  };
-
-  /* Expose toggle so header button can call it */
-  window.headerToggleLang = function () {
-    if (window.i18n) {
-      window.i18n.toggleLang();
-      updateLangButton();
-      if (window.i18n.applyAll) window.i18n.applyAll();
     }
   };
 
