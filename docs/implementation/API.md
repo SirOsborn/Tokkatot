@@ -1,11 +1,28 @@
 # Tokkatot 2.0: API Specification
 
-**Document Version**: 2.2  
+**Document Version**: 2.3  
 **Last Updated**: February 24, 2026  
-**Status**: MVP Complete (all non-AI endpoints implemented) + Temperature Timeline  
+**Status**: MVP Complete (all non-AI endpoints implemented) + Temperature Timeline + Full Frontend Rebuild  
 **Base URL**: `https://api.tokkatot.local/v1` (production), `http://localhost:3000/v1` (development)
 
-> **Implementation Status (v2.2)**: All 67 non-AI endpoints are implemented and build-verified. SQLite removed — PostgreSQL required. AI disease detection endpoint is stubbed; disease-detection UI shows "Coming Soon" overlay. Temperature timeline endpoint added (`GET /farms/:farm_id/coops/:coop_id/temperature-timeline`), serving the Apple Weather-style `/monitoring` dashboard page.
+> **Implementation Status (v2.3)**: All 67 non-AI API endpoints are implemented and build-verified. SQLite removed — PostgreSQL required. AI disease detection endpoint is stubbed; disease-detection UI shows "Coming Soon" overlay. Temperature timeline endpoint live (`GET /farms/:farm_id/coops/:coop_id/temperature-timeline`). Frontend fully rebuilt (Vue.js 3 CDN, Mi Sans, Material Symbols, new design system). New static page route added: `GET /schedules` → `pages/schedules.html` (schedule CRUD + multi-step sequence builder).
+
+### Frontend Static Page Routes (`middleware/main.go`)
+
+The Go middleware serves all frontend pages directly. These are **not** API endpoints — they return HTML files.
+
+| Browser Route | File Served | Notes |
+|---|---|---|
+| `GET /` | `pages/index.html` | Dashboard |
+| `GET /login` | `pages/login.html` | — |
+| `GET /register` | `pages/signup.html` | Calls `POST /v1/auth/signup` |
+| `GET /profile` | `pages/profile.html` | — |
+| `GET /settings` | `pages/settings.html` | — |
+| `GET /disease-detection` | `pages/disease-detection.html` | Coming Soon overlay |
+| `GET /monitoring` | `pages/monitoring.html` | Temperature timeline |
+| `GET /schedules` | `pages/schedules.html` | ⭐ Added v2.3 — CRUD + sequence builder |
+
+Static asset directories also served: `/assets`, `/components`, `/css`, `/js`.
 
 ---
 

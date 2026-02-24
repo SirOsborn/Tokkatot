@@ -7,7 +7,7 @@
 **📖 Read First**: `../AI_INSTRUCTIONS.md` (project overview, business model, farmer context)
 
 **📖 Full Documentation**:
-- API Spec: `../docs/implementation/API.md` (67 endpoints, all MVP endpoints implemented + temperature timeline)
+- API Spec: `../docs/implementation/API.md` (67 API endpoints + 8 static page routes; all MVP endpoints implemented)
 - Database: `../docs/implementation/DATABASE.md` (14 tables, PostgreSQL only)
 - Security: `../docs/implementation/SECURITY.md` (JWT, registration keys)
 - Automation: `../docs/AUTOMATION_USE_CASES.md` (real-world farmer scenarios)
@@ -36,7 +36,7 @@
 
 ```
 middleware/
-├── main.go                    Entry point, Fiber server setup, routes (67 routes)
+├── main.go                    Entry point, Fiber server setup, routes (67 API routes + 8 static page routes)
 ├── go.mod/go.sum             Go 1.23 dependencies (no sqlite3)
 ├── .env                      DATABASE_URL, JWT_SECRET (GITIGNORE'D)
 │
@@ -71,6 +71,27 @@ middleware/
 **Handler**: `TemperatureTimelineHandler` in `api/coop_handler.go`  
 **Route**: `GET /v1/farms/:farm_id/coops/:coop_id/temperature-timeline?days=7`  
 **Frontend page**: `/monitoring` (`pages/monitoring.html`)
+
+---
+
+## 🖥️ Frontend Static Page Routes (Feb 24, 2026)
+
+All frontend HTML pages are served by the Go Fiber middleware from the `frontend/` directory. These are **not** `/v1/` API endpoints.
+
+| Route | File | Notes |
+|---|---|---|
+| `GET /` | `pages/index.html` | Dashboard (Vue 3, WebSocket) |
+| `GET /login` | `pages/login.html` | No auth required |
+| `GET /register` | `pages/signup.html` | No auth required |
+| `GET /profile` | `pages/profile.html` | — |
+| `GET /settings` | `pages/settings.html` | — |
+| `GET /disease-detection` | `pages/disease-detection.html` | Coming Soon overlay |
+| `GET /monitoring` | `pages/monitoring.html` | Temperature timeline |
+| `GET /schedules` | `pages/schedules.html` | ⭐ Added v2.3 — schedule CRUD + sequence builder |
+
+Static directories: `/assets`, `/components`, `/css`, `/js` all served from `frontend/`.
+
+**Frontend stack**: Vue.js 3 CDN (no build step), Mi Sans font, Google Material Symbols, `/css/style.css` global design system. See `../frontend/AI_CONTEXT.md` for full details.
 
 ### Pattern
 ```go
