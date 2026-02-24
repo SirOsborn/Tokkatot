@@ -1,8 +1,37 @@
 # Frontend Implementation - Vue.js 3 Migration
 
-**Last Updated**: February 23, 2026  
-**Status**: Migration in Progress  
-**Tech Stack**: Vue.js 3 → Vanilla HTML/CSS/JS (Progressive Enhancement)
+**Last Updated**: February 24, 2026  
+**Status**: MVP Pages Complete (all pages exist; Vue.js migration planned post-MVP)  
+**Tech Stack**: Vanilla HTML/CSS/JS (current MVP) → Vue.js 3 CDN (next phase)
+
+---
+
+## MVP Page Inventory (Feb 2026)
+
+All pages are static HTML served by the Go backend via named routes in `middleware/main.go`.
+
+| Page | Route | File | Status |
+|------|-------|------|--------|
+| Home / Dashboard | `/` and `/index.html` | `pages/index.html` | ✅ Live |
+| Login | `/login` | `pages/login.html` | ✅ Live |
+| Sign Up | `/register` | `pages/signup.html` | ✅ Live |
+| Profile | `/profile` | `pages/profile.html` | ✅ Live |
+| Settings | `/settings` | `pages/settings.html` | ✅ Live |
+| AI Disease Detection | `/disease-detection` | `pages/disease-detection.html` | 🚧 Coming Soon |
+| 404 Not Found | all unmatched | `pages/404.html` | ✅ Live |
+
+### Disease Detection Page — Coming Soon Overlay
+
+`pages/disease-detection.html` has a **full-screen overlay** injected immediately after `<body>` (visible above all page content):
+
+```html
+<!-- Remove this div when AI service is ready -->
+<div id="coming-soon-overlay" style="position: fixed; inset: 0; z-index: 9999; ...">
+  🔬 AI Disease Detection — Coming Soon
+</div>
+```
+
+**To re-enable the page**: Remove the `<div id="coming-soon-overlay">...</div>` block (marked with comments). The full UI underneath is intact and functional.
 
 ---
 
@@ -11,7 +40,7 @@
 ### Current State
 - ✅ Vanilla HTML/CSS/JS files (`frontend/pages/*.html`)
 - ✅ No build step required
-- ✅ Served directly by Go backend
+- ✅ Served directly by Go backend via static routes
 - ❌ Code duplication (navbar, header in every page)
 - ❌ Manual DOM updates (water_level, temperature)
 - ❌ No component reusability

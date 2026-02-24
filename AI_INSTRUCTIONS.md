@@ -65,7 +65,7 @@ Future AI sessions need to know:
 - ✅ New API endpoint or modified endpoint behavior
 - ✅ New automation pattern (schedule types, sensor triggers)
 - ✅ New UI component (schedule builder, device control panel)
-- ✅ Architecture decision (SQLite fallback, JWT auth flow)
+- ✅ Architecture decision (PostgreSQL-only migration, JWT auth flow)
 - ✅ Integration work (Go → FastAPI → PyTorch, MQTT protocol)
 
 **Don't update for**:
@@ -322,7 +322,7 @@ When working on Tokkatot, you are a **professional software engineer and technic
 
 **Implementation Guides** (IG_*):
 - `IG_SPECIFICATIONS_API.md` - 66 REST endpoints, authentication, error handling
-- `IG_SPECIFICATIONS_DATABASE.md` - PostgreSQL schema (13 tables, farmer-centric)
+- `IG_SPECIFICATIONS_DATABASE.md` - PostgreSQL schema (14 tables, farmer-centric; SQLite removed Feb 2026)
 - `IG_SPECIFICATIONS_SECURITY.md` - JWT auth, Email/Phone login, no MFA for farmers
 - `IG_SPECIFICATIONS_FRONTEND.md` - Vue.js UI, 48px+ fonts, WCAG AAA accessibility
 - `IG_SPECIFICATIONS_EMBEDDED.md` - ESP32 firmware, MQTT protocol
