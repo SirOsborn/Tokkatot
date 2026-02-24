@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Temperature Monitoring – Tokkatot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@300;400;600;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Inter', 'Noto Sans Khmer', sans-serif; }
+
+    body {
+      min-height: 100vh;
+      color: #fff;
+      transition: background 1s ease;
+      overflow-x: hidden;
+    }
+
+    /* ── Background gradients per bg_hint ────────────────────── */
+    body.bg-scorching { background: linear-gradient(to bottom, #7f0000, #bf2c00, #e85d04); }
+    body.bg-hot       { background: linear-gradient(to bottom, #c1121f, #e85d04, #f48c06); }
+    body.bg-warm      { background: linear-gradient(to bottom, #e85d04, #f48c06, #faa307); }
+    body.bg-neutral   { background: linear-gradient(to bottom, #2d6a4f, #40916c, #74c69d); }
+    body.bg-cool      { background: linear-gradient(to bottom, #023e8a, #0077b6, #0096c7); }
+    body.bg-cold      { background: linear-gradient(to bottom, #03045e, #023e8a, #0077b6); }
+
+    /* ── Glass card utility ───────────────────────────────────── */
+    .glass {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+    }
+
+    /* ── Layout wrapper ───────────────────────────────────────── */
+    .page-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 0 16px 120px;
+    }
+
+    /* ── Back nav ─────────────────────────────────────────────── */
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 0 12px;
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      font-size: 18px;
+    }
+    .top-nav h1 { font-size: 16px; font-weight: 600; opacity: .9; }
+
+    /* ── Coop picker ──────────────────────────────────────────── */
+    #coop-picker {
+      width: 100%;
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 15px;
+      margin-bottom: 20px;
+      outline: none;
+      cursor: pointer;
+    }
+    #coop-picker option { background: #333; color: #fff; }
+
+    /* ── Hero – current temp ──────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 24px 0 16px;
+    }
+    .hero .coop-label { font-size: 14px; opacity: .75; margin-bottom: 4px; }
+    .hero .temp-big   { font-size: 88px; font-weight: 200; line-height: 1; }
+    .hero .temp-big sup { font-size: 36px; font-weight: 300; vertical-align: top; margin-top: 16px; display: inline-block; }
+    .hero .hl-row     { font-size: 15px; opacity: .85; margin-top: 6px; letter-spacing: .4px; }
+    .hero .hint-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 12px;
+      margin-top: 8px;
+      text-transform: capitalize;
+    }
+
+    /* ── No sensor notice ─────────────────────────────────────── */
+    .no-sensor {
+      text-align: center;
+      padding: 48px 16px;
+      opacity: .8;
+    }
+    .no-sensor h2 { font-size: 20px; margin-bottom: 8px; }
+    .no-sensor p  { font-size: 14px; }
+
+    /* ── Hourly scroll strip ──────────────────────────────────── */
+    .section-title { font-size: 12px; font-weight: 600; letter-spacing: 1px; opacity: .7; text-transform: uppercase; margin-bottom: 8px; }
+
+    .hourly-strip {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px 12px;
+    }
+    .hourly-strip::-webkit-scrollbar { display: none; }
+    .hour-cell {
+      flex: 0 0 54px;
+      text-align: center;
+    }
+    .hour-cell .h-time { font-size: 11px; opacity: .7; }
+    .hour-cell .h-temp { font-size: 15px; font-weight: 600; margin-top: 6px; }
+
+    /* ── SVG graph ────────────────────────────────────────────── */
+    #svg-wrap {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    #temp-svg { display: block; }
+
+    /* ── Daily history list ───────────────────────────────────── */
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .day-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+    }
+    .day-card .day-label { font-size: 15px; font-weight: 600; min-width: 90px; }
+    .day-card .day-bar-wrap {
+      flex: 1;
+      margin: 0 12px;
+      height: 4px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 4px;
+      position: relative;
+    }
+    .day-card .day-bar {
+      position: absolute;
+      top: 0; bottom: 0;
+      background: rgba(255,255,255,0.7);
+      border-radius: 4px;
+    }
+    .day-card .day-hl {
+      font-size: 13px;
+      text-align: right;
+      min-width: 80px;
+    }
+    .day-card .day-hl .dh { font-weight: 600; }
+    .day-card .day-hl .dl { opacity: .65; margin-left: 6px; }
+
+    /* ── Spinner ──────────────────────────────────────────────── */
+    .spinner-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 0;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-warm">
+
+<div class="page-wrap">
+
+  <!-- Back nav -->
+  <div class="top-nav">
+    <button class="back-btn" onclick="history.back()">&#8592;</button>
+    <h1>Temperature Monitoring</h1>
+  </div>
+
+  <!-- Coop picker -->
+  <select id="coop-picker"></select>
+
+  <!-- Loading -->
+  <div id="loading" class="spinner-wrap"><div class="spinner"></div></div>
+
+  <!-- Content (hidden until data loaded) -->
+  <div id="content" style="display:none">
+
+    <!-- Hero -->
+    <div class="hero" id="hero"></div>
+
+    <!-- Hourly strip -->
+    <div class="glass" style="margin-bottom:16px">
+      <div style="padding:14px 16px 0">
+        <div class="section-title">Today — Hourly</div>
+      </div>
+      <div class="hourly-strip" id="hourly-strip"></div>
+    </div>
+
+    <!-- Temperature graph -->
+    <div id="svg-wrap" class="glass" style="margin-bottom:16px">
+      <svg id="temp-svg" viewBox="0 0 480 160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="curveGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.45)" />
+            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+          </linearGradient>
+        </defs>
+        <path id="fill-path" fill="url(#curveGrad)" />
+        <path id="line-path" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round" />
+        <!-- X axis labels -->
+        <text x="0"   y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">12 AM</text>
+        <text x="120" y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">6 AM</text>
+        <text x="240" y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">12 PM</text>
+        <text x="360" y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">6 PM</text>
+        <text x="480" y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">12 AM</text>
+        <!-- Markers injected by JS -->
+        <g id="high-marker"></g>
+        <g id="low-marker"></g>
+      </svg>
+    </div>
+
+    <!-- Daily history -->
+    <div class="glass" style="padding:16px 18px">
+      <div class="section-title" style="margin-bottom:12px">Daily History</div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- No sensor -->
+  <div id="no-sensor" class="no-sensor" style="display:none">
+    <h2>No Sensor Found</h2>
+    <p>This coop does not have an active temperature sensor attached.</p>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+  const API = '/api/v1';
+  let token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/login'; }
+
+  // ── Auth fetch wrapper ─────────────────────────────────────────────────────
+  async function apiFetch(url) {
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+    if (res.status === 401) { window.location.href = '/login'; }
+    return res.json();
+  }
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let farmId = null;
+  let coops  = [];
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  async function init() {
+    // Get user profile to find their farm
+    const me = await apiFetch(`${API}/profile`);
+    if (!me.success) return showError('Could not load profile');
+
+    // Fetch farms the user belongs to
+    const farmsRes = await apiFetch(`${API}/farms`);
+    if (!farmsRes.success || !farmsRes.data || farmsRes.data.length === 0) {
+      return showError('No farms found');
+    }
+    farmId = farmsRes.data[0].id; // Take first farm
+
+    // Fetch coops
+    const coopsRes = await apiFetch(`${API}/farms/${farmId}/coops`);
+    if (!coopsRes.success || !coopsRes.data || coopsRes.data.length === 0) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('no-sensor').style.display = 'block';
+      return;
+    }
+    coops = coopsRes.data;
+
+    // Build picker
+    const picker = document.getElementById('coop-picker');
+    coops.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      picker.appendChild(opt);
+    });
+    picker.addEventListener('change', () => loadCoop(picker.value));
+
+    await loadCoop(coops[0].id);
+  }
+
+  // ── Load one coop ─────────────────────────────────────────────────────────
+  async function loadCoop(coopId) {
+    document.getElementById('loading').style.display  = 'flex';
+    document.getElementById('content').style.display  = 'none';
+    document.getElementById('no-sensor').style.display = 'none';
+
+    const data = await apiFetch(`${API}/farms/${farmId}/coops/${coopId}/temperature-timeline?days=7`);
+    document.getElementById('loading').style.display = 'none';
+
+    if (!data.success) return showError('Failed to load temperature data');
+
+    const d = data.data;
+
+    if (!d.sensor_found) {
+      document.getElementById('no-sensor').style.display = 'block';
+      return;
+    }
+
+    // Apply background
+    applyBg(d.bg_hint);
+
+    // Hero
+    renderHero(d);
+
+    // Hourly strip
+    renderHourly(d.today && d.today.hourly ? d.today.hourly : []);
+
+    // SVG graph
+    renderGraph(d.today);
+
+    // History
+    renderHistory(d.history || []);
+
+    document.getElementById('content').style.display = 'block';
+  }
+
+  // ── Background ───────────────────────────────────────────────────────────
+  const bgClasses = ['bg-scorching','bg-hot','bg-warm','bg-neutral','bg-cool','bg-cold'];
+  function applyBg(hint) {
+    document.body.classList.remove(...bgClasses);
+    document.body.classList.add('bg-' + hint);
+  }
+
+  // ── Hero ─────────────────────────────────────────────────────────────────
+  function renderHero(d) {
+    const temp  = d.current_temp != null ? d.current_temp.toFixed(1) : '--';
+    const high  = d.today && d.today.high ? `${d.today.high.temp}°` : '--';
+    const highT = d.today && d.today.high ? d.today.high.time : '';
+    const low   = d.today && d.today.low  ? `${d.today.low.temp}°` : '--';
+    const lowT  = d.today && d.today.low  ? d.today.low.time : '';
+    document.getElementById('hero').innerHTML = `
+      <p class="coop-label">${escHtml(d.coop_name || 'Coop')}</p>
+      <div class="temp-big">${temp}<sup>°C</sup></div>
+      <div class="hl-row">H: ${high} at ${highT} &nbsp;·&nbsp; L: ${low} at ${lowT}</div>
+      <span class="hint-badge">${d.bg_hint}</span>
+    `;
+  }
+
+  // ── Hourly strip ─────────────────────────────────────────────────────────
+  function renderHourly(hourly) {
+    const strip = document.getElementById('hourly-strip');
+    if (!hourly.length) {
+      strip.innerHTML = '<div style="padding:8px 16px;opacity:.6;font-size:13px">No readings yet today</div>';
+      return;
+    }
+    strip.innerHTML = hourly.map(h => `
+      <div class="hour-cell">
+        <div class="h-time">${h.hour}</div>
+        <div class="h-temp">${h.temp}°</div>
+      </div>
+    `).join('');
+  }
+
+  // ── SVG graph ─────────────────────────────────────────────────────────────
+  function renderGraph(today) {
+    const linePath = document.getElementById('line-path');
+    const fillPath = document.getElementById('fill-path');
+    const highMark = document.getElementById('high-marker');
+    const lowMark  = document.getElementById('low-marker');
+    highMark.innerHTML = ''; lowMark.innerHTML = '';
+
+    if (!today || !today.hourly || today.hourly.length < 2) {
+      linePath.setAttribute('d', '');
+      fillPath.setAttribute('d', '');
+      return;
+    }
+
+    const svgW = 480, svgH = 130, pad = 10;
+    const plotH = svgH - pad * 2;
+
+    // Build points: x = hour/23 * svgW, y = mapped temp
+    function hourToX(hStr) {
+      const [h, m] = hStr.split(':').map(Number);
+      return ((h + m / 60) / 24) * svgW;
+    }
+
+    const pts = today.hourly.map(h => ({ x: hourToX(h.hour), temp: h.temp }));
+    const temps = pts.map(p => p.temp);
+    const minT = Math.min(...temps);
+    const maxT = Math.max(...temps);
+    const range = maxT - minT || 1;
+
+    function tempToY(t) { return pad + plotH - ((t - minT) / range) * plotH; }
+    const mapped = pts.map(p => ({ x: p.x, y: tempToY(p.temp) }));
+
+    // Smooth bezier path
+    let d = `M ${mapped[0].x} ${mapped[0].y}`;
+    for (let i = 1; i < mapped.length; i++) {
+      const prev = mapped[i - 1], cur = mapped[i];
+      const cpX = (prev.x + cur.x) / 2;
+      d += ` C ${cpX} ${prev.y} ${cpX} ${cur.y} ${cur.x} ${cur.y}`;
+    }
+    linePath.setAttribute('d', d);
+
+    // Fill path (close bottom)
+    const last = mapped[mapped.length - 1];
+    const fillD = d + ` L ${last.x} ${svgH} L ${mapped[0].x} ${svgH} Z`;
+    fillPath.setAttribute('d', fillD);
+
+    // H/L markers
+    if (today.high && today.high.time) {
+      const hx = hourToX(today.high.time);
+      const hy = tempToY(today.high.temp);
+      highMark.innerHTML = `
+        <circle cx="${hx}" cy="${hy}" r="5" fill="#fff"/>
+        <text x="${hx}" y="${hy - 9}" font-size="10" fill="#fff" text-anchor="middle" font-weight="600">H ${today.high.temp}°</text>
+      `;
+    }
+    if (today.low && today.low.time) {
+      const lx = hourToX(today.low.time);
+      const ly = tempToY(today.low.temp);
+      lowMark.innerHTML = `
+        <circle cx="${lx}" cy="${ly}" r="5" fill="rgba(255,255,255,0.6)"/>
+        <text x="${lx}" y="${ly + 18}" font-size="10" fill="rgba(255,255,255,0.8)" text-anchor="middle">L ${today.low.temp}°</text>
+      `;
+    }
+  }
+
+  // ── Daily history ─────────────────────────────────────────────────────────
+  function renderHistory(history) {
+    const list = document.getElementById('history-list');
+    if (!history.length) {
+      list.innerHTML = '<p style="opacity:.6;font-size:13px">No historical data available</p>';
+      return;
+    }
+    // overall range for bar scaling
+    const allHighs = history.map(d => d.high.temp);
+    const allLows  = history.map(d => d.low.temp);
+    const rangeMin = Math.min(...allLows);
+    const rangeMax = Math.max(...allHighs);
+    const rangeSpan = rangeMax - rangeMin || 1;
+
+    list.innerHTML = history.map(d => {
+      const left  = ((d.low.temp  - rangeMin) / rangeSpan * 100).toFixed(1);
+      const right = ((d.high.temp - rangeMin) / rangeSpan * 100).toFixed(1);
+      const width = (right - left).toFixed(1);
+      return `
+        <div class="day-card glass">
+          <span class="day-label">${escHtml(d.label)}</span>
+          <div class="day-bar-wrap">
+            <div class="day-bar" style="left:${left}%;width:${width}%"></div>
+          </div>
+          <div class="day-hl">
+            <span class="dh">H ${d.high.temp}°</span>
+            <span class="dl">L ${d.low.temp}°</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── Utilities ─────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function showError(msg) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('no-sensor').style.display = 'block';
+    document.getElementById('no-sensor').querySelector('p').textContent = msg;
+  }
+
+  // ── Start ─────────────────────────────────────────────────────────────────
+  init().catch(err => { console.error(err); showError('Unexpected error — ' + err.message); });
+</script>
+</body>
+</html>

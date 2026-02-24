@@ -31,7 +31,7 @@ docs/
 │   └── SETUP.md             Complete setup guide
 │
 ├── implementation/          Component Development
-│   ├── API.md               Backend API (66 endpoints)
+│   ├── API.md               Backend API (67 endpoints)
 │   ├── DATABASE.md          PostgreSQL schema (8 tables)
 │   ├── FRONTEND.md          Vue.js 3 migration
 │   ├── AI_SERVICE.md        Disease detection (PyTorch)
@@ -182,7 +182,7 @@ docs/
 
 ## 🔄 Documentation Version History
 
-### v2.0 (February 23, 2026) - Current
+### v2.0 (February 23, 2026)
 - ✅ Reorganized structure (23 files → 14 organized files)
 - ✅ Created `guides/`, `implementation/`, `troubleshooting/` folders
 - ✅ Consolidated architecture docs (3 files → ARCHITECTURE.md)
@@ -191,6 +191,13 @@ docs/
 - ✅ Created implementation/FRONTEND.md (Vue.js 3 migration guide)
 - ✅ Moved troubleshooting guides to dedicated folder
 - ✅ **NEW: AUTOMATION_USE_CASES.md** - Real-world farmer scenarios (conveyor cycling, pulse feeding, multi-step sequences, sensor-driven pumps)
+
+### v2.1 (February 24, 2026) - Current
+- ✅ **Temperature Monitoring Dashboard** — `monitoring.html` + `TemperatureTimelineHandler`
+- ✅ API.md updated to v2.2 — 67 endpoints, full temperature-timeline spec with bg_hint table
+- ✅ FRONTEND.md — `/monitoring` page added to page inventory
+- ✅ AI_INSTRUCTIONS.md updated to v2.3
+- ✅ All component AI_CONTEXT.md files updated
 
 ### v1.0 (Legacy)
 - Flat file structure (23 files in docs/)

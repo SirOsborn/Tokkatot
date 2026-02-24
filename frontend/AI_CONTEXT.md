@@ -35,6 +35,7 @@ frontend/
 ├── pages/
 │   ├── index.html               # Dashboard (primary page, device status grid)
 │   ├── disease-detection.html   # AI disease detection + history
+│   ├── monitoring.html          # Temperature monitoring dashboard (Apple Weather-style)
 │   ├── schedules.html           # Automation schedules (action_sequence UI)
 │   ├── login.html               # Login/signup
 │   ├── profile.html             # User profile, sessions

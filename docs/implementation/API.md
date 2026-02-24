@@ -1,9 +1,28 @@
 # Tokkatot 2.0: API Specification
 
-**Document Version**: 2.0  
-**Last Updated**: February 2026  
-**Status**: Final Specification  
-**Base URL**: `https://api.tokkatot.local/v1` (production), `http://localhost:8080/v1` (development)
+**Document Version**: 2.3  
+**Last Updated**: February 24, 2026  
+**Status**: MVP Complete (all non-AI endpoints implemented) + Temperature Timeline + Full Frontend Rebuild  
+**Base URL**: `https://api.tokkatot.local/v1` (production), `http://localhost:3000/v1` (development)
+
+> **Implementation Status (v2.3)**: All 67 non-AI API endpoints are implemented and build-verified. SQLite removed — PostgreSQL required. AI disease detection endpoint is stubbed; disease-detection UI shows "Coming Soon" overlay. Temperature timeline endpoint live (`GET /farms/:farm_id/coops/:coop_id/temperature-timeline`). Frontend fully rebuilt (Vue.js 3 CDN, Mi Sans, Material Symbols, new design system). New static page route added: `GET /schedules` → `pages/schedules.html` (schedule CRUD + multi-step sequence builder).
+
+### Frontend Static Page Routes (`middleware/main.go`)
+
+The Go middleware serves all frontend pages directly. These are **not** API endpoints — they return HTML files.
+
+| Browser Route | File Served | Notes |
+|---|---|---|
+| `GET /` | `pages/index.html` | Dashboard |
+| `GET /login` | `pages/login.html` | — |
+| `GET /register` | `pages/signup.html` | Calls `POST /v1/auth/signup` |
+| `GET /profile` | `pages/profile.html` | — |
+| `GET /settings` | `pages/settings.html` | — |
+| `GET /disease-detection` | `pages/disease-detection.html` | Coming Soon overlay |
+| `GET /monitoring` | `pages/monitoring.html` | Temperature timeline |
+| `GET /schedules` | `pages/schedules.html` | ⭐ Added v2.3 — CRUD + sequence builder |
+
+Static asset directories also served: `/assets`, `/components`, `/css`, `/js`.
 
 ---
 
@@ -560,6 +579,118 @@ Response (200):
 }
 
 Permission: User must be farm admin
+```
+
+---
+
+### Coop Management Endpoints (5 + 1 temperature timeline)
+
+#### 24. List Coops
+```
+GET /farms/{farm_id}/coops
+Authorization: Bearer {access_token}
+
+Response (200): Array of coop objects (id, name, capacity, created_at)
+Permission: viewer+
+```
+
+#### 25. Create Coop
+```
+POST /farms/{farm_id}/coops
+Authorization: Bearer {access_token}
+Body: { "name": "Coop A", "capacity": 200 }
+
+Response (201): Coop object
+Permission: manager+
+```
+
+#### 26. Get Coop
+```
+GET /farms/{farm_id}/coops/{coop_id}
+Authorization: Bearer {access_token}
+
+Response (200): Coop object
+Permission: viewer+
+```
+
+#### 27. Update Coop
+```
+PUT /farms/{farm_id}/coops/{coop_id}
+Authorization: Bearer {access_token}
+Body: { "name": "Coop B", "capacity": 250 }
+
+Response (200): Updated coop object
+Permission: manager+
+```
+
+#### 28. Delete Coop
+```
+DELETE /farms/{farm_id}/coops/{coop_id}
+Authorization: Bearer {access_token}
+
+Response (200): { "message": "Coop deleted" }
+Permission: owner
+Effect: Soft delete
+```
+
+#### 29. Temperature Timeline (Apple Weather-style)
+```
+GET /farms/{farm_id}/coops/{coop_id}/temperature-timeline?days=7
+Authorization: Bearer {access_token}
+
+Response (200):
+{
+  "success": true,
+  "data": {
+    "coop_id": "uuid",
+    "coop_name": "Coop A",
+    "farm_id": "uuid",
+    "device_id": "uuid",
+    "sensor_found": true,
+    "current_temp": 34.2,
+    "bg_hint": "hot",
+    "today": {
+      "date": "2026-02-24",
+      "hourly": [
+        { "hour": "06:00", "temp": 27.4 },
+        { "hour": "07:00", "temp": 28.1 },
+        ...
+      ],
+      "high": { "temp": 34.5, "time": "14:00" },
+      "low":  { "temp": 24.1, "time": "05:00" }
+    },
+    "history": [
+      {
+        "date": "2026-02-24",
+        "label": "Today",
+        "high": { "temp": 34.5, "time": "14:00" },
+        "low":  { "temp": 24.1, "time": "05:00" }
+      },
+      {
+        "date": "2026-02-23",
+        "label": "Yesterday",
+        "high": { "temp": 35.1, "time": "14:00" },
+        "low":  { "temp": 24.0, "time": "04:00" }
+      },
+      { "date": "2026-02-22", "label": "Fri", "high": {...}, "low": {...} }
+    ]
+  },
+  "message": "Temperature timeline fetched"
+}
+
+bg_hint values:
+  scorching  >= 35°C  (deep red gradient)
+  hot        >= 32°C  (red-orange gradient)
+  warm       >= 28°C  (orange gradient)
+  neutral    >= 24°C  (green gradient)
+  cool       >= 20°C  (blue gradient)
+  cold        < 20°C  (dark blue gradient)
+
+If sensor_found = false: returns 200 with empty today/history and no device_id.
+Only temperature sensor_type readings are queried — humidity is excluded.
+
+Permission: viewer+
+Frontend page: /monitoring
 ```
 
 ---

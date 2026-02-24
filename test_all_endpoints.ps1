@@ -224,8 +224,9 @@ PrivTest PUT "/farms/$FARM_ID" "Revert farm name (PUT /farms/{farm_id})" `
 Write-Section "4. COOP MANAGEMENT"
 
 # 4-1  Create coop
+$testCoopNum = Get-Random -Minimum 1000 -Maximum 9999
 $newCoopBody = @{
-    number        = 99
+    number        = $testCoopNum
     name          = "Test Coop (automated)"
     capacity      = 200
     current_count = 150
@@ -259,6 +260,15 @@ if ($script:newCoopId) {
         -body "{`"current_count`":175}" | Out-Null
 }
 
+# 4-4b Temperature timeline (new coop — no sensor, expects sensor_found=false)
+if ($script:newCoopId) {
+    $tlResp = PrivTest GET "/farms/$FARM_ID/coops/$script:newCoopId/temperature-timeline?days=7" `
+        "Temperature timeline – no sensor (GET …/temperature-timeline)" -v {
+            param($r) if ($r.data.sensor_found -ne $false) { return "expected sensor_found=false" }
+        }
+    if ($tlResp) { Write-Detail "sensor_found=$($tlResp.data.sensor_found)  bg_hint=$($tlResp.data.bg_hint)" }
+}
+
 # 4-5  Delete coop (cleanup)
 if ($script:newCoopId) {
     PrivTest DELETE "/farms/$FARM_ID/coops/$script:newCoopId" `
@@ -284,13 +294,13 @@ $devResp = PrivTest GET "/farms/$FARM_ID/devices/$DEVICE_ID" `
 if ($devResp) { Write-Detail "Device: $($devResp.data.name)  status=$($devResp.data.status)" }
 
 # 5-3  Send command to device
-$cmdBody = "{`"command`":`"ping`",`"parameters`":{}}"
+$cmdBody = @{ command_type = "status" } | ConvertTo-Json -Compress
 $cmdResp = PrivTest POST "/farms/$FARM_ID/devices/$DEVICE_ID/commands" `
     "Send command (POST /farms/{farm_id}/devices/{device_id}/commands)" -body $cmdBody -v {
-        param($r) if (-not $r.data.id -and -not $r.data.command_id) { return "missing command id" }
+        param($r) if (-not $r.data.command.id) { return "missing data.command.id" }
     }
 if ($cmdResp) {
-    $cmdId = if ($cmdResp.data.id) { $cmdResp.data.id } else { $cmdResp.data.command_id }
+    $cmdId = $cmdResp.data.command.id
     Write-Detail "Command ID: $cmdId"
 
     # 5-4  Get command status

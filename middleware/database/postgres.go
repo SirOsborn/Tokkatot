@@ -224,6 +224,78 @@ func CreateSchema() error {
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
 
+	-- User sessions (for session management endpoints)
+	CREATE TABLE IF NOT EXISTS user_sessions (
+		id UUID PRIMARY KEY,
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		device_name VARCHAR(255),
+		ip_address VARCHAR(45),
+		user_agent TEXT,
+		refresh_token TEXT NOT NULL UNIQUE,
+		last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		expires_at TIMESTAMP NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);
+
+	-- Alerts (monitoring alerts from device thresholds)
+	CREATE TABLE IF NOT EXISTS alerts (
+		id UUID PRIMARY KEY,
+		farm_id UUID NOT NULL REFERENCES farms(id),
+		device_id UUID REFERENCES devices(id),
+		alert_type VARCHAR(50) NOT NULL,
+		severity VARCHAR(20) NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
+		message TEXT NOT NULL,
+		threshold_value DECIMAL(10,4),
+		actual_value DECIMAL(10,4),
+		is_active BOOLEAN DEFAULT true,
+		triggered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		acknowledged_by UUID REFERENCES users(id),
+		acknowledged_at TIMESTAMP,
+		resolved_at TIMESTAMP,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);
+
+	-- Alert subscriptions (user notification preferences)
+	CREATE TABLE IF NOT EXISTS alert_subscriptions (
+		id UUID PRIMARY KEY,
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		alert_type VARCHAR(50) NOT NULL,
+		channel VARCHAR(20) NOT NULL DEFAULT 'push',
+		is_enabled BOOLEAN DEFAULT true,
+		quiet_hours_start VARCHAR(5),
+		quiet_hours_end VARCHAR(5),
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(user_id, alert_type, channel)
+	);
+
+	-- Device configurations (parameter settings and calibration values)
+	CREATE TABLE IF NOT EXISTS device_configurations (
+		id UUID PRIMARY KEY,
+		device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+		parameter_name VARCHAR(100) NOT NULL,
+		parameter_value TEXT NOT NULL,
+		unit VARCHAR(20),
+		min_value DECIMAL(10,4),
+		max_value DECIMAL(10,4),
+		is_calibrated BOOLEAN DEFAULT false,
+		calibrated_at TIMESTAMP,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(device_id, parameter_name)
+	);
+
+	-- Device readings (simplified time-series, replaces InfluxDB for MVP)
+	CREATE TABLE IF NOT EXISTS device_readings (
+		id UUID PRIMARY KEY,
+		device_id UUID NOT NULL REFERENCES devices(id),
+		sensor_type VARCHAR(50) NOT NULL,
+		value DECIMAL(10,4) NOT NULL,
+		unit VARCHAR(20) NOT NULL DEFAULT '',
+		quality VARCHAR(20) NOT NULL DEFAULT 'good',
+		timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);
+
 	-- ===== PERFORMANCE INDEXES =====
 
 	-- Users indexes
@@ -280,6 +352,29 @@ func CreateSchema() error {
 	CREATE INDEX IF NOT EXISTS idx_registration_keys_code ON registration_keys(key_code);
 	CREATE INDEX IF NOT EXISTS idx_registration_keys_is_used ON registration_keys(is_used);
 	CREATE INDEX IF NOT EXISTS idx_registration_keys_expires ON registration_keys(expires_at);
+
+	-- User sessions indexes
+	CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+	CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at);
+	CREATE INDEX IF NOT EXISTS idx_user_sessions_refresh ON user_sessions(refresh_token);
+
+	-- Alerts indexes
+	CREATE INDEX IF NOT EXISTS idx_alerts_farm_id ON alerts(farm_id);
+	CREATE INDEX IF NOT EXISTS idx_alerts_device_id ON alerts(device_id);
+	CREATE INDEX IF NOT EXISTS idx_alerts_is_active ON alerts(is_active);
+	CREATE INDEX IF NOT EXISTS idx_alerts_severity ON alerts(severity);
+	CREATE INDEX IF NOT EXISTS idx_alerts_triggered_at ON alerts(triggered_at DESC);
+
+	-- Alert subscriptions indexes
+	CREATE INDEX IF NOT EXISTS idx_alert_subscriptions_user_id ON alert_subscriptions(user_id);
+
+	-- Device configurations indexes
+	CREATE INDEX IF NOT EXISTS idx_device_configs_device_id ON device_configurations(device_id);
+
+	-- Device readings indexes
+	CREATE INDEX IF NOT EXISTS idx_device_readings_device_id ON device_readings(device_id);
+	CREATE INDEX IF NOT EXISTS idx_device_readings_timestamp ON device_readings(timestamp DESC);
+	CREATE INDEX IF NOT EXISTS idx_device_readings_sensor_type ON device_readings(device_id, sensor_type);
 	`
 
 	_, err := DB.Exec(schema)

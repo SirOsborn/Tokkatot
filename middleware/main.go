@@ -17,28 +17,16 @@ func main() {
 	cfg := config.LoadConfig()
 	log.Printf("✅ Configuration loaded - Environment: %s", cfg.Environment)
 
-	// Initialize database (try PostgreSQL, fallback to SQLite for testing)
+	// Initialize PostgreSQL database
 	_, err := database.InitDB()
 	if err != nil {
-		log.Printf("⚠️  PostgreSQL connection failed: %v", err)
-		log.Println("🔄 Falling back to SQLite for testing...")
+		log.Fatalf("❌ Failed to connect to PostgreSQL: %v", err)
+	}
+	defer database.CloseDB()
 
-		_, sqliteErr := database.InitDBSQLite()
-		if sqliteErr != nil {
-			log.Fatalf("❌ Failed to initialize SQLite fallback: %v", sqliteErr)
-		}
-
-		// Create SQLite schema
-		if err := database.CreateSchemaSQLite(); err != nil {
-			log.Fatalf("❌ Failed to create SQLite schema: %v", err)
-		}
-	} else {
-		defer database.CloseDB()
-
-		// Create PostgreSQL schema
-		if err := database.CreateSchema(); err != nil {
-			log.Fatalf("❌ Failed to create database schema: %v", err)
-		}
+	// Create schema
+	if err := database.CreateSchema(); err != nil {
+		log.Fatalf("❌ Failed to create database schema: %v", err)
 	}
 
 	// Create Fiber app with optimized settings
@@ -103,6 +91,17 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Put("/users/me", api.UpdateProfileHandler)
 	protected.Post("/users/me/change-password", api.ChangePasswordHandler)
 
+	// User session & activity endpoints
+	protected.Get("/users/sessions", api.GetUserSessionsHandler)
+	protected.Delete("/users/sessions/:session_id", api.RevokeUserSessionHandler)
+	protected.Get("/users/activity-log", api.GetUserActivityLogHandler)
+
+	// Alert subscription endpoints (user-scoped)
+	protected.Post("/users/alert-subscriptions", api.CreateAlertSubscriptionHandler)
+	protected.Get("/users/alert-subscriptions", api.GetAlertSubscriptionsHandler)
+	protected.Put("/users/alert-subscriptions/:subscription_id", api.UpdateAlertSubscriptionHandler)
+	protected.Delete("/users/alert-subscriptions/:subscription_id", api.DeleteAlertSubscriptionHandler)
+
 	// Farm management endpoints
 	protected.Get("/farms", api.ListFarmsHandler)
 	protected.Post("/farms", api.CreateFarmHandler)
@@ -110,19 +109,44 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Put("/farms/:farm_id", api.UpdateFarmHandler)
 	protected.Delete("/farms/:farm_id", api.DeleteFarmHandler)
 
+	// Farm member endpoints
+	protected.Get("/farms/:farm_id/members", api.GetFarmMembersHandler)
+	protected.Post("/farms/:farm_id/members", api.InviteFarmMemberHandler)
+	protected.Put("/farms/:farm_id/members/:user_id", api.UpdateFarmMemberRoleHandler)
+	protected.Delete("/farms/:farm_id/members/:user_id", api.RemoveFarmMemberHandler)
+
 	// Coop management endpoints
 	protected.Get("/farms/:farm_id/coops", api.ListCoopsHandler)
 	protected.Post("/farms/:farm_id/coops", api.CreateCoopHandler)
 	protected.Get("/farms/:farm_id/coops/:coop_id", api.GetCoopHandler)
 	protected.Put("/farms/:farm_id/coops/:coop_id", api.UpdateCoopHandler)
 	protected.Delete("/farms/:farm_id/coops/:coop_id", api.DeleteCoopHandler)
+	protected.Get("/farms/:farm_id/coops/:coop_id/temperature-timeline", api.TemperatureTimelineHandler)
 
 	// Device management endpoints
 	protected.Get("/farms/:farm_id/devices", api.ListDevicesHandler)
+	protected.Post("/farms/:farm_id/devices", api.AddDeviceHandler)
 	protected.Get("/farms/:farm_id/devices/:device_id", api.GetDeviceHandler)
+	protected.Put("/farms/:farm_id/devices/:device_id", api.UpdateDeviceHandler)
+	protected.Delete("/farms/:farm_id/devices/:device_id", api.DeleteDeviceHandler)
+
+	// Device advanced endpoints
+	protected.Get("/farms/:farm_id/devices/:device_id/history", api.GetDeviceHistoryHandler)
+	protected.Get("/farms/:farm_id/devices/:device_id/status", api.GetDeviceStatusHandler)
+	protected.Get("/farms/:farm_id/devices/:device_id/config", api.GetDeviceConfigHandler)
+	protected.Put("/farms/:farm_id/devices/:device_id/config", api.UpdateDeviceConfigHandler)
+	protected.Post("/farms/:farm_id/devices/:device_id/calibrate", api.CalibrateDeviceHandler)
+
+	// Device command endpoints
 	protected.Post("/farms/:farm_id/devices/:device_id/commands", api.SendDeviceCommandHandler)
 	protected.Get("/farms/:farm_id/devices/:device_id/commands/:command_id", api.GetDeviceCommandStatusHandler)
 	protected.Get("/farms/:farm_id/devices/:device_id/commands", api.ListDeviceCommandsHandler)
+	protected.Delete("/farms/:farm_id/devices/:device_id/commands/:command_id", api.CancelCommandHandler)
+
+	// Farm-level device control
+	protected.Get("/farms/:farm_id/commands", api.GetFarmCommandHistoryHandler)
+	protected.Post("/farms/:farm_id/emergency-stop", api.EmergencyStopHandler)
+	protected.Post("/farms/:farm_id/devices/batch-command", api.BatchDeviceCommandHandler)
 
 	// Schedule management endpoints
 	protected.Post("/farms/:farm_id/schedules", api.CreateScheduleHandler)
@@ -132,6 +156,20 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Delete("/farms/:farm_id/schedules/:schedule_id", api.DeleteScheduleHandler)
 	protected.Get("/farms/:farm_id/schedules/:schedule_id/executions", api.GetScheduleExecutionHistoryHandler)
 	protected.Post("/farms/:farm_id/schedules/:schedule_id/execute-now", api.ExecuteScheduleNowHandler)
+
+	// Alert endpoints
+	protected.Get("/farms/:farm_id/alerts/history", api.GetAlertHistoryHandler)
+	protected.Get("/farms/:farm_id/alerts", api.GetFarmAlertsHandler)
+	protected.Get("/farms/:farm_id/alerts/:alert_id", api.GetAlertHandler)
+	protected.Put("/farms/:farm_id/alerts/:alert_id/acknowledge", api.AcknowledgeAlertHandler)
+
+	// Analytics & reporting endpoints
+	protected.Get("/farms/:farm_id/dashboard", api.GetFarmDashboardHandler)
+	protected.Get("/farms/:farm_id/reports/device-metrics", api.GetDeviceMetricsReportHandler)
+	protected.Get("/farms/:farm_id/reports/device-usage", api.GetDeviceUsageReportHandler)
+	protected.Get("/farms/:farm_id/reports/farm-performance", api.GetFarmPerformanceReportHandler)
+	protected.Get("/farms/:farm_id/reports/export", api.ExportReportHandler)
+	protected.Get("/farms/:farm_id/events", api.GetFarmEventLogHandler)
 
 	// WebSocket for real-time updates (requires authentication)
 	protected.Get("/ws", api.WebSocketUpgradeHandler)
@@ -148,12 +186,33 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	app.Static("/js", filepath.Join(frontendPath, "js"))
 
 	// Static page routes
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "index.html"))
+	})
 	app.Get("/login", func(c *fiber.Ctx) error {
 		return c.SendFile(filepath.Join(frontendPath, "pages", "login.html"))
 	})
-
 	app.Get("/register", func(c *fiber.Ctx) error {
 		return c.SendFile(filepath.Join(frontendPath, "pages", "signup.html"))
+	})
+	app.Get("/index.html", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "index.html"))
+	})
+	app.Get("/profile", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "profile.html"))
+	})
+	app.Get("/settings", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "settings.html"))
+	})
+	// Disease detection: coming soon overlay is embedded in the page itself
+	app.Get("/disease-detection", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "disease-detection.html"))
+	})
+	app.Get("/monitoring", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "monitoring.html"))
+	})
+	app.Get("/schedules", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "schedules.html"))
 	})
 
 	// 404 Handler

@@ -13,12 +13,13 @@
 - Auto-turn-off timers (`action_duration`) for water pumps, lights
 - Consolidated AI documentation structure (AI_INSTRUCTIONS.md + component AI_CONTEXT.md files)
 - **Mandatory documentation protocol** for AI agents (see AI_INSTRUCTIONS.md "MANDATORY: Self-Documentation After Building Features")
+- **Temperature Monitoring Dashboard** (`/monitoring` page + `GET /farms/:farm_id/coops/:coop_id/temperature-timeline`) — Apple Weather-style UI with dynamic bg gradient, H/L peak markers, scrollable hourly strip, SVG bezier curve, daily history
 
 ## Project Structure & Layout
 
 ```
 tokkatot/
-├── middleware/              # Go REST API gateway (66 endpoints, JWT auth)
+├── middleware/              # Go REST API gateway (67 endpoints, JWT auth)
 │   ├── main.go             # Server entry point, loads .env
 │   ├── api/                # Endpoint handlers (authentication, devices, AI, etc.)
 │   ├── database/           # SQLite wrapper (production uses PostgreSQL)
