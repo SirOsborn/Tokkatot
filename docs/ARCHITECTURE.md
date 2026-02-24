@@ -72,9 +72,9 @@ User (Farmer)
           └─ (own devices)
 ```
 
-### Database Schema (8 Tables)
+### Database Schema (14 Tables)
 ```sql
-users              -- Farmers (phone login)
+users              -- Farmers (email or phone login)
   ↓
 farms              -- Locations (Kandal, Kampong Cham)
   ↓
@@ -343,9 +343,8 @@ Response:
 ### Role-Based Access Control (RBAC)
 | Role | Permissions |
 |------|-------------|
-| **Owner** | Full control (create/delete coops, manage users) |
-| **Manager** | Control devices, view data, edit schedules |
-| **Viewer** | Read-only (dashboards, no device control) |
+| **Farmer** | Full control (coops, devices, schedules, settings, manage members) — multiple farmers can share a farm |
+| **Viewer** | Read-only (dashboards, alerts, no device control) |
 
 ---
 
@@ -386,7 +385,7 @@ Internet Down
 Raspberry Pi continues:
   ✅ Sensor reading (local)
   ✅ Automated pump control (local rules)
-  ✅ Data logging (local SQLite)
+  ✅ Data logging (local queue)
   ❌ Disease detection (needs cloud AI)
   ❌ Remote control from phone (needs cloud)
 
@@ -438,5 +437,5 @@ Internet Restored:
 **For AI Agents:**
 - This is the **canonical architecture** document
 - All implementation must follow coop-centric design
-- Phone-based login is non-negotiable (farmers don't use email)
+- Email OR phone login — farmers can register with either
 - Registration key system is FREE (no SMS/email costs)

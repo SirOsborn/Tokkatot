@@ -20,7 +20,7 @@ The Go middleware serves all frontend pages directly. These are **not** API endp
 | `GET /settings` | `pages/settings.html` | — |
 | `GET /disease-detection` | `pages/disease-detection.html` | Coming Soon overlay |
 | `GET /monitoring` | `pages/monitoring.html` | Temperature timeline |
-| `GET /schedules` | `pages/schedules.html` | ⭐ Added v2.3 — CRUD + sequence builder |
+| `GET /schedules` | `pages/schedules.html` | ✅ Live — schedule CRUD + sequence builder |
 
 Static asset directories also served: `/assets`, `/components`, `/css`, `/js`.
 
@@ -33,7 +33,7 @@ The Tokkatot API is a RESTful service with real-time capabilities for managing s
 **Key Characteristics**:
 - RESTful design with JSON payloads
 - JWT token-based authentication (simple, no MFA required)
-- **Simplified Role System**: Owner, Manager, Viewer (for farmers, no complex RBAC)
+- **Role System**: Farmer (full control), Viewer (read-only + ack alerts)
 - Pagination support for list endpoints
 - Real-time updates via WebSocket (Socket.io)
 - Device communication via MQTT
@@ -63,12 +63,15 @@ Response: { access_token, refresh_token, expires_in }
 {
   "sub": "user_id_uuid",
   "email": "farmer@example.com",
-  "farm_ids": ["farm_id_1", "farm_id_2"],
-  "role": "manager",
+  "phone": "+855012345678",
+  "farm_id": "farm_id_uuid",
+  "role": "farmer",
   "iat": 1708324800,
   "exp": 1708411200
 }
 ```
+
+> `email` and `phone` are nullable — only the field used at signup/login is populated.
 
 **Token Expiry & Refresh**:
 - Access token: 24 hours
@@ -76,15 +79,15 @@ Response: { access_token, refresh_token, expires_in }
 - New tokens issued simultaneously on successful refresh
 - MFA: **Not required** for farmers (optional for admin users only)
 
-### Simplified Role System (Farmer-Centric)
+### Role System
 
 | Role | Permissions | Notes |
 |------|-------------|-------|
-| **Owner** | Full farm management, user invitations, view all data | Farm creator |
-| **Manager** | Device control, scheduling, view all data, manage keeper users | Can delegate to keepers |
-| **Viewer** | Read-only access to monitoring data, view alerts | Cannot make changes |
+| **Farmer** | Full farm control: devices, schedules, coops, farm settings, invite/remove members | Created at farm registration; multiple farmers can share a farm |
+| **Viewer** | Read-only monitoring + acknowledge alerts (maintenance workers for large farms) | No device control, no settings |
 
-**No complex RBAC** - three simple roles sufficient for farm operations.
+**No complex RBAC** — two farm roles sufficient for operations.  
+**Tokkatot system staff** are not a farm role — they manage registration keys, JWT secrets, and system-level access outside of `farm_users` entirely.  
 **Device Management**: Only Tokkatot team can add/remove devices (not farmers).
 
 ### Permission Checks
@@ -121,7 +124,7 @@ Response (200):
     "id": "uuid",
     "email": "farmer@example.com",
     "name": "Neath",
-    "role": "manager",
+    "role": "farmer",
     "language": "km"
   }
 }
@@ -299,7 +302,7 @@ Response (200):
   "phone": "+855987654321",
   "language": "km",
   "timezone": "Asia/Phnom_Penh",
-  "role": "manager",
+  "role": "farmer",
   "avatar_url": "https://...",
   "mfa_enabled": false,
   "last_login": "2026-02-18T15:30:00Z",
@@ -414,10 +417,8 @@ Response (201):
   "created_at": "2026-02-19T10:30:00Z"
 }
 
-Permission: User role >= 'manager'
+Permission: farmer
 ```
-
-#### 17. List User's Farms
 ```
 GET /farms?limit=20&offset=0
 Authorization: Bearer {access_token}
@@ -493,7 +494,7 @@ Response (200):
   ...updated fields...
 }
 
-Permission: User must be farm owner or admin
+Permission: farmer
 ```
 
 #### 20. Delete Farm
@@ -506,7 +507,7 @@ Response (200):
   "message": "Farm deleted successfully"
 }
 
-Permission: User must be farm owner
+Permission: farmer
 Effect: Soft delete (deleted_at timestamp set)
 ```
 
@@ -522,7 +523,7 @@ Response (200):
       "user_id": "uuid",
       "name": "Neath",
       "email": "farmer@example.com",
-      "role": "manager",
+      "role": "farmer",
       "invited_by": "inviter_uuid",
       "joined_at": "2026-02-19T10:30:00Z"
     }
@@ -530,7 +531,7 @@ Response (200):
   "total": 3
 }
 
-Permission: User must be farm admin or manager
+Permission: farmer
 ```
 
 #### 22. Invite Member to Farm
@@ -542,19 +543,19 @@ Content-Type: application/json
 Request:
 {
   "email": "newfarmer@example.com",
-  "role": "keeper"
+  "role": "viewer"
 }
 
 Response (201):
 {
   "invitation_id": "uuid",
   "email": "newfarmer@example.com",
-  "role": "keeper",
+  "role": "viewer",
   "status": "pending",
   "expires_at": "2026-02-26T10:30:00Z"
 }
 
-Permission: User must be farm admin or manager
+Permission: farmer
 Actions: Send invitation email with acceptance link
 ```
 
@@ -601,7 +602,7 @@ Authorization: Bearer {access_token}
 Body: { "name": "Coop A", "capacity": 200 }
 
 Response (201): Coop object
-Permission: manager+
+Permission: farmer
 ```
 
 #### 26. Get Coop
@@ -620,7 +621,7 @@ Authorization: Bearer {access_token}
 Body: { "name": "Coop B", "capacity": 250 }
 
 Response (200): Updated coop object
-Permission: manager+
+Permission: farmer
 ```
 
 #### 28. Delete Coop
@@ -629,7 +630,7 @@ DELETE /farms/{farm_id}/coops/{coop_id}
 Authorization: Bearer {access_token}
 
 Response (200): { "message": "Coop deleted" }
-Permission: owner
+Permission: farmer
 Effect: Soft delete
 ```
 
@@ -823,7 +824,7 @@ Response (200):
   ...updated fields...
 }
 
-Permission: Owner or Manager
+Permission: farmer
 Notes:
 - Farmers can ONLY update device name and location
 - Device configuration/type cannot be changed by farmers
@@ -877,7 +878,7 @@ Response (200):
   "to_timestamp": "2026-02-19T10:30:00Z"
 }
 
-Data Source: InfluxDB (sensor_readings measurement)
+Data Source: `device_readings` table (PostgreSQL)
 ```
 
 #### 30. Calibrate Device
@@ -902,7 +903,7 @@ Response (200):
   "calibrated_at": "2026-02-19T10:30:00Z"
 }
 
-Permission: User role >= 'manager'
+Permission: farmer
 ```
 
 #### 31. Get Device Configuration
@@ -950,7 +951,7 @@ Response (200):
   "configurations": [...updated configs...]
 }
 
-Permission: User role >= 'manager'
+Permission: farmer
 Effect: Queues command to device via MQTT
 ```
 
@@ -992,7 +993,7 @@ Response (202):
   "scheduled_at": "2026-02-20T02:00:00Z"
 }
 
-Permission: User role >= 'manager'
+Permission: farmer
 Effect: Sends OTA update command to device
 ```
 
@@ -1031,7 +1032,7 @@ Command Types:
 - 'set_angle': Set servo angle {angle: 0-180}
 - 'set_speed': Set motor speed {speed: 0-100}
 
-Permission: User role >= 'keeper'
+Permission: farmer
 Priority: 'high'|'normal'|'low' (high priority commands skip queue)
 ```
 
@@ -1136,7 +1137,7 @@ Response (200):
   "message": "All devices stopped"
 }
 
-Permission: User role >= 'manager'
+Permission: farmer
 Effect: Immediately stops all active devices on farm
 Actions: Sends high-priority STOP command to all devices
 ```
@@ -1189,7 +1190,7 @@ Response (202):
   "total": 2
 }
 
-Permission: User role >= 'manager'
+Permission: farmer
 ```
 
 ---
@@ -1259,7 +1260,7 @@ New Fields (v2.0):
 
 See: docs/AUTOMATION_USE_CASES.md for real farmer scenarios
 
-Permission: User role >= 'manager'
+Permission: farmer
 ```
 
 #### 44. List Schedules
@@ -1362,7 +1363,7 @@ Response (200):
   ...other fields...
 }
 
-Permission: User role >= 'manager'
+Permission: farmer
 ```
 
 #### 47. Delete Schedule
@@ -1375,7 +1376,7 @@ Response (200):
   "message": "Schedule deleted successfully"
 }
 
-Permission: User role >= 'manager'
+Permission: farmer
 Effect: Soft delete
 ```
 
@@ -1419,7 +1420,7 @@ Response (202):
   "message": "Schedule queued for immediate execution"
 }
 
-Permission: User role >= 'keeper'
+Permission: farmer
 Effect: Skips queue, highest priority
 ```
 
@@ -1683,7 +1684,7 @@ Response (200):
   }
 }
 
-Data Source: InfluxDB (sensor_readings measurement)
+Data Source: `device_readings` table (PostgreSQL)
 ```
 
 #### 60. Get Device Usage Report
@@ -1710,7 +1711,7 @@ Response (200):
   ]
 }
 
-Data Source: device_metrics measurement (InfluxDB)
+Data Source: `device_readings` table (PostgreSQL)
 ```
 
 #### 61. Get Farm Performance Report
@@ -1910,7 +1911,7 @@ Response (200):
 Note: This endpoint provides detailed per-model scores for analysis and debugging.
 
 Data Source: PyTorch Ensemble Model (detailed output)
-Requires: User role >= Manager (detailed scores)
+Requires: farmer
 Rate Limit: 50 requests/minute
 ```
 

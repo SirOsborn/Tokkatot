@@ -94,7 +94,7 @@ type FarmUser struct {
 	ID        uuid.UUID `json:"id"`
 	FarmID    uuid.UUID `json:"farm_id"`
 	UserID    uuid.UUID `json:"user_id"`
-	Role      string    `json:"role"` // "owner", "manager", "viewer"
+	Role      string    `json:"role"` // "farmer" or "viewer"
 	InvitedBy uuid.UUID `json:"invited_by"`
 	IsActive  bool      `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`

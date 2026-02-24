@@ -273,7 +273,7 @@ func LoginHandler(c *fiber.Ctx) error {
 	if err == sql.ErrNoRows {
 		// User has no farm yet - create default farm for first login
 		farmID = uuid.New()
-		role = "owner"
+		role = "farmer"
 
 		_, err := database.DB.Exec(`
 		INSERT INTO farms (id, owner_id, name, timezone, created_at, updated_at)

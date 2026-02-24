@@ -123,12 +123,11 @@ func ValidateDeviceName(name string) error {
 // ValidateRole validates user role
 func ValidateRole(role string) error {
 	validRoles := map[string]bool{
-		"owner":   true,
-		"manager": true,
-		"viewer":  true,
+		"farmer": true,
+		"viewer": true,
 	}
 	if !validRoles[role] {
-		return fmt.Errorf("invalid role. must be 'owner', 'manager', or 'viewer'")
+		return fmt.Errorf("invalid role. must be 'farmer' or 'viewer'")
 	}
 	return nil
 }

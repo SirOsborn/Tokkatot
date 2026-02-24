@@ -26,9 +26,9 @@ func CreateScheduleHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
 	}
 
-	// Check farm access (manager+ required)
+	// Check farm access (farmer required)
 	userID := c.Locals("user_id").(uuid.UUID)
-	err = checkFarmAccess(userID, farmID, "manager")
+	err = checkFarmAccess(userID, farmID, "farmer")
 	if err != nil {
 		return err
 	}
@@ -344,9 +344,9 @@ func UpdateScheduleHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid schedule ID")
 	}
 
-	// Check farm access (manager+ required)
+	// Check farm access (farmer required)
 	userID := c.Locals("user_id").(uuid.UUID)
-	err = checkFarmAccess(userID, farmID, "manager")
+	err = checkFarmAccess(userID, farmID, "farmer")
 	if err != nil {
 		return err
 	}
@@ -519,9 +519,9 @@ func DeleteScheduleHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid schedule ID")
 	}
 
-	// Check farm access (manager+ required)
+	// Check farm access (farmer required)
 	userID := c.Locals("user_id").(uuid.UUID)
-	err = checkFarmAccess(userID, farmID, "manager")
+	err = checkFarmAccess(userID, farmID, "farmer")
 	if err != nil {
 		return err
 	}
@@ -654,9 +654,9 @@ func ExecuteScheduleNowHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid schedule ID")
 	}
 
-	// Check farm access (manager+ required)
+	// Check farm access (farmer required)
 	userID := c.Locals("user_id").(uuid.UUID)
-	err = checkFarmAccess(userID, farmID, "manager")
+	err = checkFarmAccess(userID, farmID, "farmer")
 	if err != nil {
 		return err
 	}

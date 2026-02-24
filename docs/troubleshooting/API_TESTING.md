@@ -117,7 +117,7 @@ Expected response:
       "id": "uuid",
       "name": "Neath Farmer",
       "email": "farmer@tokkatot.com",
-      "role": "owner",
+      "role": "farmer",
       "language": "km"
     }
   },
