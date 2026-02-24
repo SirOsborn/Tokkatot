@@ -288,7 +288,8 @@ type SignupRequest struct {
 	Name            string  `json:"name"`
 	Password        string  `json:"password"`
 	Language        *string `json:"language,omitempty"`         // "km" or "en"
-	RegistrationKey *string `json:"registration_key,omitempty"` // For on-site registration
+	RegistrationKey *string `json:"registration_key,omitempty"` // For farmers: system-issued reg key
+	FarmerID        *string `json:"farmer_id,omitempty"`        // For workers/viewers: the farmer's user ID
 }
 
 // LoginRequest for user login

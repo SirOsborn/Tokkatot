@@ -94,6 +94,42 @@ func SignupHandler(c *fiber.Ctx) error {
 		regKeyID = &storedKeyID
 	}
 
+	// ===== FARMER ID VALIDATION (Worker/Viewer self-registration) =====
+	var viewerFarmID *uuid.UUID
+	var viewerInvitedBy *uuid.UUID
+
+	if req.FarmerID != nil && *req.FarmerID != "" {
+		farmerUserID, parseErr := uuid.Parse(*req.FarmerID)
+		if parseErr != nil {
+			return utils.BadRequest(c, "invalid_farmer_id", "Invalid farmer ID format")
+		}
+
+		var farmID uuid.UUID
+		lookupErr := database.DB.QueryRow(`
+		SELECT farm_id FROM farm_users
+		WHERE user_id = $1 AND role = 'farmer' AND is_active = true
+		LIMIT 1
+		`, farmerUserID).Scan(&farmID)
+
+		if lookupErr == sql.ErrNoRows {
+			return utils.BadRequest(c, "invalid_farmer_id", "No active farmer found with that ID")
+		}
+		if lookupErr != nil {
+			log.Printf("Farmer lookup error: %v", lookupErr)
+			return utils.InternalError(c, "Database error")
+		}
+
+		viewerFarmID = &farmID
+		viewerInvitedBy = &farmerUserID
+		isVerifiedByKey = true // auto-verify workers so they can log in immediately
+	}
+
+	// Must provide either a registration key (farmer) or a farmer ID (worker)
+	if (req.RegistrationKey == nil || *req.RegistrationKey == "") &&
+		(req.FarmerID == nil || *req.FarmerID == "") {
+		return utils.BadRequest(c, "missing_credentials", "A registration key (for farmers) or a farmer's ID (for workers) is required")
+	}
+
 	// Validate language
 	language := "km" // Default to Khmer
 	if req.Language != nil && *req.Language != "" {
@@ -185,6 +221,18 @@ func SignupHandler(c *fiber.Ctx) error {
 		if err != nil {
 			log.Printf("Failed to mark registration key as used: %v", err)
 			// Don't fail the signup, just log the error
+		}
+	}
+
+	// If worker/viewer path: add user to the farmer's farm immediately
+	if viewerFarmID != nil && viewerInvitedBy != nil {
+		_, viewerErr := database.DB.Exec(`
+		INSERT INTO farm_users (id, farm_id, user_id, role, invited_by, created_at, updated_at)
+		VALUES ($1, $2, $3, 'viewer', $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, uuid.New(), *viewerFarmID, user.ID, *viewerInvitedBy)
+		if viewerErr != nil {
+			log.Printf("Failed to add viewer to farm: %v", viewerErr)
+			// Don't fail the signup, but log it
 		}
 	}
 

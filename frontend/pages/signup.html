@@ -76,13 +76,42 @@
       </div>
     </div>
 
-    <!-- Registration key -->
+    <!-- Registration type selector -->
     <div class="form-group">
+      <label class="form-label">{{ lang === 'km' ? 'ចុះឈ្មោះជា' : 'Register as' }}</label>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn" :class="mode==='farmer' ? 'btn-primary' : 'btn-outline'" style="flex:1;" @click="mode='farmer'">
+          <span class="material-symbols-outlined" style="font-size:18px;">agriculture</span>
+          {{ lang === 'km' ? 'ម្ចាស់ចម្ការ' : 'Farmer' }}
+        </button>
+        <button type="button" class="btn" :class="mode==='worker' ? 'btn-primary' : 'btn-outline'" style="flex:1;" @click="mode='worker'">
+          <span class="material-symbols-outlined" style="font-size:18px;">person</span>
+          {{ lang === 'km' ? 'កម្មករ' : 'Worker' }}
+        </button>
+      </div>
+      <div style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin-top:6px;">
+        <span v-if="mode==='farmer'">{{ lang === 'km' ? 'ត្រូវការសោចុះឈ្មោះពី Tokkatot' : 'Requires a registration key from Tokkatot' }}</span>
+        <span v-else>{{ lang === 'km' ? 'ប្រើ ID ម្ចាស់ចម្ការដើម្បីចូលរួមចម្ការ' : "Use your farm owner's ID to join their farm" }}</span>
+      </div>
+    </div>
+
+    <!-- Registration key (farmer mode) -->
+    <div v-if="mode==='farmer'" class="form-group">
       <label class="form-label" for="regkey">{{ t('register_key') }}</label>
       <div class="form-input-icon">
         <span class="input-icon material-symbols-outlined">key</span>
         <input id="regkey" class="form-input" type="text" v-model="regKey"
-          :placeholder="t('register_key')" autocomplete="off" required />
+          :placeholder="t('register_key')" autocomplete="off" />
+      </div>
+    </div>
+
+    <!-- Farmer ID (worker mode) -->
+    <div v-else class="form-group">
+      <label class="form-label" for="farmerid">{{ lang === 'km' ? 'ID ម្ចាស់ចម្ការ' : "Farmer's ID" }}</label>
+      <div class="form-input-icon">
+        <span class="input-icon material-symbols-outlined">badge</span>
+        <input id="farmerid" class="form-input" type="text" v-model="farmerID"
+          :placeholder="lang === 'km' ? 'បញ្ចូល ID ម្ចាស់ចម្ការ' : \"Paste your farmer's user ID\"" autocomplete="off" />
       </div>
     </div>
 
@@ -136,6 +165,8 @@ createApp({
       email:      '',
       phone:      '',
       regKey:     '',
+      farmerID:   '',
+      mode:       'farmer',
       password:   '',
       confirmPwd: '',
       showPwd:    false,
@@ -158,8 +189,16 @@ createApp({
     async doRegister() {
       this.errorMsg = '';
       this.successMsg = '';
-      if (!this.fullName || !this.email || !this.password || !this.regKey) {
+      if (!this.fullName || !this.email || !this.password) {
         this.errorMsg = this.lang === 'km' ? 'សូមបំពេញព័ត៌មានទាំងអស់' : 'Please fill all required fields.';
+        return;
+      }
+      if (this.mode === 'farmer' && !this.regKey) {
+        this.errorMsg = this.lang === 'km' ? 'សូមបញ្ចូលសោចុះឈ្មោះ' : 'Registration key is required for farmers.';
+        return;
+      }
+      if (this.mode === 'worker' && !this.farmerID) {
+        this.errorMsg = this.lang === 'km' ? 'សូមបញ្ចូល ID ម្ចាស់ចម្ការ' : "Farmer's ID is required for workers.";
         return;
       }
       if (this.password !== this.confirmPwd) {
@@ -173,12 +212,13 @@ createApp({
       this.loading = true;
       try {
         const payload = {
-          name:             this.fullName,
-          email:            this.email,
-          password:         this.password,
-          registration_key: this.regKey
+          name:     this.fullName,
+          email:    this.email,
+          password: this.password,
         };
         if (this.phone) payload.phone = this.phone;
+        if (this.mode === 'farmer') payload.registration_key = this.regKey;
+        if (this.mode === 'worker') payload.farmer_id = this.farmerID;
 
         const data = await window.API.post('/v1/auth/signup', payload);
         if (data && data.success) {

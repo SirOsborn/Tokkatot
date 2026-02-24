@@ -55,7 +55,39 @@ func GetCurrentUserHandler(c *fiber.Ctx) error {
 		return utils.InternalError(c, "Failed to fetch user")
 	}
 
-	return utils.SuccessResponse(c, fiber.StatusOK, user, "User fetched successfully")
+	// Build response map so we can enrich with farm membership
+	resp := fiber.Map{
+		"id":               user.ID,
+		"email":            user.Email,
+		"phone":            user.Phone,
+		"name":             user.Name,
+		"language":         user.Language,
+		"timezone":         user.Timezone,
+		"avatar_url":       user.AvatarURL,
+		"is_active":        user.IsActive,
+		"contact_verified": user.ContactVerified,
+		"last_login":       user.LastLogin,
+		"created_at":       user.CreatedAt,
+	}
+
+	// Fetch farm membership (farm_id, role, farm_name)
+	var farmID uuid.UUID
+	var farmRole, farmName string
+	farmErr := database.DB.QueryRow(`
+	SELECT fu.farm_id, fu.role, f.name
+	FROM farm_users fu
+	JOIN farms f ON f.id = fu.farm_id
+	WHERE fu.user_id = $1 AND fu.is_active = true
+	LIMIT 1
+	`, userID).Scan(&farmID, &farmRole, &farmName)
+
+	if farmErr == nil {
+		resp["farm_id"] = farmID
+		resp["role"] = farmRole
+		resp["farm_name"] = farmName
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, resp, "User fetched successfully")
 }
 
 // UpdateProfileHandler updates the current user's profile

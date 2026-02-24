@@ -86,6 +86,31 @@
             <div class="list-item-title">{{ roleLabel }}</div>
           </div>
         </div>
+        <div class="list-item">
+          <div class="list-item-icon"><span class="material-symbols-outlined">home</span></div>
+          <div class="list-item-content">
+            <div class="list-item-subtitle">{{ lang === 'km' ? 'ចម្ការ' : 'Farm' }}</div>
+            <div class="list-item-title">{{ user.farm_name || '--' }}</div>
+          </div>
+        </div>
+        <div class="list-item">
+          <div class="list-item-icon"><span class="material-symbols-outlined">translate</span></div>
+          <div class="list-item-content">
+            <div class="list-item-subtitle">{{ lang === 'km' ? 'ភាសា' : 'Language' }}</div>
+            <div class="list-item-title">{{ user.language === 'en' ? 'English' : 'ខ្មែរ' }}</div>
+          </div>
+        </div>
+        <!-- Farmer ID — share this with workers so they can self-register -->
+        <div class="list-item">
+          <div class="list-item-icon"><span class="material-symbols-outlined">fingerprint</span></div>
+          <div class="list-item-content" style="min-width:0;">
+            <div class="list-item-subtitle">{{ lang === 'km' ? 'Farmer ID (សម្រាប់ច្វឹលតម្ឃឹតកម្មករ)' : 'Farmer ID (share with workers)' }}</div>
+            <div class="list-item-title" style="font-size:var(--font-size-sm);word-break:break-all;">{{ user.id || '--' }}</div>
+          </div>
+          <button v-if="user.id" class="btn btn-outline btn-sm" style="flex-shrink:0;" @click="copyID">
+            <span class="material-symbols-outlined" style="font-size:18px;">{{ copiedID ? 'check' : 'content_copy' }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Edit mode -->
@@ -98,10 +123,13 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label" data-i18n="phone">ទូរស័ព្ទ</label>
+          <label class="form-label">{{ lang === 'km' ? 'ខ្មែរ' : 'Language' }}</label>
           <div class="form-input-icon">
-            <span class="input-icon material-symbols-outlined">phone</span>
-            <input class="form-input" type="tel" v-model="editPhone" inputmode="tel" />
+            <span class="input-icon material-symbols-outlined">translate</span>
+            <select class="form-input" v-model="editLanguage">
+              <option value="km">ខ្មែរ</option>
+              <option value="en">English</option>
+            </select>
           </div>
         </div>
         <button class="btn btn-primary btn-full" @click="saveProfile" :disabled="saving">
@@ -147,7 +175,9 @@ createApp({
   data() {
     return {
       loading: true, saving: false, editing: false,
-      user: {}, editName: '', editPhone: '',
+      user: {}, editName: '', editPhone: '', editLanguage: '',
+      copiedID: false,
+      lang: window.i18n ? window.i18n.getLang() : 'km',
       errorMsg: '', successMsg: ''
     };
   },
@@ -171,23 +201,24 @@ createApp({
     async loadProfile() {
       this.loading = true;
       try {
-        const data = await window.API.get('/v1/auth/me');
+        const data = await window.API.get('/v1/users/me');
         this.user = (data && data.data && data.data.user) ? data.data.user : (data && data.data ? data.data : {});
-        this.editName  = this.user.name  || '';
-        this.editPhone = this.user.phone || '';
+        this.editName     = this.user.name     || '';
+        this.editPhone    = this.user.phone    || '';
+        this.editLanguage = this.user.language || 'km';
       } catch(e) { console.error(e); }
       finally { this.loading = false; }
     },
     async saveProfile() {
       this.errorMsg = ''; this.successMsg = ''; this.saving = true;
       try {
-        const data = await window.API.patch('/v1/auth/me', {
+        const data = await window.API.put('/v1/users/me', {
           name: this.editName,
-          phone: this.editPhone
+          language: this.editLanguage
         });
         if (data && data.success) {
-          this.user.name  = this.editName;
-          this.user.phone = this.editPhone;
+          this.user.name     = this.editName;
+          this.user.language = this.editLanguage;
           this.successMsg = this.t('success');
           this.editing = false;
         } else {
@@ -195,6 +226,12 @@ createApp({
         }
       } catch(e) { this.errorMsg = this.t('error'); }
       finally { this.saving = false; }
+    },
+    copyID() {
+      if (!this.user.id) return;
+      navigator.clipboard.writeText(this.user.id).catch(() => {});
+      this.copiedID = true;
+      setTimeout(() => { this.copiedID = false; }, 2000);
     }
   }
 }).mount('#app');
