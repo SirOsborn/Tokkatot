@@ -281,8 +281,8 @@ h5 { font-size: var(--font-size-base); font-weight: 600; }
   width: 36px;
   height: 36px;
   padding: 0;
-  color: var(--color-primary);
-  border: 2px solid var(--color-primary);
+  color: var(--color-text-secondary);
+  border: none;
   border-radius: 50%;
   background: none;
   display: flex;
@@ -293,7 +293,7 @@ h5 { font-size: var(--font-size-base); font-weight: 600; }
   transition: background 0.15s, color 0.15s;
 }
 .lang-toggle:active {
-  background: var(--color-primary-light);
+  background: var(--color-bg);
 }
 
 /* --------------------------------------------------------------------------
