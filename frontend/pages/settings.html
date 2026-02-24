@@ -63,6 +63,16 @@
       </label>
     </div>
 
+    <!-- Language -->
+    <div class="list-item" @click="toggleLang" style="cursor:pointer;">
+      <div class="list-item-icon"><span class="material-symbols-outlined">translate</span></div>
+      <div class="list-item-content">
+        <div class="list-item-title">{{ lang === 'km' ? 'ភាសា' : 'Language' }}</div>
+        <div class="list-item-subtitle">{{ lang === 'km' ? 'ខ្មែរ → English' : 'English → ខ្មែរ' }}</div>
+      </div>
+      <span class="list-item-chevron material-symbols-outlined">swap_horiz</span>
+    </div>
+
   </div>
 
   <!-- Schedules shortcut -->
@@ -83,20 +93,13 @@
   <!-- About -->
   <div class="section-label" data-i18n="about">អំពី</div>
   <div class="list-group" style="margin:0 var(--space-md);">
-    <div class="list-item">
+    <a href="https://tokkatot.aztrolabe.com" target="_blank" class="list-item">
       <div class="list-item-icon" style="background:var(--color-primary-light);">
         <img src="/assets/images/tokkatot logo-02.png" style="width:28px;height:28px;object-fit:contain;" alt="logo" />
       </div>
       <div class="list-item-content">
         <div class="list-item-title">Tokkatot</div>
         <div class="list-item-subtitle">v2.0 — Smart Poultry Farm</div>
-      </div>
-    </div>
-    <a href="https://camtech.edu.kh" target="_blank" class="list-item">
-      <div class="list-item-icon"><span class="material-symbols-outlined">school</span></div>
-      <div class="list-item-content">
-        <div class="list-item-title">CamTech University</div>
-        <div class="list-item-subtitle">camtech.edu.kh</div>
       </div>
       <span class="list-item-chevron material-symbols-outlined">open_in_new</span>
     </a>
