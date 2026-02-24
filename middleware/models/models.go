@@ -209,6 +209,76 @@ type RegistrationKey struct {
 	CreatedAt     time.Time  `json:"created_at"`
 }
 
+// Alert represents a monitoring alert triggered by device thresholds
+type Alert struct {
+	ID             uuid.UUID  `json:"id"`
+	FarmID         uuid.UUID  `json:"farm_id"`
+	DeviceID       *uuid.UUID `json:"device_id,omitempty"`
+	AlertType      string     `json:"alert_type"` // "temp_high", "temp_low", "humidity_high", "device_offline"
+	Severity       string     `json:"severity"`   // "info", "warning", "critical"
+	Message        string     `json:"message"`
+	ThresholdValue *float64   `json:"threshold_value,omitempty"`
+	ActualValue    *float64   `json:"actual_value,omitempty"`
+	IsActive       bool       `json:"is_active"`
+	TriggeredAt    time.Time  `json:"triggered_at"`
+	AcknowledgedBy *uuid.UUID `json:"acknowledged_by,omitempty"`
+	AcknowledgedAt *time.Time `json:"acknowledged_at,omitempty"`
+	ResolvedAt     *time.Time `json:"resolved_at,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+}
+
+// AlertSubscription represents a user's alert notification preferences
+type AlertSubscription struct {
+	ID              uuid.UUID `json:"id"`
+	UserID          uuid.UUID `json:"user_id"`
+	AlertType       string    `json:"alert_type"` // "temp_high", "device_offline", "all"
+	Channel         string    `json:"channel"`    // "push"
+	IsEnabled       bool      `json:"is_enabled"`
+	QuietHoursStart *string   `json:"quiet_hours_start,omitempty"` // "20:00"
+	QuietHoursEnd   *string   `json:"quiet_hours_end,omitempty"`   // "06:00"
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// UserSession represents an active authenticated session
+type UserSession struct {
+	ID           uuid.UUID `json:"id"`
+	UserID       uuid.UUID `json:"user_id"`
+	DeviceName   *string   `json:"device_name,omitempty"`
+	IPAddress    *string   `json:"ip_address,omitempty"`
+	UserAgent    *string   `json:"user_agent,omitempty"`
+	RefreshToken string    `json:"-"`
+	LastActivity time.Time `json:"last_activity"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+// DeviceConfiguration represents a device parameter setting or calibration
+type DeviceConfiguration struct {
+	ID             uuid.UUID  `json:"id"`
+	DeviceID       uuid.UUID  `json:"device_id"`
+	ParameterName  string     `json:"parameter_name"`
+	ParameterValue string     `json:"parameter_value"`
+	Unit           *string    `json:"unit,omitempty"`
+	MinValue       *float64   `json:"min_value,omitempty"`
+	MaxValue       *float64   `json:"max_value,omitempty"`
+	IsCalibrated   bool       `json:"is_calibrated"`
+	CalibratedAt   *time.Time `json:"calibrated_at,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+}
+
+// DeviceReading represents a time-series sensor reading (simplified, no InfluxDB for MVP)
+type DeviceReading struct {
+	ID         uuid.UUID `json:"id"`
+	DeviceID   uuid.UUID `json:"device_id"`
+	SensorType string    `json:"sensor_type"` // "temperature", "humidity"
+	Value      float64   `json:"value"`
+	Unit       string    `json:"unit"`
+	Quality    string    `json:"quality"` // "good", "degraded", "bad"
+	Timestamp  time.Time `json:"timestamp"`
+}
+
 // ===== REQUEST/RESPONSE MODELS =====
 
 // SignupRequest for user registration

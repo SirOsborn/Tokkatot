@@ -367,3 +367,257 @@ func DeleteFarmHandler(c *fiber.Ctx) error {
 		"message": "Farm deleted successfully",
 	}, "Farm deleted")
 }
+
+// ===== FARM MEMBER HANDLERS =====
+
+// GetFarmMembersHandler returns all members of a farm
+// @GET /v1/farms/:farm_id/members?limit=20&offset=0
+func GetFarmMembersHandler(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return utils.Unauthorized(c, "Invalid token")
+	}
+
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+
+	if err := checkFarmAccess(userID, farmID, "viewer"); err != nil {
+		return err
+	}
+
+	limit, _ := strconv.Atoi(c.Query("limit", "20"))
+	offset, _ := strconv.Atoi(c.Query("offset", "0"))
+	if limit > 100 {
+		limit = 100
+	}
+
+	rows, err := database.DB.Query(`
+		SELECT fu.id, fu.user_id, u.name, u.email, u.phone, fu.role, fu.invited_by, fu.created_at
+		FROM farm_users fu
+		INNER JOIN users u ON fu.user_id = u.id
+		WHERE fu.farm_id = $1 AND fu.is_active = true
+		ORDER BY fu.created_at ASC
+		LIMIT $2 OFFSET $3
+	`, farmID, limit, offset)
+	if err != nil {
+		log.Printf("Get farm members error: %v", err)
+		return utils.InternalError(c, "Failed to fetch members")
+	}
+	defer rows.Close()
+
+	type MemberInfo struct {
+		ID        uuid.UUID `json:"id"`
+		UserID    uuid.UUID `json:"user_id"`
+		Name      string    `json:"name"`
+		Email     *string   `json:"email,omitempty"`
+		Phone     *string   `json:"phone,omitempty"`
+		Role      string    `json:"role"`
+		InvitedBy uuid.UUID `json:"invited_by"`
+		JoinedAt  string    `json:"joined_at"`
+	}
+
+	members := []MemberInfo{}
+	for rows.Next() {
+		var m MemberInfo
+		if err := rows.Scan(&m.ID, &m.UserID, &m.Name, &m.Email, &m.Phone, &m.Role, &m.InvitedBy, &m.JoinedAt); err != nil {
+			continue
+		}
+		members = append(members, m)
+	}
+
+	var total int64
+	database.DB.QueryRow(`SELECT COUNT(*) FROM farm_users WHERE farm_id = $1 AND is_active = true`, farmID).Scan(&total)
+
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+		"members": members,
+		"total":   total,
+	}, "Members fetched successfully")
+}
+
+// InviteFarmMemberHandler adds an existing user to a farm by email or phone
+// @POST /v1/farms/:farm_id/members
+func InviteFarmMemberHandler(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return utils.Unauthorized(c, "Invalid token")
+	}
+
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+
+	if err := checkFarmAccess(userID, farmID, "manager"); err != nil {
+		return err
+	}
+
+	var req struct {
+		Email *string `json:"email,omitempty"`
+		Phone *string `json:"phone,omitempty"`
+		Role  string  `json:"role"` // "manager" or "viewer"
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_request", "Invalid request body")
+	}
+	if req.Email == nil && req.Phone == nil {
+		return utils.BadRequest(c, "missing_contact", "Email or phone is required")
+	}
+	if req.Role != "manager" && req.Role != "viewer" {
+		return utils.BadRequest(c, "invalid_role", "Role must be 'manager' or 'viewer'")
+	}
+
+	// Find target user
+	var targetUserID uuid.UUID
+	var query string
+	var arg interface{}
+	if req.Email != nil {
+		query = "SELECT id FROM users WHERE email = $1 AND is_active = true"
+		arg = req.Email
+	} else {
+		query = "SELECT id FROM users WHERE phone = $1 AND is_active = true"
+		arg = req.Phone
+	}
+
+	err = database.DB.QueryRow(query, arg).Scan(&targetUserID)
+	if err == sql.ErrNoRows {
+		return utils.NotFound(c, "User not found with that contact")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to find user")
+	}
+
+	// Check not already a member
+	var existingID string
+	err = database.DB.QueryRow(
+		"SELECT id FROM farm_users WHERE farm_id = $1 AND user_id = $2 AND is_active = true",
+		farmID, targetUserID,
+	).Scan(&existingID)
+	if err == nil {
+		return utils.Conflict(c, "already_member", "User is already a member of this farm")
+	}
+
+	// Add member
+	memberID := uuid.New()
+	_, err = database.DB.Exec(`
+		INSERT INTO farm_users (id, farm_id, user_id, role, invited_by, is_active, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (farm_id, user_id) DO UPDATE SET role = $4, is_active = true, updated_at = CURRENT_TIMESTAMP
+	`, memberID, farmID, targetUserID, req.Role, userID)
+	if err != nil {
+		log.Printf("Invite member error: %v", err)
+		return utils.InternalError(c, "Failed to add member")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusCreated, fiber.Map{
+		"user_id": targetUserID,
+		"farm_id": farmID,
+		"role":    req.Role,
+		"status":  "added",
+	}, "Member added successfully")
+}
+
+// UpdateFarmMemberRoleHandler changes a member's role
+// @PUT /v1/farms/:farm_id/members/:user_id
+func UpdateFarmMemberRoleHandler(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return utils.Unauthorized(c, "Invalid token")
+	}
+
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+
+	targetUserID, err := uuid.Parse(c.Params("user_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid user ID")
+	}
+
+	if err := checkFarmAccess(userID, farmID, "owner"); err != nil {
+		return err
+	}
+
+	// Cannot change own role
+	if targetUserID == userID {
+		return utils.BadRequest(c, "self_update", "Cannot change your own role")
+	}
+
+	var req struct {
+		Role string `json:"role"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_request", "Invalid request body")
+	}
+	if req.Role != "manager" && req.Role != "viewer" {
+		return utils.BadRequest(c, "invalid_role", "Role must be 'manager' or 'viewer'")
+	}
+
+	result, err := database.DB.Exec(`
+		UPDATE farm_users SET role = $1, updated_at = CURRENT_TIMESTAMP
+		WHERE farm_id = $2 AND user_id = $3 AND is_active = true
+	`, req.Role, farmID, targetUserID)
+	if err != nil {
+		log.Printf("Update member role error: %v", err)
+		return utils.InternalError(c, "Failed to update role")
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return utils.NotFound(c, "Member not found")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+		"user_id":    targetUserID,
+		"farm_id":    farmID,
+		"role":       req.Role,
+		"updated_at": "now",
+	}, "Role updated successfully")
+}
+
+// RemoveFarmMemberHandler removes a member from a farm
+// @DELETE /v1/farms/:farm_id/members/:user_id
+func RemoveFarmMemberHandler(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return utils.Unauthorized(c, "Invalid token")
+	}
+
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+
+	targetUserID, err := uuid.Parse(c.Params("user_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid user ID")
+	}
+
+	if err := checkFarmAccess(userID, farmID, "owner"); err != nil {
+		return err
+	}
+
+	if targetUserID == userID {
+		return utils.BadRequest(c, "self_remove", "Cannot remove yourself")
+	}
+
+	result, err := database.DB.Exec(`
+		UPDATE farm_users SET is_active = false, updated_at = CURRENT_TIMESTAMP
+		WHERE farm_id = $1 AND user_id = $2 AND role != 'owner'
+	`, farmID, targetUserID)
+	if err != nil {
+		log.Printf("Remove member error: %v", err)
+		return utils.InternalError(c, "Failed to remove member")
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return utils.NotFound(c, "Member not found or cannot remove owner")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+		"message": "Member removed successfully",
+	}, "Member removed")
+}
