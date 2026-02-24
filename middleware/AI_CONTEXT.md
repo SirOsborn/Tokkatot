@@ -1,14 +1,14 @@
 # 🤖 AI Context: Go API Gateway & Middleware
 
 **Directory**: `middleware/`  
-**Your Role**: HTTP API, authentication, device management, schedule automation  
-**Tech Stack**: Go 1.23+, Fiber v2, PostgreSQL/SQLite, JWT, WebSocket  
+**Your Role**: HTTP API, authentication, device management, schedule automation, alerts, analytics  
+**Tech Stack**: Go 1.23+, Fiber v2, PostgreSQL (only), JWT, WebSocket  
 
 **📖 Read First**: `../AI_INSTRUCTIONS.md` (project overview, business model, farmer context)
 
 **📖 Full Documentation**:
-- API Spec: `../docs/implementation/API.md` (66 endpoints)
-- Database: `../docs/implementation/DATABASE.md` (10 tables with schedules)
+- API Spec: `../docs/implementation/API.md` (66 endpoints, all MVP endpoints implemented)
+- Database: `../docs/implementation/DATABASE.md` (14 tables, PostgreSQL only)
 - Security: `../docs/implementation/SECURITY.md` (JWT, registration keys)
 - Automation: `../docs/AUTOMATION_USE_CASES.md` (real-world farmer scenarios)
 
@@ -16,15 +16,19 @@
 
 ## 🎯 What This Component Does
 
-**RESTful API Gateway** serving 35 endpoints:
+**RESTful API Gateway** serving 66+ endpoints:
 - **Authentication**: Phone/Email login, JWT tokens, registration keys
 - **Farms & Coops**: Hierarchical management (Farm → Coop → Device)
-- **Device Control**: Real-time commands to IoT equipment via WebSocket
+- **Farm Members**: Invite, role management, remove members
+- **Device Control**: Real-time commands via WebSocket; CRUD + advanced (config, calibrate, history)
 - **Schedules**: 4 automation types (time_based, duration_based, condition_based, manual)
-- **AI Proxy**: Disease detection via Python FastAPI service
+- **Alerts**: Farm alert monitoring + user notification subscriptions
+- **Analytics**: Dashboard, device metrics reports, CSV export, event log
+- **User Sessions**: View and revoke active sessions
+- **AI Proxy**: Disease detection (stubbed — Coming Soon overlay; not wired for MVP)
 - **WebSocket**: Real-time updates for device status, alerts, commands
 
-**Database**: PostgreSQL (production) + SQLite (development fallback)
+**Database**: PostgreSQL only (SQLite permanently removed Feb 2026)
 
 ---
 
@@ -32,26 +36,29 @@
 
 ```
 middleware/
-├── main.go                    Entry point, Fiber server setup, routes
-├── go.mod/go.sum             Go 1.23 dependencies
+├── main.go                    Entry point, Fiber server setup, routes (66+ routes)
+├── go.mod/go.sum             Go 1.23 dependencies (no sqlite3)
 ├── .env                      DATABASE_URL, JWT_SECRET (GITIGNORE'D)
 │
-├── api/                      Endpoint handlers (35 routes total)
-│   ├── auth_handler.go       Login, signup, token refresh, verify, forgot/reset password
+├── api/                      Endpoint handlers
+│   ├── auth_handler.go       Login, signup, token refresh, verify, forgot/reset password (8 endpoints)
 │   ├── auth_middleware.go    JWT extraction & farm access checks (checkFarmAccess)
-│   ├── farm_handler.go       Farm CRUD (5 endpoints)
+│   ├── farm_handler.go       Farm CRUD + member management (9 endpoints)
 │   ├── coop_handler.go       Coop CRUD (5 endpoints)
-│   ├── device_handler.go     Device control & commands (5 endpoints)
+│   ├── device_handler.go     Device control, commands, CRUD, advanced ops (17 endpoints)
 │   ├── schedule_handler.go   Schedule automation (7 endpoints) ⭐
-│   ├── user_handler.go       User profile management (3 endpoints)
+│   ├── alert_handler.go      Farm alerts + user subscriptions (8 endpoints) ⭐ NEW
+│   ├── analytics_handler.go  Dashboard, reports, CSV export (6 endpoints) ⭐ NEW
+│   ├── user_handler.go       User profile, sessions, activity log (6 endpoints)
 │   └── websocket_handler.go  Real-time updates + /ws/stats
 │
 ├── database/
-│   ├── postgres.go           PostgreSQL schema (10 tables)
-│   └── sqlite.go             SQLite fallback schema
+│   └── postgres.go           PostgreSQL schema (14 tables + indexes) — ONLY DB file
 │
 ├── models/
-│   └── models.go             Data structures (User, Farm, Coop, Device, Schedule)
+│   └── models.go             Data structures (User, Farm, Coop, Device, Schedule,
+│                              Alert, AlertSubscription, UserSession,
+│                              DeviceConfiguration, DeviceReading)
 │
 └── utils/
     └── utils.go              JWT, bcrypt, error responses
@@ -138,9 +145,92 @@ Key fields:
 
 **See**: `../docs/implementation/DATABASE.md` (schedules table section)
 
+## 🖐️ Farm Member Endpoints (NEW Feb 2026)
+
+**File**: `api/farm_handler.go` (4 member endpoints appended after farm CRUD)
+```
+GET    /v1/farms/:farm_id/members                      List all farm members + roles
+POST   /v1/farms/:farm_id/members                      Invite user by email/phone (manager+)
+PUT    /v1/farms/:farm_id/members/:user_id             Change member role (owner only)
+DELETE /v1/farms/:farm_id/members/:user_id             Remove member (owner only, can't remove owners)
+```
+
+**Rules**:
+- Cannot change your own role
+- Cannot set anyone to `owner` role (only one via farm creation)
+- Cannot remove a user with role `owner`
+- Invite by email OR phone; user must already exist in system
+
 ---
 
-## 🔐 Authentication Flow
+## 🔔 Alert & Subscription Endpoints (NEW Feb 2026)
+
+**File**: `api/alert_handler.go` (8 endpoints)
+```
+GET /v1/farms/:farm_id/alerts/history        Alert history (days param, includes duration_minutes)
+GET /v1/farms/:farm_id/alerts                Active alerts (filter: is_active, severity)
+GET /v1/farms/:farm_id/alerts/:alert_id      Single alert
+PUT /v1/farms/:farm_id/alerts/:alert_id/acknowledge  Mark alert as acknowledged
+
+POST   /v1/users/alert-subscriptions         Create/upsert notification preference
+GET    /v1/users/alert-subscriptions         List user's subscriptions
+PUT    /v1/users/alert-subscriptions/:id     Update subscription (quiet hours, enabled)
+DELETE /v1/users/alert-subscriptions/:id     Delete subscription
+```
+
+**Route ordering important**: `/alerts/history` is registered BEFORE `/alerts/:alert_id` in `main.go` to prevent Fiber from treating "history" as an alert_id.
+
+---
+
+## 📊 Analytics & Reporting Endpoints (NEW Feb 2026)
+
+**File**: `api/analytics_handler.go` (6 endpoints)
+```
+GET /v1/farms/:farm_id/dashboard                          Overview: devices, alerts, recent events
+GET /v1/farms/:farm_id/reports/device-metrics             Aggregated sensor data (avg/min/max by day)
+GET /v1/farms/:farm_id/reports/device-usage               Device reliability & command success rate
+GET /v1/farms/:farm_id/reports/farm-performance           Farm-wide uptime & automation efficiency
+GET /v1/farms/:farm_id/reports/export                     CSV download (device_metrics or farm_events)
+GET /v1/farms/:farm_id/events                             Audit event log
+```
+
+**Export handler**: Sets `Content-Type: text/csv` and `Content-Disposition: attachment` directly on the response. Two types: `device_metrics` (requires `device_id`) and `farm_events`.
+
+---
+
+## 🔧 Device Advanced Endpoints (NEW Feb 2026)
+
+**File**: `api/device_handler.go` (appended after existing handlers)
+```
+POST   /v1/farms/:farm_id/devices                          Add device (owner only)
+PUT    /v1/farms/:farm_id/devices/:device_id               Update name/location (manager+)
+DELETE /v1/farms/:farm_id/devices/:device_id               Soft-delete (owner only)
+
+GET    /v1/farms/:farm_id/devices/:device_id/history       Sensor readings (hours, metric, limit)
+GET    /v1/farms/:farm_id/devices/:device_id/status        Real-time status + latest reading
+GET    /v1/farms/:farm_id/devices/:device_id/config        Config parameters
+PUT    /v1/farms/:farm_id/devices/:device_id/config        Upsert config (ON CONFLICT)
+POST   /v1/farms/:farm_id/devices/:device_id/calibrate     Set calibrated value
+DELETE /v1/farms/:farm_id/devices/:device_id/commands/:id  Cancel pending command
+
+GET    /v1/farms/:farm_id/commands                         Command history across all devices
+POST   /v1/farms/:farm_id/emergency-stop                   Stop all online devices
+POST   /v1/farms/:farm_id/devices/batch-command            Send same command to multiple devices
+```
+
+---
+
+## 👤 User Session Endpoints (NEW Feb 2026)
+
+**File**: `api/user_handler.go` (3 handlers appended)
+```
+GET    /v1/users/sessions                  List active sessions (not expired)
+DELETE /v1/users/sessions/:session_id      Revoke a session
+GET    /v1/users/activity-log              Event log for current user (days, limit, offset)
+```
+
+---
+
 
 **Login** (`POST /v1/auth/login`):
 ```json
@@ -165,13 +255,13 @@ Key fields:
 
 ## 🗄️ Database Patterns
 
-**Connection**:
+**Connection** (PostgreSQL only):
 ```go
-// Production: PostgreSQL via DATABASE_URL
+// Production & development: PostgreSQL via DATABASE_URL env var
 database.DB.Query(`SELECT * FROM farms WHERE id = $1`, farmID)
-
-// Development: SQLite fallback (tokkatot.db file)
 ```
+
+**No SQLite**: `database/sqlite.go` has been permanently deleted. If `DATABASE_URL` is missing or PostgreSQL is unreachable, the server exits immediately with a fatal error.
 
 **Common Queries**:
 ```go
@@ -184,6 +274,15 @@ db.Query(`SELECT f.* FROM farms f
 db.Query(`SELECT * FROM schedules 
   WHERE device_id = $1 AND is_active = true 
   ORDER BY priority DESC, next_execution ASC`, deviceID)
+
+// Upsert device configuration (safe to call repeatedly)
+db.Exec(`INSERT INTO device_configurations (...) VALUES (...)
+  ON CONFLICT (device_id, parameter_name) DO UPDATE SET ...`)
+
+// Get device readings (last 24h)
+db.Query(`SELECT sensor_type, value, unit, timestamp FROM device_readings
+  WHERE device_id = $1 AND timestamp > CURRENT_TIMESTAMP - ($2 * INTERVAL '1 hour')`,
+  deviceID, hours)
 ```
 
 ---
@@ -217,9 +316,8 @@ BroadcastScheduleExecution(farmID, coopID, scheduleExecution)
 
 ### Add New Database Table
 1. Add struct to `models/models.go`
-2. Add CREATE TABLE in `database/postgres.go`
-3. Add CREATE TABLE in `database/sqlite.go` (SQLite syntax)
-4. Update `../docs/implementation/DATABASE.md`
+2. Add CREATE TABLE in `database/postgres.go` (only PostgreSQL file)
+3. Update `../docs/implementation/DATABASE.md`
 
 ### Test Locally
 ```powershell

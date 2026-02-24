@@ -1,9 +1,11 @@
 # Tokkatot 2.0: API Specification
 
-**Document Version**: 2.0  
-**Last Updated**: February 2026  
-**Status**: Final Specification  
-**Base URL**: `https://api.tokkatot.local/v1` (production), `http://localhost:8080/v1` (development)
+**Document Version**: 2.1  
+**Last Updated**: February 24, 2026  
+**Status**: MVP Complete (all non-AI endpoints implemented)  
+**Base URL**: `https://api.tokkatot.local/v1` (production), `http://localhost:3000/v1` (development)
+
+> **Implementation Status (v2.1)**: All 66 non-AI endpoints are implemented and build-verified. SQLite removed — PostgreSQL required. AI disease detection endpoint is stubbed; disease-detection UI shows "Coming Soon" overlay.
 
 ---
 

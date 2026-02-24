@@ -1,16 +1,16 @@
 # Tokkatot 2.0: Database Design Specification
 
-**Document Version**: 2.1  
-**Last Updated**: February 23, 2026  
+**Document Version**: 2.2  
+**Last Updated**: February 24, 2026  
 **Status**: Final Specification
 
-**Database System**: PostgreSQL (primary development)  
-**Time-Series DB**: InfluxDB (for sensor data)  
-**Cache Layer**: Redis (for sessions and cache)
+**Database System**: PostgreSQL only (SQLite removed Feb 2026)  
+**Time-Series DB**: PostgreSQL `device_readings` table (MVP) → InfluxDB (post-MVP)  
+**Cache Layer**: Redis (post-MVP; not yet implemented)
 
 **Design Principle**: Simplified for farmers - no complex RBAC, phone number as registration option
 
----
+> **v2.2 Change**: SQLite has been **permanently removed**. PostgreSQL is now required for all environments (development, staging, production). The `database/sqlite.go` file is deleted. Start the server with a valid `DATABASE_URL` in `middleware/.env`.
 
 ## Overview
 
@@ -136,27 +136,32 @@ devices
 
 ---
 
-### 5. Device Configs Table
+### 5. Device Configurations Table
+
+> **Implemented**: Table name is `device_configurations` in PostgreSQL schema (see `database/postgres.go`).
 
 ```
-device_configs
+device_configurations
 ├── id (UUID, PK)
 ├── device_id (UUID, FK → devices.id, NOT NULL)
-├── parameter_name (TEXT, NOT NULL)
-├── parameter_value (JSONB, NOT NULL)
+├── parameter_name (VARCHAR(100), NOT NULL)
+├── parameter_value (TEXT, NOT NULL)
 ├── unit (VARCHAR(20), NULL)  -- "°C", "%", "ml/s"
-├── min_value (DECIMAL(10,2), NULL)
-├── max_value (DECIMAL(10,2), NULL)
+├── min_value (DECIMAL(10,4), NULL)
+├── max_value (DECIMAL(10,4), NULL)
 ├── is_calibrated (BOOLEAN, DEFAULT FALSE)
+├── calibrated_at (TIMESTAMP, NULL)
 ├── created_at (TIMESTAMP, DEFAULT NOW())
 ├── updated_at (TIMESTAMP, DEFAULT NOW())
-└── deleted_at (TIMESTAMP, NULL)
+UNIQUE(device_id, parameter_name)
 ```
 
 **Examples**:
-- parameter_name="temp_threshold_high", parameter_value=35, unit="°C"
-- parameter_name="humidity_threshold_low", parameter_value=40, unit="%"
-- parameter_name="polling_interval", parameter_value=30, unit="seconds"
+- parameter_name="temp_threshold_high", parameter_value="35", unit="°C"
+- parameter_name="humidity_threshold_low", parameter_value="40", unit="%"
+- parameter_name="polling_interval", parameter_value="30", unit="seconds"
+
+**Upsert pattern**: `ON CONFLICT (device_id, parameter_name) DO UPDATE SET ...` — safe to call repeatedly.
 
 ---
 
@@ -348,32 +353,56 @@ notification_log
 
 ---
 
-### 13. User Sessions Table (Optional, if using session-based auth)
+### 13. User Sessions Table
+
+> **Implemented**: Table exists in PostgreSQL schema (see `database/postgres.go`).
 
 ```
 user_sessions
 ├── id (UUID, PK)
-├── user_id (UUID, FK → users.id, NOT NULL)
-├── jwt_token_hash (TEXT, NOT NULL)
-├── device_name (TEXT, NULL)  -- "Neath's Phone", "Farm Computer"
-├── ip_address (INET, NOT NULL)
-├── user_agent (TEXT, NOT NULL)
-├── is_active (BOOLEAN, DEFAULT TRUE)
+├── user_id (UUID, FK → users.id ON DELETE CASCADE, NOT NULL)
+├── device_name (VARCHAR(255), NULL)  -- "Neath's Phone", "Farm Computer"
+├── ip_address (VARCHAR(45), NULL)
+├── user_agent (TEXT, NULL)
+├── refresh_token (TEXT, NOT NULL, UNIQUE)
 ├── last_activity (TIMESTAMP, DEFAULT NOW())
 ├── expires_at (TIMESTAMP, NOT NULL)
-├── created_at (TIMESTAMP, DEFAULT NOW())
-└── deleted_at (TIMESTAMP, NULL)
+└── created_at (TIMESTAMP, DEFAULT NOW())
 ```
 
-**Indexes**: user_id, jwt_token_hash (unique), expires_at  
-**Purpose**: Track active sessions across devices  
+**Indexes**: user_id, expires_at, refresh_token (unique)  
+**Purpose**: Track active sessions across devices; used by session management endpoints  
+**Endpoints**: `GET /users/sessions`, `DELETE /users/sessions/:session_id`
 
 ---
 
-## Time-Series Database Schema (InfluxDB)
+### 14. Device Readings Table (MVP — PostgreSQL)
 
-**Used for**: Sensor data, device metrics, system performance metrics  
-**Retention**: 5 years with automatic downsampling
+> **MVP Implementation**: Sensor readings are stored in PostgreSQL for MVP instead of InfluxDB. InfluxDB will be introduced post-MVP when volume justifies it.
+
+```
+device_readings
+├── id (UUID, PK)
+├── device_id (UUID, FK → devices.id, NOT NULL)
+├── sensor_type (VARCHAR(50), NOT NULL)  -- "temperature", "humidity", "water_level"
+├── value (DECIMAL(10,4), NOT NULL)
+├── unit (VARCHAR(20), NOT NULL, DEFAULT '')  -- "°C", "%", "cm"
+├── quality (VARCHAR(20), NOT NULL, DEFAULT 'good')  -- "good", "degraded", "bad"
+└── timestamp (TIMESTAMP, DEFAULT NOW())
+```
+
+**Indexes**: `(device_id)`, `(timestamp DESC)`, `(device_id, sensor_type)`  
+**Purpose**: Time-series sensor data; replaces InfluxDB for MVP  
+**Endpoints**: `GET /farms/:farm_id/devices/:device_id/history`, `GET /farms/:farm_id/reports/device-metrics`  
+**Migration path**: Post-MVP, backfill to InfluxDB and switch reads to InfluxDB query API.
+
+---
+
+## Time-Series Database Schema (InfluxDB — Post-MVP)
+
+**Planned for post-MVP**: Sensor data, device metrics, system performance metrics  
+**Retention**: 5 years with automatic downsampling  
+**Current MVP**: Using `device_readings` PostgreSQL table above instead
 
 ### Measurement: sensor_readings
 
@@ -593,6 +622,8 @@ alerts (1) ──→ (many) notifications
 | Version | Date | Changes |
 |---------|------|---------|
 | 2.0 | Feb 2026 | Initial production schema |
+| 2.1 | Feb 23, 2026 | Added action_duration and action_sequence to schedules; added alert_subscriptions |
+| 2.2 | Feb 24, 2026 | **SQLite removed** — PostgreSQL only; added device_readings (MVP time-series); renamed device_configs → device_configurations; added refresh_token to user_sessions; all MVP non-AI endpoints implemented |
 
 **Related Documents**
 - SPECIFICATIONS_ARCHITECTURE.md
