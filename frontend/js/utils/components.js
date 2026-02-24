@@ -45,7 +45,17 @@
 
   function updateLangButton() {
     var btn = document.getElementById('lang-toggle-btn');
-    if (btn) btn.textContent = (window.i18n ? window.i18n.getLang() : 'km').toUpperCase();
+    if (!btn) return;
+    var lang = window.i18n ? window.i18n.getLang() : 'km';
+    btn.textContent = lang === 'km' ? '\uD83C\uDDF0\uD83C\uDDED' : '\uD83C\uDDFA\uD83C\uDDF8';
+    btn.title = lang === 'km' ? 'Switch to English' : 'ប្តូរទៅភាសាខ្មែរ';
+  }
+
+  function updateAvatarImg() {
+    var img = document.getElementById('header-avatar-img');
+    if (!img) return;
+    var role = localStorage.getItem('user_role') || 'farmer';
+    img.src = '/assets/images/' + role + '-avatar.png';
   }
 
   function loadFarmName() {
@@ -92,6 +102,7 @@
     /* Post-inject setup */
     highlightActiveNav();
     updateLangButton();
+    updateAvatarImg();
     loadFarmName();
 
     /* Hide farmer-specific nav tabs for admin */

@@ -207,8 +207,40 @@
   </template><!-- /admin -->
   <div v-else-if="!isAdmin && farms.length === 0" class="setup-card">
     <span class="material-symbols-outlined" style="font-size:64px;color:var(--color-border);">agriculture</span>
-    <h2 style="margin-top:var(--space-md);margin-bottom:var(--space-sm);" data-i18n="no_farm">មិនទាន់មានចំការ</h2>
-    <p class="color-muted text-sm">Contact your farm owner to get access.</p>
+    <template v-if="userRole === 'farmer'">
+      <h2 style="margin-top:var(--space-md);margin-bottom:var(--space-sm);">{{ lang==='km' ? 'មិនទាន់មានចំការ' : 'No Farm Yet' }}</h2>
+      <p class="color-muted text-sm" style="margin-bottom:var(--space-lg);">{{ lang==='km' ? 'បង្កើតចំការដំបូងរបស់អ្នក' : 'Create your first farm to get started.' }}</p>
+      <button class="btn btn-primary" @click="showAddFarm = true" style="gap:8px;">
+        <span class="material-symbols-outlined" style="font-size:20px;">add</span>
+        {{ lang==='km' ? 'បង្កើតចំការ' : 'Add Farm' }}
+      </button>
+      <!-- Add farm modal -->
+      <div v-if="showAddFarm" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;" @click.self="showAddFarm=false">
+        <div style="background:var(--color-surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;width:100%;padding:var(--space-xl) var(--space-md);max-width:600px;margin:0 auto;">
+          <h3 style="margin-bottom:var(--space-lg);">{{ lang==='km' ? 'បង្កើតចំការ' : 'Create Farm' }}</h3>
+          <div class="form-group">
+            <label class="form-label">{{ lang==='km' ? 'ឈ្មោះចំការ' : 'Farm Name' }}</label>
+            <input class="form-input" v-model="newFarm.name" :placeholder="lang==='km'?'ឈ្មោះចំការ...':'Farm name...'" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ lang==='km' ? 'ខេត្ត/ក្រុង' : 'Province / City' }}</label>
+            <input class="form-input" v-model="newFarm.province" :placeholder="lang==='km'?'ខេត្ត/ក្រុង...':'Province...'" />
+          </div>
+          <div v-if="addFarmError" class="alert alert-error" style="margin-bottom:var(--space-md);">{{ addFarmError }}</div>
+          <div style="display:flex;gap:var(--space-sm);">
+            <button class="btn btn-ghost btn-full" @click="showAddFarm=false">{{ lang==='km' ? 'បោះបង់' : 'Cancel' }}</button>
+            <button class="btn btn-primary btn-full" @click="createFarm" :disabled="addFarmLoading">
+              <span v-if="addFarmLoading" class="spinner" style="width:18px;height:18px;border-width:2px;"></span>
+              <span v-else>{{ lang==='km' ? 'បង្កើត' : 'Create' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template v-else>
+      <h2 style="margin-top:var(--space-md);margin-bottom:var(--space-sm);">{{ lang==='km' ? 'មិនទាន់មានចំការ' : 'No Farm Access' }}</h2>
+      <p class="color-muted text-sm">{{ lang==='km' ? 'សូមទំនាក់ទំនងម្ចាស់ចំការ' : 'Contact your farm owner to get access.' }}</p>
+    </template>
   </div>
 
   <!-- Dashboard content -->
@@ -363,6 +395,7 @@ createApp({
     return {
       loading:      true,
       isAdmin:      false,
+      userRole:     localStorage.getItem('user_role') || 'viewer',
       adminStats:   {},
       adminFarmers: [],
       showRegForm:  false,
@@ -370,6 +403,10 @@ createApp({
       regFormSuccess: '',
       regSubmitting: false,
       rf: { name:'', phone:'', email:'', password:'', showPwd:false, province:'', district:'', national_id:'', full_name_kh:'', full_name_en:'', sex:'', notes:'' },
+      showAddFarm:  false,
+      newFarm:      { name: '', province: '' },
+      addFarmError: '',
+      addFarmLoading: false,
       lang: window.i18n ? window.i18n.getLang() : 'km',
       farms:        [],
       selectedFarmId: null,
@@ -533,6 +570,23 @@ createApp({
         sensor: 'sensors', default: 'electrical_services'
       };
       return icons[type] || icons.default;
+    },
+
+    async createFarm() {
+      this.addFarmError = '';
+      if (!this.newFarm.name.trim()) { this.addFarmError = this.lang === 'km' ? 'សូមបញ្ចូលឈ្មោះចំការ' : 'Farm name is required.'; return; }
+      this.addFarmLoading = true;
+      try {
+        const res = await window.API.post('/v1/farms', { name: this.newFarm.name, province: this.newFarm.province || undefined });
+        if (res && res.success) {
+          this.showAddFarm = false;
+          this.newFarm = { name: '', province: '' };
+          await this.loadFarms();
+        } else {
+          this.addFarmError = (res && res.message) || 'Failed to create farm';
+        }
+      } catch(e) { this.addFarmError = 'Error: ' + (e.message || e); }
+      finally { this.addFarmLoading = false; }
     },
 
     connectWS() {

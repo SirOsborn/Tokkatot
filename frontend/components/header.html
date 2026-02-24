@@ -7,19 +7,22 @@
 
   <div class="header-actions">
     <!-- Language toggle -->
-    <button class="lang-toggle" id="lang-toggle-btn" onclick="headerToggleLang()">
-      KM
+    <button class="lang-toggle" id="lang-toggle-btn" onclick="headerToggleLang()" title="Switch language" style="font-size:22px;padding:0 6px;background:none;border:none;cursor:pointer;display:flex;align-items:center;">
+      🇰🇭
     </button>
 
     <!-- Alert bell -->
-    <a href="#" class="header-icon-btn" id="header-alert-btn">
+    <a href="/alerts" class="header-icon-btn" id="header-alert-btn">
       <span class="material-symbols-outlined">notifications</span>
       <span class="badge" id="header-alert-badge" style="display:none;"></span>
     </a>
 
     <!-- Profile avatar -->
-    <a href="/profile" class="header-icon-btn">
-      <span class="material-symbols-outlined">account_circle</span>
+    <a href="/profile" class="header-icon-btn" style="padding:4px;">
+      <img id="header-avatar-img" src="/assets/images/farmer-avatar.png" alt="profile"
+           style="width:32px;height:32px;border-radius:50%;object-fit:cover;display:block;"
+           onerror="this.style.display='none';document.getElementById('header-avatar-fallback').style.display='flex';" />
+      <span id="header-avatar-fallback" class="material-symbols-outlined" style="display:none;">account_circle</span>
     </a>
   </div>
 </header>

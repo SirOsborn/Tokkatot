@@ -226,6 +226,9 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	app.Get("/schedules", func(c *fiber.Ctx) error {
 		return c.SendFile(filepath.Join(frontendPath, "pages", "schedules.html"))
 	})
+	app.Get("/alerts", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "alerts.html"))
+	})
 
 	// 404 Handler
 	app.Use(func(c *fiber.Ctx) error {

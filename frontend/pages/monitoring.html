@@ -10,7 +10,7 @@
   <style>
     /* ── Reset & base ─────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; font-family: inherit; }
+    html, body { height: 100%; }
 
     body {
       min-height: 100vh;
@@ -272,19 +272,27 @@
     // Fetch farms — prefer locally stored farm id
     const storedFarm = window.API.getSelectedFarmId();
     const farmsRes = await apiFetch('/v1/farms');
-    if (!farmsRes || !farmsRes.success || !farmsRes.data?.data || farmsRes.data.data.length === 0) {
+    if (!farmsRes || !farmsRes.success || !farmsRes.data?.farms || farmsRes.data.farms.length === 0) {
       return showError('No farms found');
     }
-    farmId = storedFarm || farmsRes.data.data[0].id;
+    farmId = storedFarm || farmsRes.data.farms[0].id;
 
     // Fetch coops
     const coopsRes = await apiFetch(`/v1/farms/${farmId}/coops`);
-    if (!coopsRes || !coopsRes.success || !coopsRes.data || coopsRes.data.length === 0) {
+    if (!coopsRes || !coopsRes.success) {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('no-sensor').style.display = 'block';
       return;
     }
-    coops = coopsRes.data;
+    // API returns { data: { coops: [...] } } or { data: [...] }
+    const coopsRaw = (coopsRes.data && coopsRes.data.coops) ? coopsRes.data.coops
+                   : Array.isArray(coopsRes.data) ? coopsRes.data : [];
+    if (coopsRaw.length === 0) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('no-sensor').style.display = 'block';
+      return;
+    }
+    coops = coopsRaw;
 
     // Build picker
     const picker = document.getElementById('coop-picker');

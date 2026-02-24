@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Tokkatot - ការជូនដំណឹង</title>
+  <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    .alert-item { display:flex; gap:var(--space-md); align-items:flex-start; padding:var(--space-md); }
+    .alert-icon-wrap { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .alert-icon-wrap.critical { background:#fef2f2; color:#ef4444; }
+    .alert-icon-wrap.warning  { background:#fffbeb; color:#f59e0b; }
+    .alert-icon-wrap.info     { background:#eff6ff; color:#3b82f6; }
+    .alert-item.unread { background:var(--color-primary-light); }
+    .alert-ack-btn { min-height:32px; font-size:var(--font-size-xs); padding:4px 14px; }
+    .alert-time { font-size:var(--font-size-xs); color:var(--color-text-muted); margin-top:2px; }
+    .empty-state { text-align:center; padding:var(--space-xxl) var(--space-md); }
+    .empty-state .material-symbols-outlined { font-size:64px; color:var(--color-border); }
+  </style>
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+
+<div id="app">
+
+  <div v-if="loading" class="loading-spinner">
+    <div class="spinner"></div>
+    <span>{{ lang==='km' ? 'កំពុងផ្ទុក...' : 'Loading...' }}</span>
+  </div>
+
+  <template v-else>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">{{ lang==='km' ? 'ការជូនដំណឹង' : 'Alerts' }}</span>
+        <span class="badge badge-neutral" v-if="alerts.length">{{ alerts.length }}</span>
+      </div>
+
+      <!-- Empty state -->
+      <div v-if="alerts.length === 0" class="empty-state">
+        <div><span class="material-symbols-outlined">notifications_none</span></div>
+        <p class="color-muted text-sm" style="margin-top:var(--space-md);">
+          {{ lang==='km' ? 'មិនមានការជូនដំណឹង' : 'No alerts at the moment.' }}
+        </p>
+      </div>
+
+      <div class="list-group" v-else>
+        <div class="list-divider" v-for="alert in alerts" :key="alert.id">
+          <div class="alert-item" :class="{ unread: !alert.acknowledged_at }">
+            <div class="alert-icon-wrap" :class="alertSeverityClass(alert.alert_type)">
+              <span class="material-symbols-outlined" style="font-size:20px;">{{ alertIcon(alert.alert_type) }}</span>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:var(--font-size-sm);">{{ alert.message }}</div>
+              <div class="alert-time">{{ alert.coop_name }} · {{ formatTime(alert.created_at) }}</div>
+              <div v-if="alert.acknowledged_at" class="alert-time" style="color:var(--color-success);">
+                ✓ {{ lang==='km' ? 'បានទទួល' : 'Acknowledged' }} {{ formatTime(alert.acknowledged_at) }}
+              </div>
+            </div>
+            <button v-if="!alert.acknowledged_at" class="btn btn-ghost alert-ack-btn" @click="acknowledge(alert)" :disabled="alert.acking">
+              <span v-if="alert.acking" class="spinner" style="width:14px;height:14px;border-width:2px;"></span>
+              <span v-else>{{ lang==='km' ? 'ទទួល' : 'OK' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Farm selector if multiple -->
+    <div v-if="farms.length > 1" style="padding: 0 var(--space-md) var(--space-md);">
+      <select class="form-select" v-model="selectedFarmId" @change="loadAlerts">
+        <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
+      </select>
+    </div>
+
+  </template>
+
+</div>
+
+<div id="navbar-placeholder"></div>
+
+<script src="/js/utils/i18n.js"></script>
+<script src="/js/utils/api.js"></script>
+<script src="/js/utils/components.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      loading: true,
+      farms: [],
+      selectedFarmId: null,
+      alerts: [],
+      lang: window.i18n ? window.i18n.getLang() : 'km',
+    };
+  },
+  async mounted() {
+    if (!window.API.requireAuth()) return;
+    await loadComponents();
+    this.lang = window.i18n ? window.i18n.getLang() : 'km';
+    const data = await window.API.get('/v1/farms');
+    this.farms = (data && data.data && data.data.farms) ? data.data.farms : [];
+    if (this.farms.length > 0) {
+      const saved = window.API.getSelectedFarmId();
+      const match = saved && this.farms.find(f => String(f.id) === saved);
+      this.selectedFarmId = match ? match.id : this.farms[0].id;
+      await this.loadAlerts();
+    }
+    this.loading = false;
+  },
+  methods: {
+    async loadAlerts() {
+      if (!this.selectedFarmId) return;
+      try {
+        const res = await window.API.get(`/v1/farms/${this.selectedFarmId}/alerts`);
+        const raw = (res && res.data && Array.isArray(res.data)) ? res.data
+                  : (res && res.data && Array.isArray(res.data.alerts)) ? res.data.alerts : [];
+        this.alerts = raw.map(a => ({ ...a, acking: false }));
+      } catch(e) { console.error(e); }
+    },
+    async acknowledge(alert) {
+      alert.acking = true;
+      try {
+        const res = await window.API.put(`/v1/farms/${this.selectedFarmId}/alerts/${alert.id}/acknowledge`, {});
+        if (res && res.success) {
+          alert.acknowledged_at = new Date().toISOString();
+        }
+      } catch(e) { console.error(e); }
+      finally { alert.acking = false; }
+    },
+    alertSeverityClass(type) {
+      if (!type) return 'info';
+      const t = type.toLowerCase();
+      if (t.includes('critical') || t.includes('danger')) return 'critical';
+      if (t.includes('warn') || t.includes('high') || t.includes('low')) return 'warning';
+      return 'info';
+    },
+    alertIcon(type) {
+      if (!type) return 'info';
+      const t = type.toLowerCase();
+      if (t.includes('temp') || t.includes('heat')) return 'thermostat';
+      if (t.includes('humid')) return 'water_drop';
+      if (t.includes('device') || t.includes('offline')) return 'electrical_services';
+      if (t.includes('critical') || t.includes('danger')) return 'warning';
+      return 'notifications';
+    },
+    formatTime(iso) {
+      if (!iso) return '';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+      } catch(_) { return iso; }
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
