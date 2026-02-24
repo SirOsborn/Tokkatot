@@ -1,6 +1,6 @@
 # Frontend Implementation
 
-**Last Updated**: February 24, 2026  
+**Last Updated**: February 25, 2026  
 **Status**: ✅ Fully Rebuilt — Vue.js 3 CDN, new design system  
 **Tech Stack**: Vue.js 3 CDN (no build step), Mi Sans, Google Material Symbols, global CSS design system
 
@@ -18,10 +18,11 @@ All pages are static HTML served by the Go Fiber backend. No npm, no bundler —
 | `/login` | `pages/login.html` | Public | Redirects to `/` if already authed |
 | `/register` | `pages/signup.html` | Public | Redirects to `/` if already authed |
 | `/profile` | `pages/profile.html` | ✅ Required | View + edit user info |
-| `/settings` | `pages/settings.html` | ✅ Required | Language, notifications, logout |
+| `/settings` | `pages/settings.html` | ✅ Required | Language toggle, notifications, logout |
 | `/schedules` | `pages/schedules.html` | ✅ Required | Full schedule CRUD + sequence builder |
 | `/disease-detection` | `pages/disease-detection.html` | ✅ Required | Coming Soon overlay |
 | `/monitoring` | `pages/monitoring.html` | ✅ Required | Apple Weather-style temp timeline |
+| `/alerts` | `pages/alerts.html` | ✅ Required | Farm alerts list, acknowledge |
 | 404 fallback | `pages/404.html` | Public | — |
 
 ---
@@ -38,7 +39,7 @@ frontend/
 │       ├── i18n.js             ← window.i18n / window.t() — KM/EN translations
 │       └── components.js       ← window.loadComponents() — injects header + navbar
 ├── components/
-│   ├── header.html             ← Top bar: logo, farm name, lang toggle, alert bell
+│   ├── header.html             ← Top bar: logo, farm name, alert bell, avatar
 │   └── navbar.html             ← Bottom nav: 5 items with Material Symbols icons
 ├── pages/
 │   ├── index.html              ← Dashboard (Vue 3)
@@ -47,6 +48,7 @@ frontend/
 │   ├── profile.html            ← Profile view/edit (Vue 3)
 │   ├── settings.html           ← Settings + logout (Vue 3)
 │   ├── schedules.html          ← Schedule CRUD + sequence builder (Vue 3)
+│   ├── alerts.html             ← Alerts list + acknowledge (Vue 3)
 │   ├── disease-detection.html  ← Coming Soon overlay + upload UI
 │   ├── monitoring.html         ← Temperature timeline (vanilla JS)
 │   └── 404.html                ← 404 page (no header/nav)
@@ -161,6 +163,12 @@ Fetches `header.html` and `navbar.html`, injects into `#header-placeholder` / `#
 
 Uses `document.createRange().createContextualFragment()` so `<script>` tags inside components execute correctly (unlike `innerHTML`).
 
+After inject, also calls:
+- `highlightActiveNav()` — marks the current page tab active
+- `updateAvatarImg()` — sets header avatar to `/{role}-avatar.png` from `localStorage('user_role')`
+- `loadFarmName()` — sets `#header-farm-name` from `localStorage('farm_name')`
+- `i18n.applyAll()` — applies translations to injected HTML
+
 ```js
 await loadComponents();   // call in every page's mounted() or init()
 ```
@@ -253,17 +261,24 @@ Public pages (login, signup, 404) — omit placeholders, add `body.no-nav.no-hea
 ### `profile.html`
 
 **API**:
-- `GET /v1/auth/me` → load
-- `PATCH /v1/auth/me` → save name + phone
+- `GET /v1/users/me` → load user (returns `name`, `email`, `phone`, `role`, `farm_id`, `farm_name`, `province`)
+- `PUT /v1/users/me` → save `{ name }` — also writes `user_name` to `localStorage` on success
+- `PUT /v1/farms/:farm_id` → save `{ name, province }` (only if farmer + farm fields changed)
 
-View mode: avatar initials, role badge, read-only fields. Edit mode: name + phone inputs.
+**View mode**: role avatar image, role badge, read-only fields (name, email, phone, farm name + province, farmer ID with copy button), Tokkatot About link.
+
+**Edit mode**: name input + farm name/province inputs (farmers only). Language field intentionally removed — change language via Settings.
+
+**localStorage updated on save**: `user_name` → so Settings page reflects the new name immediately.
 
 ---
 
 ### `settings.html`
 
-- Language toggle (KM ↔ EN)
-- Notifications toggle
+- **Language toggle** — tap to switch KM ↔ EN (the only place to change language)
+- Notifications toggle — persisted in `localStorage('notif_enabled')`
+- Schedules shortcut → `/schedules`
+- Tokkatot About link → `https://tokkatot.aztrolabe.com`
 - Logout with `v-if` confirm modal (no `window.confirm`)
 
 ---
@@ -289,6 +304,18 @@ View mode: avatar initials, role badge, read-only fields. Edit mode: name + phon
 ```json
 [{"action":"ON","duration":30},{"action":"OFF","duration":10}]
 ```
+
+---
+
+### `alerts.html`
+
+**Route**: `/alerts` — linked from the bell icon in the header.
+
+**API**:
+- `GET /v1/farms/:farm_id/alerts` → active alerts list
+- `PUT /v1/farms/:farm_id/alerts/:alert_id` → acknowledge alert
+
+**UI**: Severity icons (critical/warning/info), acknowledge button per alert, empty state.
 
 ---
 
@@ -343,13 +370,13 @@ No header/navbar. Khmer "រកទំព័រមិនឃើញ", teal 404, hom
 ### `header.html`
 
 ```
-[Logo + Farm Name]              [🌐 lang] [🔔 alerts] [👤]
+[Logo + Farm Name]                         [🔔 alerts] [👤 avatar]
 ```
 
-- `#header-farm-name` — set by `loadComponents()` from `GET /v1/farms`
-- `#lang-toggle-btn` → calls `window.headerToggleLang()`
-- Alert bell with `#header-alert-badge`
-- Profile icon links to `/profile`
+- `#header-farm-name` — set by `loadComponents()` from `localStorage('farm_name')`
+- Bell `href="/alerts"` with `#header-alert-badge` (hidden by default)
+- Profile avatar: `<img id="header-avatar-img">` — role-based image (`farmer-avatar.png` / `viewer-avatar.png` / `admin-avatar.png`), links to `/profile`
+- **No language toggle in header** — language is changed exclusively via Settings page
 
 ### `navbar.html`
 

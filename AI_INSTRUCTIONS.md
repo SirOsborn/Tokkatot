@@ -1,7 +1,7 @@
 # 🤖 AI Instructions — Tokkatot
 
-**Last Updated**: February 24, 2026  
-**Version**: 2.3  
+**Last Updated**: February 25, 2026  
+**Version**: 2.4  
 **Purpose**: Single source of truth for all AI agents working on Tokkatot
 
 > **This is the only AI context file you need to read.** It covers the full project: Go middleware, Vue.js frontend, Python AI service, and ESP32 embedded firmware. The component-level `AI_CONTEXT.md` files in each folder are just pointers back here.
@@ -207,6 +207,7 @@ JWT claims: `user_id`, `email` (nullable), `phone` (nullable), `farm_id`, `role`
 | `GET /settings` | `pages/settings.html` |
 | `GET /disease-detection` | `pages/disease-detection.html` |
 | `GET /monitoring` | `pages/monitoring.html` |
+| `GET /alerts` | `pages/alerts.html` |
 
 Static dirs `/assets`, `/components`, `/css`, `/js` served from `frontend/`.
 
@@ -396,7 +397,7 @@ Test data seeded: email `farmer@tokkatot.com` / `FarmerPass123`, farm `11111111-
 - Contrast: WCAG AAA (black on white — no grey text)
 - Icons: always paired with text labels
 - Max 3 main actions per screen
-- Khmer/English toggle reachable from every page (top-right header)
+- Khmer/English toggle reachable from Settings page (`/settings`)
 
 ### File Map (what actually exists)
 
@@ -404,7 +405,8 @@ Test data seeded: email `farmer@tokkatot.com` / `FarmerPass123`, farm `11111111-
 frontend/pages/
   index.html              Dashboard — device status grid, WebSocket live updates
   monitoring.html         Temperature timeline (Apple Weather-style)
-  disease-detection.html  AI feces photo upload + prediction
+  disease-detection.html  AI feces photo upload + prediction (Coming Soon overlay)
+  alerts.html             Farm alerts list — severity icons, acknowledge button
   login.html / signup.html / profile.html / settings.html / 404.html
 
 frontend/js/
@@ -424,7 +426,7 @@ frontend/components/
   header.html / navbar.html
 ```
 
-> **Note**: `disease-detection.js`, `utils/api.js` do **not exist yet**. `schedules.html` ✅ exists as a self-contained page (CSS + JS inline, same pattern as `monitoring.html`).
+> **Note**: `disease-detection.js` does **not exist yet** (only the Coming Soon HTML shell). `utils/api.js`, `utils/i18n.js`, `utils/components.js` all exist under `frontend/js/utils/`. `schedules.html` and `alerts.html` are self-contained pages (CSS + JS inline, same pattern as `monitoring.html`).
 
 ### Vue App Pattern
 

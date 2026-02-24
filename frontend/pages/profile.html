@@ -143,21 +143,16 @@
     <!-- About section -->
     <div class="section" style="padding-top:0;">
       <div class="list-group">
-        <a href="https://camtech.edu.kh" target="_blank" class="list-item">
-          <div class="list-item-icon"><span class="material-symbols-outlined">school</span></div>
-          <div class="list-item-content">
-            <div class="list-item-title">CamTech University</div>
-            <div class="list-item-subtitle">camtech.edu.kh</div>
+        <a href="https://tokkatot.aztrolabe.com" target="_blank" class="list-item">
+          <div class="list-item-icon" style="background:var(--color-primary-light);">
+            <img src="/assets/images/tokkatot logo-02.png" style="width:28px;height:28px;object-fit:contain;" alt="logo" />
           </div>
-          <span class="list-item-chevron material-symbols-outlined">open_in_new</span>
-        </a>
-        <div class="list-item">
-          <div class="list-item-icon"><span class="material-symbols-outlined">info</span></div>
           <div class="list-item-content">
             <div class="list-item-title" data-i18n="about">អំពី</div>
             <div class="list-item-subtitle">Tokkatot v2.0 — Smart Poultry Farm</div>
           </div>
-        </div>
+          <span class="list-item-chevron material-symbols-outlined">open_in_new</span>
+        </a>
       </div>
     </div>
   </template>
@@ -225,6 +220,7 @@ createApp({
         });
         if (data && data.success) {
           this.user.name = this.editName;
+          localStorage.setItem('user_name', this.editName);
           // Also update farm if farmer changed farm fields
           if (this.user.farm_id && this.user.role === 'farmer' &&
               (this.editFarmName !== this.user.farm_name || this.editProvince !== (this.user.province || ''))) {
