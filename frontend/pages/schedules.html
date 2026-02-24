@@ -271,12 +271,12 @@
     </div>
   </div>
 
-</div><!-- #app -->
+  <!-- FAB -->
+  <button class="fab" @click="openCreate" v-if="!showForm && !deleteTarget">
+    <span class="material-symbols-outlined">add</span>
+  </button>
 
-<!-- FAB -->
-<button class="fab" @click="openCreate" v-if="!showForm && !deleteTarget">
-  <span class="material-symbols-outlined">add</span>
-</button>
+</div><!-- #app -->
 
 <div id="navbar-placeholder"></div>
 

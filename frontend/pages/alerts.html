@@ -104,7 +104,8 @@ createApp({
     await loadComponents();
     this.lang = window.i18n ? window.i18n.getLang() : 'km';
     const data = await window.API.get('/v1/farms');
-    this.farms = (data && data.data && data.data.farms) ? data.data.farms : [];
+    this.farms = (data && data.data && data.data.data) ? data.data.data
+               : (data && data.data && Array.isArray(data.data)) ? data.data : [];
     if (this.farms.length > 0) {
       const saved = window.API.getSelectedFarmId();
       const match = saved && this.farms.find(f => String(f.id) === saved);

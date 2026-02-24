@@ -168,6 +168,7 @@ func CreateFarmHandler(c *fiber.Ctx) error {
 	var req struct {
 		Name        string   `json:"name"`
 		Location    *string  `json:"location,omitempty"`
+		Province    *string  `json:"province,omitempty"`
 		Timezone    *string  `json:"timezone,omitempty"`
 		Latitude    *float64 `json:"latitude,omitempty"`
 		Longitude   *float64 `json:"longitude,omitempty"`
@@ -199,18 +200,18 @@ func CreateFarmHandler(c *fiber.Ctx) error {
 	// Create farm
 	farmID := uuid.New()
 	query := `
-	INSERT INTO farms (id, owner_id, name, location, timezone, latitude, longitude, description, image_url, created_at, updated_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-	RETURNING id, owner_id, name, location, timezone, latitude, longitude, description, image_url, is_active, created_at, updated_at
+	INSERT INTO farms (id, owner_id, name, location, province, timezone, latitude, longitude, description, image_url, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	RETURNING id, owner_id, name, location, province, timezone, latitude, longitude, description, image_url, is_active, created_at, updated_at
 	`
 
 	var farm models.Farm
 	err = tx.QueryRow(
 		query,
-		farmID, userID, req.Name, req.Location, timezone,
+		farmID, userID, req.Name, req.Location, req.Province, timezone,
 		req.Latitude, req.Longitude, req.Description, req.ImageURL,
 	).Scan(
-		&farm.ID, &farm.OwnerID, &farm.Name, &farm.Location, &farm.Timezone,
+		&farm.ID, &farm.OwnerID, &farm.Name, &farm.Location, &farm.Province, &farm.Timezone,
 		&farm.Latitude, &farm.Longitude, &farm.Description, &farm.ImageURL,
 		&farm.IsActive, &farm.CreatedAt, &farm.UpdatedAt,
 	)

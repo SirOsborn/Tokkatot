@@ -224,9 +224,39 @@
           </div>
           <div class="form-group">
             <label class="form-label">{{ lang==='km' ? 'ខេត្ត/ក្រុង' : 'Province / City' }}</label>
-            <input class="form-input" v-model="newFarm.province" :placeholder="lang==='km'?'ខេត្ត/ក្រុង...':'Province...'" />
+            <div class="form-input-icon">
+              <span class="input-icon material-symbols-outlined">location_on</span>
+              <select class="form-input" v-model="newFarm.province" style="padding-left:40px;">
+                <option value="">{{ lang==='km' ? '-- ជ្រើសរើសខេត្ត --' : '-- Select Province --' }}</option>
+                <option value="Phnom Penh">ភ្នំពេញ / Phnom Penh</option>
+                <option value="Banteay Meanchey">បន្ទាយមានជ័យ / Banteay Meanchey</option>
+                <option value="Battambang">បាត់ដំបង / Battambang</option>
+                <option value="Kampong Cham">កំពង់ចាម / Kampong Cham</option>
+                <option value="Kampong Chhnang">កំពង់ឆ្នាំង / Kampong Chhnang</option>
+                <option value="Kampong Speu">កំពង់ស្ពឺ / Kampong Speu</option>
+                <option value="Kampong Thom">កំពង់ធំ / Kampong Thom</option>
+                <option value="Kampot">កំពត / Kampot</option>
+                <option value="Kandal">កណ្ដាល / Kandal</option>
+                <option value="Kep">កែប / Kep</option>
+                <option value="Koh Kong">កោះកុង / Koh Kong</option>
+                <option value="Kratié">ក្រចេះ / Kratié</option>
+                <option value="Mondulkiri">មណ្ឌលគីរី / Mondulkiri</option>
+                <option value="Oddar Meanchey">ឧត្តរមានជ័យ / Oddar Meanchey</option>
+                <option value="Pailin">បៃលិន / Pailin</option>
+                <option value="Preah Sihanouk">ព្រះសីហនុ / Preah Sihanouk</option>
+                <option value="Preah Vihear">ព្រះវិហារ / Preah Vihear</option>
+                <option value="Prey Veng">ព្រៃវែង / Prey Veng</option>
+                <option value="Pursat">ពោធិ៍សាត់ / Pursat</option>
+                <option value="Ratanakiri">រតនគីរី / Ratanakiri</option>
+                <option value="Siem Reap">សៀមរាប / Siem Reap</option>
+                <option value="Stung Treng">ស្ទឹងត្រែង / Stung Treng</option>
+                <option value="Svay Rieng">ស្វាយរៀង / Svay Rieng</option>
+                <option value="Takeo">តាកែវ / Takeo</option>
+                <option value="Tboung Khmum">ត្បូងឃ្មុំ / Tboung Khmum</option>
+              </select>
+            </div>
           </div>
-          <div v-if="addFarmError" class="alert alert-error" style="margin-bottom:var(--space-md);">{{ addFarmError }}</div>
+          <div v-if="addFarmError" class="alert alert-danger" style="margin-bottom:var(--space-md);">{{ addFarmError }}</div>
           <div style="display:flex;gap:var(--space-sm);">
             <button class="btn btn-ghost btn-full" @click="showAddFarm=false">{{ lang==='km' ? 'បោះបង់' : 'Cancel' }}</button>
             <button class="btn btn-primary btn-full" @click="createFarm" :disabled="addFarmLoading">
@@ -489,7 +519,8 @@ createApp({
       this.loading = true;
       try {
         const data = await window.API.get('/v1/farms');
-        this.farms = (data && data.data && data.data.farms) ? data.data.farms : [];
+        this.farms = (data && data.data && data.data.data) ? data.data.data
+                   : (data && data.data && Array.isArray(data.data)) ? data.data : [];
         if (this.farms.length > 0) {
           const saved = window.API.getSelectedFarmId();
           const match = saved && this.farms.find(f => String(f.id) === saved);

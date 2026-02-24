@@ -126,10 +126,37 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">{{ lang === 'km' ? 'ខ័ត់' : 'Province' }}</label>
+            <label class="form-label">{{ lang === 'km' ? 'ខែត្ត/ក្រុង' : 'Province' }}</label>
             <div class="form-input-icon">
               <span class="input-icon material-symbols-outlined">location_on</span>
-              <input class="form-input" type="text" v-model="editProvince" :placeholder="lang==='km' ? 'ខ័ត់/ករុង' : 'Province / City'" />
+              <select class="form-input" v-model="editProvince" style="padding-left:40px;">
+                <option value="">{{ lang === 'km' ? '-- ជ្រើសរើសខេត្ត --' : '-- Select Province --' }}</option>
+                <option value="Phnom Penh">ភ្នំពេញ / Phnom Penh</option>
+                <option value="Banteay Meanchey">បន្ទាយមានជ័យ / Banteay Meanchey</option>
+                <option value="Battambang">បាត់ដំបង / Battambang</option>
+                <option value="Kampong Cham">កំពង់ចាម / Kampong Cham</option>
+                <option value="Kampong Chhnang">កំពង់ឆ្នាំង / Kampong Chhnang</option>
+                <option value="Kampong Speu">កំពង់ស្ពឺ / Kampong Speu</option>
+                <option value="Kampong Thom">កំពង់ធំ / Kampong Thom</option>
+                <option value="Kampot">កំពត / Kampot</option>
+                <option value="Kandal">កណ្ដាល / Kandal</option>
+                <option value="Kep">កែប / Kep</option>
+                <option value="Koh Kong">កោះកុង / Koh Kong</option>
+                <option value="Kratié">ក្រចេះ / Kratié</option>
+                <option value="Mondulkiri">មណ្ឌលគីរី / Mondulkiri</option>
+                <option value="Oddar Meanchey">ឧត្តរមានជ័យ / Oddar Meanchey</option>
+                <option value="Pailin">បៃលិន / Pailin</option>
+                <option value="Preah Sihanouk">ព្រះសីហនុ / Preah Sihanouk</option>
+                <option value="Preah Vihear">ព្រះវិហារ / Preah Vihear</option>
+                <option value="Prey Veng">ព្រៃវែង / Prey Veng</option>
+                <option value="Pursat">ពោធិ៍សាត់ / Pursat</option>
+                <option value="Ratanakiri">រតនគីរី / Ratanakiri</option>
+                <option value="Siem Reap">សៀមរាប / Siem Reap</option>
+                <option value="Stung Treng">ស្ទឹងត្រែង / Stung Treng</option>
+                <option value="Svay Rieng">ស្វាយរៀង / Svay Rieng</option>
+                <option value="Takeo">តាកែវ / Takeo</option>
+                <option value="Tboung Khmum">ត្បូងឃ្មុំ / Tboung Khmum</option>
+              </select>
             </div>
           </div>
         </template>
