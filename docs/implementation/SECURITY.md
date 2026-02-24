@@ -21,19 +21,21 @@ This document specifies security requirements, authentication, authorization, en
 - Algorithm: HS256 (HMAC with SHA-256)
 - Expiration: 24 hours per token
 - Refresh: Automatic on login
-- Storage: HttpOnly cookie (not localStorage)
+- Storage: `localStorage` (client-side; not HttpOnly cookie)
 
 **Token Structure**:
 ```json
 {
   "sub": "user-uuid",
-  "phone_number": "+855981234567",
+  "email": "farmer@example.com",
+  "phone": null,
   "farm_id": "farm-uuid",
-  "role": "keeper",
+  "role": "farmer",
   "iat": 1677000000,
   "exp": 1677086400
 }
 ```
+> `email` and `phone` are nullable — only the field used at signup/login is populated.
 
 **Password Requirements**:
 - Minimum 8 characters
@@ -42,55 +44,45 @@ This document specifies security requirements, authentication, authorization, en
 - Expiration: 90 days (prompt for change)
 - Failure lockout: 5 failed attempts = 15 minute lockout
 
-### Authorization (RBAC)
+### Authorization (2-Role Farm System)
 
-**4 Roles defined**:
+**2 Farm Roles** (farmer-centric — no Admin, no Manager, no Keeper):
 
-**Admin**
-- Manage all users on farm
-- Update farm settings
-- View all audit logs
-- Billing management
-- System configuration
-- Full device control
-
-**Manager**
-- Invite new users (with specific roles)
-- Update own farm details
-- View audit logs
-- Full device control
-- Schedule creation/management
-- Cannot manage billing
-
-**Keeper**
-- Manual device control only
-- View schedules (read-only)
-- View logs (read-only)
-- No user management
-- No settings modification
+**Farmer**
+- Full farm management (settings, delete farm)
+- Manage all members (invite `farmer` or `viewer`, change role, remove)
+- Full device control and scheduling
+- View all analytics and audit logs
+- Multiple farmers can share the same farm with equal full access
 
 **Viewer**
-- Dashboard view only
-- Read-only access to all data
-- No control permissions
-- Cannot view sensitive settings
+- Read-only access to all monitoring data and alerts
+- Can **acknowledge alerts** (maintenance/worker role for large farms)
+- Cannot control devices, cannot change farm settings
+- No user management
+
+**Tokkatot System Staff** (not a `farm_users` role — system-level access only):
+- Manage registration keys (`registration_keys` table + `generate_reg_key.ps1`)
+- Control JWT configuration (`.env` `JWT_SECRET`, `REG_KEY`)
+- System-level bypasses for onboarding and support
+- Full visibility across all farms for support/diagnostic purposes
+- Access managed via server environment and `registration_keys` table, not via farm invitation
 
 **Permission Matrix**:
 
-| Resource | Admin | Manager | Keeper | Viewer |
-|----------|-------|---------|--------|--------|
-| User Management | ✓ | Limited | ✗ | ✗ |
-| Device Control | ✓ | ✓ | ✓ | ✗ |
-| Create Schedule | ✓ | ✓ | ✓ | ✗ |
-| Edit Schedule | ✓ | ✓ | Own only | ✗ |
-| View Analytics | ✓ | ✓ | ✓ | ✓ |
-| Farm Settings | ✓ | ✓ | ✗ | ✗ |
-| Billing | ✓ | ✗ | ✗ | ✗ |
-| Audit Logs | ✓ | ✓ | ✗ | ✗ |
+| Resource | Farmer | Viewer |
+|----------|--------|--------|
+| User Management | ✓ | ✗ |
+| Device Control | ✓ | ✗ |
+| Create Schedule | ✓ | ✗ |
+| View Analytics | ✓ | ✓ |
+| Farm Settings | ✓ | ✗ |
+| Audit Logs | ✓ | ✗ |
+| Acknowledge Alerts | ✓ | ✓ |
 
 ### Multi-Factor Authentication (MFA)
 
-**Optional for Admin accounts** (future feature):
+**Not implemented for farmers** — MFA is an optional future feature for Tokkatot staff/admin only:
 - Time-based One-Time Password (TOTP)
 - SMS codes (optional fallback)
 - Backup codes for account recovery
@@ -225,7 +217,7 @@ Time-Based Duration:
 - Firmware signed with private key
 - Device verifies signature before installing
 - Rollback protection (previous version kept)
-- Update restricted to admin/manager roles
+- Update restricted to farmer role
 - Staged rollout (test on single device first)
 
 ---
@@ -366,7 +358,7 @@ Referrer-Policy: strict-origin-when-cross-origin
   "event_type": "authentication_failure",
   "severity": "warning",
   "user_id": "uuid",
-  "phone_number": "+855981234567",
+  "identifier": "farmer@example.com",
   "ip_address": "203.0.113.45",
   "reason": "invalid_password",
   "attempt_number": 3,

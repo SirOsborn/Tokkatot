@@ -220,11 +220,11 @@ func CreateFarmHandler(c *fiber.Ctx) error {
 		return utils.InternalError(c, "Failed to create farm")
 	}
 
-	// Add creator as owner in farm_users
+	// Add creator as farmer in farm_users
 	farmUserID := uuid.New()
 	_, err = tx.Exec(`
 		INSERT INTO farm_users (id, farm_id, user_id, role, invited_by, created_at, updated_at)
-		VALUES ($1, $2, $3, 'owner', $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		VALUES ($1, $2, $3, 'farmer', $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`, farmUserID, farmID, userID)
 
 	if err != nil {
@@ -270,8 +270,8 @@ func UpdateFarmHandler(c *fiber.Ctx) error {
 		return utils.InternalError(c, "Failed to verify access")
 	}
 
-	if userRole != "owner" && userRole != "manager" {
-		return utils.Forbidden(c, "Only farm owners and managers can update farm details")
+	if userRole != "farmer" {
+		return utils.Forbidden(c, "Only farmers can update farm details")
 	}
 
 	var req struct {
@@ -352,8 +352,8 @@ func DeleteFarmHandler(c *fiber.Ctx) error {
 		return utils.InternalError(c, "Failed to verify access")
 	}
 
-	if userRole != "owner" {
-		return utils.Forbidden(c, "Only farm owners can delete farms")
+	if userRole != "farmer" {
+		return utils.Forbidden(c, "Only farmers can delete farms")
 	}
 
 	// Soft delete (set is_active = false)
@@ -449,14 +449,14 @@ func InviteFarmMemberHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "manager"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
 	var req struct {
 		Email *string `json:"email,omitempty"`
 		Phone *string `json:"phone,omitempty"`
-		Role  string  `json:"role"` // "manager" or "viewer"
+		Role  string  `json:"role"` // "farmer" or "viewer"
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return utils.BadRequest(c, "invalid_request", "Invalid request body")
@@ -464,8 +464,8 @@ func InviteFarmMemberHandler(c *fiber.Ctx) error {
 	if req.Email == nil && req.Phone == nil {
 		return utils.BadRequest(c, "missing_contact", "Email or phone is required")
 	}
-	if req.Role != "manager" && req.Role != "viewer" {
-		return utils.BadRequest(c, "invalid_role", "Role must be 'manager' or 'viewer'")
+	if req.Role != "farmer" && req.Role != "viewer" {
+		return utils.BadRequest(c, "invalid_role", "Role must be 'farmer' or 'viewer'")
 	}
 
 	// Find target user
@@ -536,7 +536,7 @@ func UpdateFarmMemberRoleHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid user ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "owner"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
@@ -551,8 +551,8 @@ func UpdateFarmMemberRoleHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return utils.BadRequest(c, "invalid_request", "Invalid request body")
 	}
-	if req.Role != "manager" && req.Role != "viewer" {
-		return utils.BadRequest(c, "invalid_role", "Role must be 'manager' or 'viewer'")
+	if req.Role != "farmer" && req.Role != "viewer" {
+		return utils.BadRequest(c, "invalid_role", "Role must be 'farmer' or 'viewer'")
 	}
 
 	result, err := database.DB.Exec(`
@@ -595,7 +595,7 @@ func RemoveFarmMemberHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid user ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "owner"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
@@ -605,7 +605,7 @@ func RemoveFarmMemberHandler(c *fiber.Ctx) error {
 
 	result, err := database.DB.Exec(`
 		UPDATE farm_users SET is_active = false, updated_at = CURRENT_TIMESTAMP
-		WHERE farm_id = $1 AND user_id = $2 AND role != 'owner'
+		WHERE farm_id = $1 AND user_id = $2 AND role != 'farmer'
 	`, farmID, targetUserID)
 	if err != nil {
 		log.Printf("Remove member error: %v", err)

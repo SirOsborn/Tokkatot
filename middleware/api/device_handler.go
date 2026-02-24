@@ -189,8 +189,8 @@ func SendDeviceCommandHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
 	}
 
-	// Check user has manager or owner role (device control permission)
-	err = checkFarmAccess(userID, farmID, "manager")
+	// Check user has farmer role (device control permission)
+	err = checkFarmAccess(userID, farmID, "farmer")
 	if err != nil {
 		return err
 	}
@@ -481,7 +481,7 @@ func AddDeviceHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "owner"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
@@ -552,7 +552,7 @@ func UpdateDeviceHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "manager"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
@@ -610,7 +610,7 @@ func DeleteDeviceHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "owner"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
@@ -825,7 +825,7 @@ func UpdateDeviceConfigHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "manager"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
@@ -880,7 +880,7 @@ func CalibrateDeviceHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "manager"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
@@ -942,7 +942,7 @@ func CancelCommandHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid command ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "manager"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
@@ -1054,7 +1054,7 @@ func EmergencyStopHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "manager"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 
@@ -1101,7 +1101,7 @@ func BatchDeviceCommandHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
 	}
 
-	if err := checkFarmAccess(userID, farmID, "manager"); err != nil {
+	if err := checkFarmAccess(userID, farmID, "farmer"); err != nil {
 		return err
 	}
 

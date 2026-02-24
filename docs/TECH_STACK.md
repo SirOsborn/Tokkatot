@@ -137,7 +137,7 @@ app.component('coop-card', {
 
 ### Schema Design
 ```sql
--- 8 tables, coop-centric design
+-- 14 tables, coop-centric design
 users → farms → coops → devices
                   ↓
               schedules, device_commands, event_logs
