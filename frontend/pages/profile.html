@@ -157,7 +157,7 @@ createApp({
       return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || '?';
     },
     roleLabel() {
-      const roles = { Owner: this.t('owner'), Manager: this.t('manager'), Viewer: this.t('viewer') };
+      const roles = { farmer: this.t('farmer') || 'Farmer', viewer: this.t('viewer') || 'Viewer' };
       return roles[this.user.role] || this.user.role || '--';
     }
   },

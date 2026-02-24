@@ -383,5 +383,20 @@ func CreateSchema() error {
 	}
 
 	log.Println("✅ Database schema created/updated")
+
+	// Run idempotent migrations for constraint changes
+	migrations := []string{
+		// Migrate farm_users role constraint from legacy (owner/manager/viewer) to current (farmer/viewer)
+		`ALTER TABLE farm_users DROP CONSTRAINT IF EXISTS farm_users_role_check`,
+		`ALTER TABLE farm_users ADD CONSTRAINT farm_users_role_check CHECK (role IN ('farmer', 'viewer'))`,
+		// Ensure legacy 'owner'/'manager' rows are updated to 'farmer'
+		`UPDATE farm_users SET role = 'farmer' WHERE role IN ('owner', 'manager')`,
+	}
+	for _, m := range migrations {
+		if _, merr := DB.Exec(m); merr != nil {
+			log.Printf("⚠️  Migration warning: %v", merr)
+		}
+	}
+
 	return nil
 }

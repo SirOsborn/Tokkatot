@@ -182,6 +182,22 @@ createApp({
 
         const data = await window.API.post('/v1/auth/signup', payload);
         if (data && data.success) {
+          // Auto-login after successful registration
+          try {
+            const loginData = await window.API.post('/v1/auth/login', {
+              email: this.email,
+              password: this.password
+            });
+            if (loginData && loginData.success && loginData.data) {
+              localStorage.setItem('access_token',  loginData.data.access_token);
+              localStorage.setItem('refresh_token', loginData.data.refresh_token);
+              if (loginData.data.user && loginData.data.user.name) {
+                localStorage.setItem('user_name', loginData.data.user.name);
+              }
+              window.location.href = '/';
+              return;
+            }
+          } catch (e) { /* fall through to login redirect */ }
           this.successMsg = this.t('register_success');
           setTimeout(() => { window.location.href = '/login'; }, 1800);
         } else {

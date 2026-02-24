@@ -223,7 +223,7 @@ func LoginHandler(c *fiber.Ctx) error {
 	query := `
 	SELECT id, email, phone, password_hash, name, language, is_active, contact_verified
 	FROM users
-	WHERE ($1::TEXT IS NULL OR email = $1) OR ($2::TEXT IS NULL OR phone = $2)
+	WHERE ($1::TEXT IS NOT NULL AND email = $1) OR ($2::TEXT IS NOT NULL AND phone = $2)
 	`
 
 	err := database.DB.QueryRow(query, req.Email, req.Phone).Scan(

@@ -272,10 +272,10 @@
     // Fetch farms — prefer locally stored farm id
     const storedFarm = window.API.getSelectedFarmId();
     const farmsRes = await apiFetch('/v1/farms');
-    if (!farmsRes || !farmsRes.success || !farmsRes.data || farmsRes.data.length === 0) {
+    if (!farmsRes || !farmsRes.success || !farmsRes.data?.data || farmsRes.data.data.length === 0) {
       return showError('No farms found');
     }
-    farmId = storedFarm || farmsRes.data[0].id;
+    farmId = storedFarm || farmsRes.data.data[0].id;
 
     // Fetch coops
     const coopsRes = await apiFetch(`/v1/farms/${farmId}/coops`);
