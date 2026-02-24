@@ -207,7 +207,7 @@ createApp({
     },
     avatarSrc() {
       const role = this.user.role || 'viewer';
-      return `/assets/images/avatar-${role}.png`;
+      return `/assets/images/${role}-avatar.png`;
     },
     roleLabel() {
       const roles = { farmer: this.t('farmer') || 'Farmer', viewer: this.t('viewer') || 'Viewer' };
