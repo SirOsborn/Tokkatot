@@ -99,7 +99,7 @@ docs/
 - ✅ New API endpoint or modified endpoint behavior
 - ✅ New automation pattern (schedule types, sensor triggers)
 - ✅ New UI component (schedule builder, device control panel)
-- ✅ Architecture decision (SQLite fallback, JWT auth flow)
+- ✅ Architecture decision (PostgreSQL-only stack, JWT auth flow)
 - ✅ Integration work (Go → FastAPI → PyTorch, MQTT protocol)
 
 **Don't update for**:

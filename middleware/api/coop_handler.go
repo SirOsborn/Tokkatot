@@ -173,8 +173,8 @@ func CreateCoopHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
 	}
 
-	// Check user has manager or owner role
-	err = checkFarmAccess(userID, farmID, "manager")
+	// Check user has farmer role
+	err = checkFarmAccess(userID, farmID, "farmer")
 	if err != nil {
 		return err
 	}
@@ -257,8 +257,8 @@ func UpdateCoopHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid coop ID")
 	}
 
-	// Check user has manager or owner role
-	err = checkFarmAccess(userID, farmID, "manager")
+	// Check user has farmer role
+	err = checkFarmAccess(userID, farmID, "farmer")
 	if err != nil {
 		return err
 	}
@@ -328,8 +328,8 @@ func DeleteCoopHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "invalid_id", "Invalid coop ID")
 	}
 
-	// Check user is owner
-	err = checkFarmAccess(userID, farmID, "owner")
+	// Check user is farmer
+	err = checkFarmAccess(userID, farmID, "farmer")
 	if err != nil {
 		return err
 	}
@@ -571,11 +571,10 @@ func checkFarmAccess(userID, farmID uuid.UUID, minRole string) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Failed to verify access")
 	}
 
-	// Check role hierarchy: owner > manager > viewer
+	// Check role hierarchy: farmer > viewer
 	roleHierarchy := map[string]int{
-		"owner":   3,
-		"manager": 2,
-		"viewer":  1,
+		"farmer": 2,
+		"viewer": 1,
 	}
 
 	if roleHierarchy[userRole] < roleHierarchy[minRole] {

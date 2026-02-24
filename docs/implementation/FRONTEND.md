@@ -1,8 +1,8 @@
 # Frontend Implementation - Vue.js 3 Migration
 
 **Last Updated**: February 24, 2026  
-**Status**: MVP Pages Complete (all pages exist; Vue.js migration planned post-MVP)  
-**Tech Stack**: Vanilla HTML/CSS/JS (current MVP) → Vue.js 3 CDN (next phase)
+**Status**: Vue.js 3 CDN active — all pages rebuilt; schedules page not yet built  
+**Tech Stack**: Vue.js 3 CDN (no build step) — Mi Sans, Material Symbols, full design system
 
 ---
 
@@ -67,9 +67,9 @@ token = localStorage.getItem('token');
 if (!token) window.location.href = '/login';
 
 // API calls
-GET /api/v1/farms             → get farmId
-GET /api/v1/farms/{id}/coops  → populate coop picker
-GET /api/v1/farms/{fid}/coops/{cid}/temperature-timeline?days=7  → render page
+GET /v1/farms             → get farmId
+GET /v1/farms/{id}/coops  → populate coop picker
+GET /v1/farms/{fid}/coops/{cid}/temperature-timeline?days=7  → render page
 ```
 
 #### No sensor handling

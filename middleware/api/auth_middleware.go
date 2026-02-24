@@ -39,7 +39,7 @@ func AuthMiddleware(c *fiber.Ctx) error {
 }
 
 // RequireRole checks if user has the required role
-// Usage: RequireRole("manager", "owner") for multiple allowed roles
+// Usage: RequireRole("farmer") or RequireRole("farmer", "viewer") for multiple allowed roles
 func RequireRole(allowedRoles ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userRole := c.Locals("role")
@@ -69,14 +69,14 @@ func RequireRole(allowedRoles ...string) fiber.Handler {
 	}
 }
 
-// RequireOwner checks if user is farm owner
+// RequireOwner checks if user is a farmer (full farm access)
 func RequireOwner(c *fiber.Ctx) error {
-	return RequireRole("owner")(c)
+	return RequireRole("farmer")(c)
 }
 
-// RequireManagerOrOwner checks if user is manager or owner
+// RequireManagerOrOwner checks if user has farmer role (full farm access)
 func RequireManagerOrOwner(c *fiber.Ctx) error {
-	return RequireRole("manager", "owner")(c)
+	return RequireRole("farmer")(c)
 }
 
 // RequireAnyRole allows any authenticated role

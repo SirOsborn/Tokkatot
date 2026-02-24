@@ -32,7 +32,7 @@ docs/
 │
 ├── implementation/          Component Development
 │   ├── API.md               Backend API (67 endpoints)
-│   ├── DATABASE.md          PostgreSQL schema (8 tables)
+│   ├── DATABASE.md          PostgreSQL schema (14 tables)
 │   ├── FRONTEND.md          Vue.js 3 migration
 │   ├── AI_SERVICE.md        Disease detection (PyTorch)
 │   ├── EMBEDDED.md          ESP32 firmware
@@ -86,9 +86,9 @@ docs/
 
 ### Database (PostgreSQL)
 **[implementation/DATABASE.md](implementation/DATABASE.md)**
-- Schema design (8 tables: users, farms, coops, devices, sensor_data, etc.)
+- Schema design (14 tables: users, farms, farm_users, coops, devices, device_configurations, schedules, schedule_executions, device_commands, event_logs, alerts, alert_subscriptions, device_readings, etc.)
 - Indexes & performance tuning
-- Simplified RBAC (Owner, Manager, Viewer)
+- Simplified RBAC (Farmer, Viewer)
 - Migrations
 - Query examples
 
@@ -124,7 +124,7 @@ docs/
 **[implementation/SECURITY.md](implementation/SECURITY.md)**
 - JWT authentication (access tokens, refresh tokens)
 - Registration key system (FREE verification, no SMS costs)
-- RBAC (Owner/Manager/Viewer)
+- RBAC (Farmer/Viewer)
 - Password hashing (bcrypt)
 - TLS/SSL certificates
 - API security best practices
