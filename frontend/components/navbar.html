@@ -1,22 +1,25 @@
-<!-- components/navbar.html -->
-<footer id="bottom-navbar">
-    <nav>
-        <ul>
-            <li>
-                <a href="#" id="nav-home"
-                    ><img src="../assets/icons/building.png" alt="Home"
-                /></a>
-            </li>
-            <li>
-                <a href="#" id="nav-disease-detection"
-                    ><img src="../assets/icons/disease.png" alt="AI Disease Detection"
-                /></a>
-            </li>
-            <li>
-                <a href="#" id="nav-settings"
-                    ><img src="../assets/icons/setting.png" alt="Settings"
-                /></a>
-            </li>
-        </ul>
-    </nav>
-</footer>
+<!-- Tokkatot Bottom Navigation Component -->
+<nav class="bottom-nav" id="app-navbar">
+  <a href="/" class="nav-item" data-nav="home">
+    <span class="material-symbols-outlined">home</span>
+    <span data-i18n="nav_home">ផ្ទះ</span>
+  </a>
+  <a href="/monitoring" class="nav-item" data-nav="monitoring">
+    <span class="material-symbols-outlined">thermostat</span>
+    <span data-i18n="nav_monitoring">ការត្រួតពិនិត្យ</span>
+  </a>
+  <a href="/disease-detection" class="nav-item" data-nav="disease">
+    <span class="material-symbols-outlined">biotech</span>
+    <span data-i18n="nav_disease">ជំងឺ</span>
+  </a>
+  <a href="/schedules" class="nav-item" data-nav="schedules">
+    <span class="material-symbols-outlined">schedule</span>
+    <span data-i18n="nav_schedules">កាលវិភាគ</span>
+  </a>
+  <a href="/settings" class="nav-item" data-nav="settings">
+    <span class="material-symbols-outlined">settings</span>
+    <span data-i18n="nav_settings">ការកំណត់</span>
+  </a>
+</nav>
+
+

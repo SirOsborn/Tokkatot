@@ -1,13 +1,27 @@
-<!-- Header Clock and Profile-->
-<header class="main-header">
-	<div class="datetime">
-		📅
-		<b id="t"></b>
-		🕰️
-		<b id="t2"></b>
-	</div>
-	<a href="#" class="profile-info">
-		<p><span>កសិករ​ ៖ </span><span id="username"></span></p>
-		<img src="../assets/images/tokkatot logo-02.png" alt="Profile" />
-	</a>
+<!-- Tokkatot Top Header Component -->
+<header class="top-header" id="app-header">
+  <div class="header-logo">
+    <img src="/assets/images/tokkatot logo-02.png" alt="Tokkatot" />
+    <span class="header-title" id="header-farm-name">Tokkatot</span>
+  </div>
+
+  <div class="header-actions">
+    <!-- Language toggle -->
+    <button class="lang-toggle" id="lang-toggle-btn" onclick="headerToggleLang()">
+      KM
+    </button>
+
+    <!-- Alert bell -->
+    <a href="#" class="header-icon-btn" id="header-alert-btn">
+      <span class="material-symbols-outlined">notifications</span>
+      <span class="badge" id="header-alert-badge" style="display:none;"></span>
+    </a>
+
+    <!-- Profile avatar -->
+    <a href="/profile" class="header-icon-btn">
+      <span class="material-symbols-outlined">account_circle</span>
+    </a>
+  </div>
 </header>
+
+
