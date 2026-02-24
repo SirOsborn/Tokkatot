@@ -1,77 +1,203 @@
-    <!DOCTYPE html>
-    <html lang="km">
-        <head>
-            <meta charset="UTF-8" />
-            <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title>ព័ត៌មានលម្អិត - Smart Poultry</title>
-            <link rel="stylesheet" href="../css/styleProfile.css" />
-            <link rel="stylesheet" href="../css/styleHeader.css" />
-            <link rel="stylesheet" href="../css/stylenavbar.css" />
-            <link rel="icon" href="../assets/images/tokkatot logo-02.png" type="image/x-icon" />
-        </head>
-        <body>
-            <div class="container">
-                <!-- Header Placeholder -->
-                <div id="header-placeholder"></div>
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Tokkatot - ប្រវត្តិ</title>
+  <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    .avatar-section { display: flex; flex-direction: column; align-items: center; padding: var(--space-xl) var(--space-md) var(--space-lg); gap: var(--space-md); }
+    .avatar-circle { width: 96px; height: 96px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .avatar-name  { font-size: var(--font-size-xl); font-weight: 700; }
+    .avatar-role  { display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary); font-size: var(--font-size-sm); font-weight: 600; }
+    .profile-form { display: flex; flex-direction: column; gap: var(--space-md); }
+  </style>
+</head>
+<body>
 
-                <!-- Facebook QR Section -->
-                <div class="contact-card qr-card">
-                    <p class="qr-text">តាមដានពួកយើងនៅលើ Facebook</p>
-                    <img src="../assets/images/facebook-qr.jpg" alt="Facebook QR" class="qr-image">
-                </div>
+<div id="header-placeholder"></div>
 
-                <!-- About Us Section -->
-                <div class="profile-section">
-                    <!-- University Info -->
-                    <div class="university-info">
-                        <img src="../assets/images/camtech.jpg" alt="CamTech University Logo" class="university-logo">
-                        <h2>គម្រោងនិស្សិតនៃសាកលវិទ្យាល័យ CamTech</h2>
-                    </div>
+<div id="app">
 
-                    <!-- Project Info -->
-                    <div class="project-info">
-                        <h3>អំពីគម្រោង Smart Poultry</h3>
-                        <p>គម្រោងនេះត្រូវបានបង្កើតឡើងដើម្បីជួយកសិករក្នុងការគ្រប់គ្រងស្រុកមាន់របស់ពួកគេប្រកបដោយប្រសិទ្ធភាព តាមរយៈការប្រើប្រាស់បច្ចេកវិទ្យា IoT។</p>
-                        <ul>
-                            <li>កាត់បន្ថយការប្រើប្រាស់កម្លាំងពលកម្មសម្រាប់កសិករ</li>
-                            <li>បង្កើនប្រាក់ចំណូលតាមរយៈការគ្រប់គ្រងដោយស្វ័យប្រវត្តិ</li>
-                            <li>តាមដានសីតុណ្ហភាព និងសំណើមដោយស្វ័យប្រវត្តិ</li>
-                            <li>គ្រប់គ្រងប្រព័ន្ធបំភ្លឺ ចំណីអាហារ និងទឹក</li>
-                        </ul>
-                    </div>
+  <div v-if="loading" class="loading-spinner">
+    <div class="spinner"></div>
+  </div>
 
-                    <!-- Support Info -->
-                    <div class="support-info">
-                        <h3>ជំនួយបច្ចេកទេស</h3>
-                        <div class="contact-cards">
-                            <div class="contact-card">
-                                <span class="material-icons-sharp">phone</span>
-                                <p>088 944 449</p>
-                            </div>
-                            <div class="contact-card">
-                                <span class="material-icons-sharp">phone</span>
-                                <p>099 992 939</p>
-                            </div>
-                        </div>
-                    </div>
+  <template v-else>
+    <!-- Avatar + name -->
+    <div class="avatar-section">
+      <div class="avatar-circle">{{ initials }}</div>
+      <div style="text-align:center;">
+        <div class="avatar-name">{{ user.name || '--' }}</div>
+        <div class="avatar-role">
+          <span class="material-symbols-outlined" style="font-size:18px;">verified_user</span>
+          {{ roleLabel }}
+        </div>
+      </div>
+    </div>
 
-                    <!-- University Link -->
-                    <div class="university-link">
-                        <h3>គេហទំព័រសាកលវិទ្យាល័យ</h3>
-                        <a href="https://camtech.edu.kh" target="_blank" class="camtech-button">
-                            <span class="material-icons-sharp">school</span>
-                            CamTech University
-                        </a>
-                    </div>
-                </div>
+    <!-- Info / Edit form -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title" data-i18n="my_profile">គណនីខ្ញុំ</span>
+        <button class="btn btn-outline btn-sm" @click="editing = !editing">
+          <span class="material-symbols-outlined" style="font-size:18px;">{{ editing ? 'close' : 'edit' }}</span>
+          {{ editing ? t('cancel') : t('edit_profile') }}
+        </button>
+      </div>
 
-                <!-- Notification Toast -->
-                <!-- <div id="notification" class="notification"></div> -->
-            </div>
-            <script src="../js/index.js"></script>
-            <script src="../js/header.js"></script>
-            <script src="../js/navbar.js"></script>
-            <script src="../js/profile.js"></script>
-        </body>
-    </html> 
+      <!-- Error/success -->
+      <div v-if="errorMsg" class="alert alert-danger mb-md">
+        <span class="material-symbols-outlined">error</span>{{ errorMsg }}
+      </div>
+      <div v-if="successMsg" class="alert alert-success mb-md">
+        <span class="material-symbols-outlined">check_circle</span>{{ successMsg }}
+      </div>
+
+      <!-- View mode -->
+      <div v-if="!editing" class="list-group">
+        <div class="list-item">
+          <div class="list-item-icon"><span class="material-symbols-outlined">person</span></div>
+          <div class="list-item-content">
+            <div class="list-item-subtitle" data-i18n="full_name">ឈ្មោះពេញ</div>
+            <div class="list-item-title">{{ user.name || '--' }}</div>
+          </div>
+        </div>
+        <div class="list-item">
+          <div class="list-item-icon"><span class="material-symbols-outlined">mail</span></div>
+          <div class="list-item-content">
+            <div class="list-item-subtitle" data-i18n="email">អ៊ីមែល</div>
+            <div class="list-item-title">{{ user.email || '--' }}</div>
+          </div>
+        </div>
+        <div class="list-item">
+          <div class="list-item-icon"><span class="material-symbols-outlined">phone</span></div>
+          <div class="list-item-content">
+            <div class="list-item-subtitle" data-i18n="phone">ទូរស័ព្ទ</div>
+            <div class="list-item-title">{{ user.phone || '--' }}</div>
+          </div>
+        </div>
+        <div class="list-item">
+          <div class="list-item-icon"><span class="material-symbols-outlined">badge</span></div>
+          <div class="list-item-content">
+            <div class="list-item-subtitle" data-i18n="role">តួនាទី</div>
+            <div class="list-item-title">{{ roleLabel }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit mode -->
+      <div v-else class="profile-form">
+        <div class="form-group">
+          <label class="form-label" data-i18n="full_name">ឈ្មោះពេញ</label>
+          <div class="form-input-icon">
+            <span class="input-icon material-symbols-outlined">person</span>
+            <input class="form-input" type="text" v-model="editName" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="phone">ទូរស័ព្ទ</label>
+          <div class="form-input-icon">
+            <span class="input-icon material-symbols-outlined">phone</span>
+            <input class="form-input" type="tel" v-model="editPhone" inputmode="tel" />
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" @click="saveProfile" :disabled="saving">
+          <span v-if="saving" class="spinner" style="width:22px;height:22px;border-width:3px;"></span>
+          <span v-else data-i18n="save">រក្សាទុក</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- About section -->
+    <div class="section" style="padding-top:0;">
+      <div class="list-group">
+        <a href="https://camtech.edu.kh" target="_blank" class="list-item">
+          <div class="list-item-icon"><span class="material-symbols-outlined">school</span></div>
+          <div class="list-item-content">
+            <div class="list-item-title">CamTech University</div>
+            <div class="list-item-subtitle">camtech.edu.kh</div>
+          </div>
+          <span class="list-item-chevron material-symbols-outlined">open_in_new</span>
+        </a>
+        <div class="list-item">
+          <div class="list-item-icon"><span class="material-symbols-outlined">info</span></div>
+          <div class="list-item-content">
+            <div class="list-item-title" data-i18n="about">អំពី</div>
+            <div class="list-item-subtitle">Tokkatot v2.0 — Smart Poultry Farm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+</div><!-- #app -->
+
+<div id="navbar-placeholder"></div>
+
+<script src="/js/utils/i18n.js"></script>
+<script src="/js/utils/api.js"></script>
+<script src="/js/utils/components.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue;
+createApp({
+  data() {
+    return {
+      loading: true, saving: false, editing: false,
+      user: {}, editName: '', editPhone: '',
+      errorMsg: '', successMsg: ''
+    };
+  },
+  computed: {
+    initials() {
+      const n = this.user.name || '';
+      return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || '?';
+    },
+    roleLabel() {
+      const roles = { Owner: this.t('owner'), Manager: this.t('manager'), Viewer: this.t('viewer') };
+      return roles[this.user.role] || this.user.role || '--';
+    }
+  },
+  async mounted() {
+    if (!window.API.requireAuth()) return;
+    await loadComponents();
+    await this.loadProfile();
+  },
+  methods: {
+    t(k) { return window.i18n ? window.i18n.t(k) : k; },
+    async loadProfile() {
+      this.loading = true;
+      try {
+        const data = await window.API.get('/v1/auth/me');
+        this.user = (data && data.data && data.data.user) ? data.data.user : (data && data.data ? data.data : {});
+        this.editName  = this.user.name  || '';
+        this.editPhone = this.user.phone || '';
+      } catch(e) { console.error(e); }
+      finally { this.loading = false; }
+    },
+    async saveProfile() {
+      this.errorMsg = ''; this.successMsg = ''; this.saving = true;
+      try {
+        const data = await window.API.patch('/v1/auth/me', {
+          name: this.editName,
+          phone: this.editPhone
+        });
+        if (data && data.success) {
+          this.user.name  = this.editName;
+          this.user.phone = this.editPhone;
+          this.successMsg = this.t('success');
+          this.editing = false;
+        } else {
+          this.errorMsg = (data && data.message) || this.t('error');
+        }
+      } catch(e) { this.errorMsg = this.t('error'); }
+      finally { this.saving = false; }
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

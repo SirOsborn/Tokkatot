@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Tokkatot - កាលវិភាគ</title>
+  <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    /* Schedule card */
+    .schedule-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: var(--space-sm);
+    }
+    .schedule-card-body {
+      padding: var(--space-md);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+    }
+    .schedule-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--color-primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+    .schedule-name  { font-size: var(--font-size-base); font-weight: 700; }
+    .schedule-sub   { font-size: var(--font-size-sm);   color: var(--color-text-secondary); margin-top: 2px; }
+    .schedule-time  { font-size: var(--font-size-sm);   color: var(--color-primary);        margin-top: 4px; font-weight: 600; }
+    .schedule-card-footer {
+      border-top: 1px solid var(--color-border);
+      padding: var(--space-sm) var(--space-md);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .exec-btn { min-height: 36px; padding: 0 var(--space-md); font-size: var(--font-size-sm); font-weight: 600; border-radius: var(--radius-full); border: 2px solid var(--color-primary); color: var(--color-primary); background: transparent; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+    .exec-btn:active { background: var(--color-primary-light); }
+    .del-btn  { min-height: 36px; padding: 0 var(--space-sm); font-size: var(--font-size-sm); font-weight: 600; border-radius: var(--radius-full); border: none; color: var(--color-danger); background: transparent; cursor: pointer; margin-left: auto; }
+
+    /* Create / Edit modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: var(--color-overlay); z-index: 300;
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    .modal-sheet {
+      background: var(--color-surface); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto;
+      padding: var(--space-lg) var(--space-md) calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+    }
+    .modal-handle { width: 40px; height: 4px; background: var(--color-border); border-radius: 4px; margin: 0 auto var(--space-lg); }
+    .modal-title  { font-size: var(--font-size-xl); font-weight: 700; margin-bottom: var(--space-lg); }
+    .modal-form   { display: flex; flex-direction: column; gap: var(--space-md); }
+    .modal-actions { display: flex; gap: var(--space-md); margin-top: var(--space-sm); }
+
+    /* Sequence builder */
+    .seq-step { display: flex; align-items: center; gap: var(--space-sm); background: var(--color-bg); border-radius: var(--radius-md); padding: var(--space-sm); margin-bottom: var(--space-xs); }
+    .seq-number { width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary); color: #fff; font-size: var(--font-size-sm); font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .seq-action-select { flex: 1; }
+    .seq-dur-input { width: 90px; flex-shrink: 0; }
+    .seq-del { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--color-danger); cursor: pointer; flex-shrink: 0; }
+
+    .fab {
+      position: fixed; bottom: calc(var(--nav-height) + var(--space-md) + env(safe-area-inset-bottom, 0px));
+      right: var(--space-md);
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--color-primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-lg); z-index: 50;
+      cursor: pointer; border: none;
+    }
+    .fab .material-symbols-outlined { font-size: 28px; }
+  </style>
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+
+<div id="app">
+
+  <!-- Delete confirm modal -->
+  <div v-if="deleteTarget" class="modal-backdrop" @click.self="deleteTarget=null">
+    <div class="modal-sheet" style="max-height:280px;">
+      <div class="modal-handle"></div>
+      <div style="text-align:center;padding:var(--space-md) 0;">
+        <span class="material-symbols-outlined" style="font-size:48px;color:var(--color-danger);">delete</span>
+        <h2 style="margin:var(--space-sm) 0;">{{ t('delete') }}?</h2>
+        <p class="color-muted" style="margin-bottom:var(--space-lg);">{{ deleteTarget.name }}</p>
+        <div style="display:flex;gap:var(--space-md);">
+          <button class="btn btn-ghost flex-1" @click="deleteTarget=null">{{ t('cancel') }}</button>
+          <button class="btn btn-danger flex-1" @click="confirmDelete" :disabled="deleting">
+            <span v-if="deleting" class="spinner" style="width:20px;height:20px;border-width:3px;"></span>
+            <span v-else>{{ t('delete') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create / Edit modal -->
+  <div v-if="showForm" class="modal-backdrop" @click.self="closeForm">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">{{ editingId ? t('edit_schedule') : t('add_schedule') }}</div>
+
+      <div v-if="formError" class="alert alert-danger" style="margin-bottom:var(--space-md);">
+        <span class="material-symbols-outlined">error</span>{{ formError }}
+      </div>
+
+      <div class="modal-form">
+        <!-- Name -->
+        <div class="form-group">
+          <label class="form-label">{{ t('schedule_name') }}</label>
+          <div class="form-input-icon">
+            <span class="input-icon material-symbols-outlined">edit</span>
+            <input class="form-input" type="text" v-model="form.name" :placeholder="t('schedule_name')" />
+          </div>
+        </div>
+
+        <!-- Device -->
+        <div class="form-group">
+          <label class="form-label">{{ t('devices') }}</label>
+          <select class="form-select" v-model="form.device_id">
+            <option value="">-- {{ t('devices') }} --</option>
+            <option v-for="d in devices" :key="d.id" :value="d.id">{{ d.name }}</option>
+          </select>
+        </div>
+
+        <!-- Action -->
+        <div class="form-group">
+          <label class="form-label">{{ t('action') }}</label>
+          <select class="form-select" v-model="form.action_value">
+            <option value="on">{{ t('turn_on') }}</option>
+            <option value="off">{{ t('turn_off') }}</option>
+          </select>
+        </div>
+
+        <!-- Cron expression -->
+        <div class="form-group">
+          <label class="form-label">{{ t('cron_expr') }}</label>
+          <div class="form-input-icon">
+            <span class="input-icon material-symbols-outlined">schedule</span>
+            <input class="form-input" type="text" v-model="form.cron_expression"
+              placeholder="0 6 * * *" autocomplete="off" />
+          </div>
+          <span class="text-xs color-muted" style="margin-top:4px;">{{ cronHint }}</span>
+        </div>
+
+        <!-- Simple auto-off duration OR sequence toggle -->
+        <div class="form-group">
+          <label class="form-label">{{ t('duration') }} ({{ lang === 'km' ? 'វិនាទី — 0 = មិនដំណើរការ' : 'seconds — 0 = disabled' }})</label>
+          <div class="form-input-icon">
+            <span class="input-icon material-symbols-outlined">timer</span>
+            <input class="form-input" type="number" min="0" v-model.number="form.action_duration"
+              placeholder="0" :disabled="useSequence" />
+          </div>
+        </div>
+
+        <!-- Multi-step sequence toggle -->
+        <div class="list-item" style="border-radius:var(--radius-md);border:1px solid var(--color-border);">
+          <div class="list-item-content">
+            <div class="list-item-title">{{ lang === 'km' ? 'លំដាប់ច្រើនជំហាន' : 'Multi-step sequence' }}</div>
+            <div class="list-item-subtitle">{{ lang === 'km' ? 'ON/OFF ជំហានៗ' : 'Pulse ON/OFF pattern' }}</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="useSequence" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Sequence builder -->
+        <div v-if="useSequence">
+          <div v-for="(step, idx) in form.sequence" :key="idx" class="seq-step">
+            <div class="seq-number">{{ idx + 1 }}</div>
+            <select class="form-select seq-action-select" v-model="step.action" style="min-height:40px;font-size:var(--font-size-sm);">
+              <option value="ON">{{ t('turn_on') }}</option>
+              <option value="OFF">{{ t('turn_off') }}</option>
+            </select>
+            <input class="form-input seq-dur-input" type="number" min="0" v-model.number="step.duration"
+              placeholder="s" style="min-height:40px;font-size:var(--font-size-sm);" />
+            <span class="seq-del material-symbols-outlined" @click="removeStep(idx)"
+              v-if="form.sequence.length > 1">delete</span>
+          </div>
+          <button class="btn btn-outline btn-sm w-full" style="margin-top:var(--space-xs);" @click="addStep">
+            <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+            {{ lang === 'km' ? 'បន្ថែមជំហាន' : 'Add Step' }}
+          </button>
+        </div>
+
+        <!-- Enabled toggle -->
+        <div class="list-item" style="border-radius:var(--radius-md);border:1px solid var(--color-border);">
+          <div class="list-item-content">
+            <div class="list-item-title">{{ t('enabled') }}</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="form.is_enabled" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="modal-actions">
+          <button class="btn btn-ghost flex-1" @click="closeForm">{{ t('cancel') }}</button>
+          <button class="btn btn-primary flex-1" @click="saveSchedule" :disabled="saving">
+            <span v-if="saving" class="spinner" style="width:22px;height:22px;border-width:3px;"></span>
+            <span v-else>{{ t('save') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page content -->
+  <div class="page-title" data-i18n="schedules">កាលវិភាគ</div>
+
+  <div v-if="loading" class="loading-spinner"><div class="spinner"></div></div>
+
+  <div v-else class="section" style="padding-top:0;">
+    <!-- Empty -->
+    <div v-if="schedules.length === 0" class="empty-state">
+      <span class="material-symbols-outlined">schedule</span>
+      <span class="empty-state-title" data-i18n="no_data">មិនមានទិន្នន័យ</span>
+      <p class="empty-state-text text-sm">{{ lang === 'km' ? 'ចុចប៊ូតុង + ដើម្បីបង្កើតកាលវិភាគ' : 'Tap + to create a schedule' }}</p>
+    </div>
+
+    <!-- Schedule cards -->
+    <div v-for="s in schedules" :key="s.id" class="schedule-card">
+      <div class="schedule-card-body">
+        <div class="schedule-icon">
+          <span class="material-symbols-outlined">schedule</span>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="schedule-name">{{ s.name }}</div>
+          <div class="schedule-sub">{{ deviceName(s.device_id) }}</div>
+          <div class="schedule-time">
+            <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">alarm</span>
+            {{ s.cron_expression }}
+          </div>
+        </div>
+        <label class="toggle-switch" style="flex-shrink:0;">
+          <input type="checkbox" :checked="s.is_enabled" @change="toggleEnabled(s)" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="schedule-card-footer">
+        <span class="badge" :class="s.is_enabled ? 'badge-success' : 'badge-neutral'">
+          {{ s.is_enabled ? t('enabled') : t('disabled') }}
+        </span>
+        <button class="exec-btn" @click="executeNow(s)" :disabled="s.executing">
+          <span v-if="s.executing" class="spinner" style="width:16px;height:16px;border-width:2px;"></span>
+          <span v-else class="material-symbols-outlined" style="font-size:16px;">play_arrow</span>
+          {{ lang === 'km' ? 'ដំណើរការឥឡូវ' : 'Run Now' }}
+        </button>
+        <button class="exec-btn" @click="openEdit(s)" style="margin-left:4px;">
+          <span class="material-symbols-outlined" style="font-size:16px;">edit</span>
+        </button>
+        <button class="del-btn" @click="promptDelete(s)">
+          <span class="material-symbols-outlined" style="font-size:20px;">delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<!-- FAB -->
+<button class="fab" @click="openCreate" v-if="!showForm && !deleteTarget">
+  <span class="material-symbols-outlined">add</span>
+</button>
+
+<div id="navbar-placeholder"></div>
+
+<script src="/js/utils/i18n.js"></script>
+<script src="/js/utils/api.js"></script>
+<script src="/js/utils/components.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue;
+
+const EMPTY_FORM = {
+  name: '', device_id: '', action_value: 'on', cron_expression: '0 6 * * *',
+  action_duration: 0, is_enabled: true,
+  sequence: [{ action: 'ON', duration: 30 }, { action: 'OFF', duration: 10 }]
+};
+
+const CRON_HINTS = [
+  { re: /^0 6 \* \* \*$/, km: 'រៀងរាល់ថ្ងៃ ម៉ោង 6:00',  en: 'Every day at 6:00 AM' },
+  { re: /^0 12 \* \* \*$/, km: 'រៀងរាល់ថ្ងៃ ម៉ោង 12:00', en: 'Every day at 12:00 PM' },
+  { re: /^0 18 \* \* \*$/, km: 'រៀងរាល់ថ្ងៃ ម៉ោង 18:00', en: 'Every day at 6:00 PM' },
+  { re: /^0 \*\/(\d+) \* \* \*$/, km: (m)=>`រៀងរាល់ ${m[1]} ម៉ោង`, en: (m)=>`Every ${m[1]} hours` },
+];
+
+createApp({
+  data() {
+    return {
+      loading: true, saving: false, deleting: false,
+      schedules: [], devices: [],
+      showForm: false, editingId: null,
+      form: JSON.parse(JSON.stringify(EMPTY_FORM)),
+      useSequence: false,
+      formError: '',
+      deleteTarget: null,
+      lang: window.i18n ? window.i18n.getLang() : 'km'
+    };
+  },
+  computed: {
+    cronHint() {
+      const expr = (this.form.cron_expression || '').trim();
+      for (const h of CRON_HINTS) {
+        const m = expr.match(h.re);
+        if (m) return typeof h[this.lang] === 'function' ? h[this.lang](m) : h[this.lang];
+      }
+      return '';
+    }
+  },
+  async mounted() {
+    if (!window.API.requireAuth()) return;
+    await loadComponents();
+    await Promise.all([this.loadSchedules(), this.loadDevices()]);
+  },
+  methods: {
+    t(k) { return window.i18n ? window.i18n.t(k) : k; },
+
+    getFarmId() { return window.API.getSelectedFarmId(); },
+
+    deviceName(id) {
+      const d = this.devices.find(x => x.id === id);
+      return d ? d.name : (id || '--');
+    },
+
+    async loadSchedules() {
+      this.loading = true;
+      const fid = this.getFarmId();
+      if (!fid) { this.loading = false; return; }
+      try {
+        const data = await window.API.get('/v1/farms/' + fid + '/schedules');
+        this.schedules = ((data && data.data && data.data.schedules) ? data.data.schedules : [])
+          .map(s => ({ ...s, executing: false }));
+      } catch(e) { console.error(e); }
+      finally { this.loading = false; }
+    },
+
+    async loadDevices() {
+      const fid = this.getFarmId();
+      if (!fid) return;
+      try {
+        const data = await window.API.get('/v1/farms/' + fid + '/devices');
+        this.devices = (data && data.data && data.data.devices) ? data.data.devices : [];
+      } catch(e) { console.error(e); }
+    },
+
+    openCreate() {
+      this.editingId = null;
+      this.form = JSON.parse(JSON.stringify(EMPTY_FORM));
+      this.form.device_id = this.devices[0] ? this.devices[0].id : '';
+      this.useSequence = false;
+      this.formError = '';
+      this.showForm = true;
+    },
+
+    openEdit(s) {
+      this.editingId = s.id;
+      this.form = {
+        name: s.name, device_id: s.device_id,
+        action_value: s.action_value || 'on',
+        cron_expression: s.cron_expression || '0 6 * * *',
+        action_duration: s.action_duration || 0,
+        is_enabled: s.is_enabled,
+        sequence: s.action_sequence ? JSON.parse(s.action_sequence) : JSON.parse(JSON.stringify(EMPTY_FORM.sequence))
+      };
+      this.useSequence = !!s.action_sequence;
+      this.formError = '';
+      this.showForm = true;
+    },
+
+    closeForm() { this.showForm = false; this.editingId = null; },
+
+    addStep()            { this.form.sequence.push({ action: 'ON', duration: 10 }); },
+    removeStep(i)        { if (this.form.sequence.length > 1) this.form.sequence.splice(i, 1); },
+
+    async saveSchedule() {
+      this.formError = '';
+      if (!this.form.name || !this.form.device_id) {
+        this.formError = this.lang === 'km' ? 'សូមបំពេញឈ្មោះ និង ឧបករណ៍' : 'Name and device are required.';
+        return;
+      }
+      this.saving = true;
+      const fid = this.getFarmId();
+      const payload = {
+        name: this.form.name, device_id: this.form.device_id,
+        schedule_type: 'time_based',
+        cron_expression: this.form.cron_expression,
+        action_value: this.form.action_value,
+        priority: 5, is_enabled: this.form.is_enabled
+      };
+      if (this.useSequence) {
+        payload.action_sequence = JSON.stringify(this.form.sequence);
+      } else if (this.form.action_duration > 0) {
+        payload.action_duration = this.form.action_duration;
+      }
+      try {
+        let data;
+        if (this.editingId) {
+          data = await window.API.put('/v1/farms/' + fid + '/schedules/' + this.editingId, payload);
+        } else {
+          data = await window.API.post('/v1/farms/' + fid + '/schedules', payload);
+        }
+        if (data && data.success) {
+          this.closeForm();
+          await this.loadSchedules();
+        } else {
+          this.formError = (data && data.message) || this.t('error');
+        }
+      } catch(e) { this.formError = this.t('error'); }
+      finally { this.saving = false; }
+    },
+
+    async toggleEnabled(s) {
+      const fid = this.getFarmId();
+      s.is_enabled = !s.is_enabled;
+      try {
+        await window.API.put('/v1/farms/' + fid + '/schedules/' + s.id, { is_enabled: s.is_enabled });
+      } catch(e) { s.is_enabled = !s.is_enabled; }
+    },
+
+    async executeNow(s) {
+      s.executing = true;
+      const fid = this.getFarmId();
+      try {
+        await window.API.post('/v1/farms/' + fid + '/schedules/' + s.id + '/execute-now', {});
+      } catch(e) { console.error(e); }
+      finally { s.executing = false; }
+    },
+
+    promptDelete(s) { this.deleteTarget = s; },
+
+    async confirmDelete() {
+      if (!this.deleteTarget) return;
+      this.deleting = true;
+      const fid = this.getFarmId();
+      try {
+        await window.API.delete('/v1/farms/' + fid + '/schedules/' + this.deleteTarget.id);
+        this.schedules = this.schedules.filter(s => s.id !== this.deleteTarget.id);
+        this.deleteTarget = null;
+      } catch(e) { console.error(e); }
+      finally { this.deleting = false; }
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

@@ -1,93 +1,200 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Tokkatot - Register</title>
-        <link rel="stylesheet" href="../css/loginSignUp.css" />
-        <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"/>
-        <link rel="icon" href="../assets/images/tokkatot logo-02.png" type="image/x-icon" />
-    </head>
-    <body>
-        <div class="wrapper">
-            <header>ទម្រង់ចុះឈ្មោះ</header>
-            <form action="#" method="POST">
-                <div class="field username">
-                    <div class="input-area">
-                        <input
-                            name="username"
-                            type="text"
-                            placeholder="ឈ្មោះគណនី"
-                            required
-                        />
-                        <i class="icon fas fa-user"></i>
-                        <i
-                            class="error error-icon fas fa-exclamation-circle"
-                        ></i>
-                    </div>
-                    <div class="error error-txt">Username can't be blank</div>
-                </div>
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Tokkatot - ចុះឈ្មោះ</title>
+  <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    body { padding: 0; display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; background: var(--color-bg); }
+    .auth-page { width: 100%; max-width: 400px; padding: var(--space-lg) var(--space-md) var(--space-2xl); }
+    .auth-logo { display: flex; flex-direction: column; align-items: center; margin-bottom: var(--space-xl); gap: var(--space-sm); }
+    .auth-logo img { width: 64px; height: 64px; object-fit: contain; }
+    .auth-logo-name { font-size: var(--font-size-lg); font-weight: 700; color: var(--color-primary); }
+    .auth-title { font-size: var(--font-size-2xl); font-weight: 700; margin-bottom: var(--space-lg); }
+    .auth-footer { text-align: center; margin-top: var(--space-lg); font-size: var(--font-size-base); color: var(--color-text-secondary); }
+    .auth-footer a { color: var(--color-primary); font-weight: 600; }
+    .lang-row { display: flex; justify-content: flex-end; margin-bottom: var(--space-md); }
+    .forms-stack { display: flex; flex-direction: column; gap: var(--space-md); }
+  </style>
+</head>
+<body class="no-nav no-header">
 
-                <div class="field password">
-                    <div class="input-area">
-                        <input
-                            name="password"
-                            type="password"
-                            placeholder="លេខសម្ងាត់"
-                            required
-                        />
-                        <i class="icon fas fa-lock"></i>
-                        <i class="toggle-password fas fa-eye"></i>
-                        <i
-                            class="error error-icon fas fa-exclamation-circle"
-                        ></i>
-                    </div>
-                    <div class="error error-txt">Password can't be blank</div>
-                </div>
-                <div class="field confirm-password">
-                    <div class="input-area">
-                        <input
-                            type="password"
-                            placeholder="បញ្ជាក់លេខសម្ងាត់"
-                            required
-                        />
-                        <i class="icon fas fa-lock"></i>
-                        <i class="toggle-confirm-password fas fa-eye"></i>
-                        <i
-                            class="error error-icon fas fa-exclamation-circle"
-                        ></i>
-                    </div>
-                    <div class="error error-txt">
-                        Confirm Password can't be blank
-                    </div>
-                </div>
-                <div class="field registration-key">
-                    <div class="input-area">
-                        <input
-                            name="key"
-                            type="text"
-                            placeholder="Registration key"
-                            required
-                        />
-                        <i class="icon fas fa-key"></i>
-                        <i
-                            class="error error-icon fas fa-exclamation-circle"
-                        ></i>
-                    </div>
-                    <div class="error error-txt">
-                        Registration key can't be blank
-                    </div>
-                </div>
-                <input type="submit" value="ចុះឈ្មោះ" />
-            </form>
-            <div class="sign-txt">
-                បានក្លាយជាសមាជិករួចរាល់?
-                <a id="login-link" href="#">ចូលគណនី</a>
-            </div>
-        </div>
-        <script src="../js/index.js"></script>
-        <script src="../js/signup.js"></script>
-    </body>
+<div id="app" class="auth-page">
+
+  <div class="lang-row">
+    <button class="lang-toggle" @click="toggleLang">{{ lang === 'km' ? 'EN' : 'KM' }}</button>
+  </div>
+
+  <div class="auth-logo">
+    <img src="/assets/images/tokkatot logo-02.png" alt="Tokkatot" />
+    <span class="auth-logo-name">Tokkatot</span>
+  </div>
+
+  <h1 class="auth-title">{{ t('register') }}</h1>
+
+  <!-- Error / success alerts -->
+  <div v-if="errorMsg" class="alert alert-danger">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMsg }}
+  </div>
+  <div v-if="successMsg" class="alert alert-success">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ successMsg }}
+  </div>
+
+  <div class="forms-stack">
+    <!-- Full name -->
+    <div class="form-group">
+      <label class="form-label" for="fullname">{{ t('full_name') }}</label>
+      <div class="form-input-icon">
+        <span class="input-icon material-symbols-outlined">person</span>
+        <input id="fullname" class="form-input" type="text" v-model="fullName"
+          :placeholder="t('full_name')" autocomplete="name" required />
+      </div>
+    </div>
+
+    <!-- Email -->
+    <div class="form-group">
+      <label class="form-label" for="email">{{ t('email') }}</label>
+      <div class="form-input-icon">
+        <span class="input-icon material-symbols-outlined">mail</span>
+        <input id="email" class="form-input" type="email" v-model="email"
+          :placeholder="t('email')" autocomplete="email" inputmode="email" required />
+      </div>
+    </div>
+
+    <!-- Phone -->
+    <div class="form-group">
+      <label class="form-label" for="phone">{{ t('phone') }}</label>
+      <div class="form-input-icon">
+        <span class="input-icon material-symbols-outlined">phone</span>
+        <input id="phone" class="form-input" type="tel" v-model="phone"
+          :placeholder="t('phone')" inputmode="tel" autocomplete="tel" />
+      </div>
+    </div>
+
+    <!-- Registration key -->
+    <div class="form-group">
+      <label class="form-label" for="regkey">{{ t('register_key') }}</label>
+      <div class="form-input-icon">
+        <span class="input-icon material-symbols-outlined">key</span>
+        <input id="regkey" class="form-input" type="text" v-model="regKey"
+          :placeholder="t('register_key')" autocomplete="off" required />
+      </div>
+    </div>
+
+    <!-- Password -->
+    <div class="form-group">
+      <label class="form-label" for="password">{{ t('password') }}</label>
+      <div class="form-input-icon">
+        <span class="input-icon material-symbols-outlined">lock</span>
+        <input id="password" class="form-input" :type="showPwd ? 'text' : 'password'"
+          v-model="password" :placeholder="t('password')" autocomplete="new-password" required />
+        <span class="input-icon-right material-symbols-outlined" @click="showPwd = !showPwd">
+          {{ showPwd ? 'visibility_off' : 'visibility' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Confirm password -->
+    <div class="form-group">
+      <label class="form-label" for="confirm">{{ t('confirm_password') }}</label>
+      <div class="form-input-icon">
+        <span class="input-icon material-symbols-outlined">lock_reset</span>
+        <input id="confirm" class="form-input" :type="showPwd ? 'text' : 'password'"
+          v-model="confirmPwd" :placeholder="t('confirm_password')" autocomplete="new-password" required />
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <button class="btn btn-primary btn-full btn-lg" @click="doRegister" :disabled="loading">
+      <span v-if="loading" class="spinner" style="width:24px;height:24px;border-width:3px;"></span>
+      <span v-else>{{ t('register') }}</span>
+    </button>
+  </div>
+
+  <p class="auth-footer">
+    {{ t('have_account') }}
+    <a href="/login">{{ t('login') }}</a>
+  </p>
+
+</div>
+
+<script src="/js/utils/i18n.js"></script>
+<script src="/js/utils/api.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      fullName:   '',
+      email:      '',
+      phone:      '',
+      regKey:     '',
+      password:   '',
+      confirmPwd: '',
+      showPwd:    false,
+      loading:    false,
+      errorMsg:   '',
+      successMsg: '',
+      lang: window.i18n ? window.i18n.getLang() : 'km'
+    };
+  },
+  mounted() {
+    if (window.API && window.API.isAuthenticated()) {
+      window.location.href = '/';
+    }
+  },
+  methods: {
+    t(k) { return window.i18n ? window.i18n.t(k) : k; },
+    toggleLang() {
+      if (window.i18n) { window.i18n.toggleLang(); this.lang = window.i18n.getLang(); }
+    },
+    async doRegister() {
+      this.errorMsg = '';
+      this.successMsg = '';
+      if (!this.fullName || !this.email || !this.password || !this.regKey) {
+        this.errorMsg = this.lang === 'km' ? 'សូមបំពេញព័ត៌មានទាំងអស់' : 'Please fill all required fields.';
+        return;
+      }
+      if (this.password !== this.confirmPwd) {
+        this.errorMsg = this.lang === 'km' ? 'លេខសម្ងាត់មិនត្រូវគ្នា' : 'Passwords do not match.';
+        return;
+      }
+      if (this.password.length < 6) {
+        this.errorMsg = this.lang === 'km' ? 'លេខសម្ងាត់យ៉ាងតិច ៦ តួ' : 'Password must be at least 6 characters.';
+        return;
+      }
+      this.loading = true;
+      try {
+        const payload = {
+          name:             this.fullName,
+          email:            this.email,
+          password:         this.password,
+          registration_key: this.regKey
+        };
+        if (this.phone) payload.phone = this.phone;
+
+        const data = await window.API.post('/v1/auth/signup', payload);
+        if (data && data.success) {
+          this.successMsg = this.t('register_success');
+          setTimeout(() => { window.location.href = '/login'; }, 1800);
+        } else {
+          this.errorMsg = (data && data.message) || (this.lang === 'km' ? 'ចុះឈ្មោះបានបរាជ័យ' : 'Registration failed.');
+        }
+      } catch (e) {
+        this.errorMsg = this.lang === 'km' ? 'ចុះឈ្មោះបានបរាជ័យ' : 'Registration failed.';
+      } finally {
+        this.loading = false;
+      }
+    }
+  }
+}).mount('#app');
+</script>
+</body>
 </html>

@@ -1,576 +1,28 @@
-# Frontend Implementation - Vue.js 3 Migration
+# Frontend Implementation
 
 **Last Updated**: February 24, 2026  
-**Status**: MVP Pages Complete (all pages exist; Vue.js migration planned post-MVP)  
-**Tech Stack**: Vanilla HTML/CSS/JS (current MVP) → Vue.js 3 CDN (next phase)
+**Status**: ✅ Fully Rebuilt — Vue.js 3 CDN, new design system  
+**Tech Stack**: Vue.js 3 CDN (no build step), Mi Sans, Google Material Symbols, global CSS design system
 
 ---
 
-## MVP Page Inventory (Feb 2026)
+## Overview
 
-All pages are static HTML served by the Go backend via named routes in `middleware/main.go`.
+All pages are static HTML served by the Go Fiber backend. No npm, no bundler — Vue 3 is loaded via CDN. Every page shares a single global design system (`/css/style.css`).
 
-| Page | Route | File | Status |
-|------|-------|------|--------|
-| Home / Dashboard | `/` and `/index.html` | `pages/index.html` | ✅ Live |
-| Login | `/login` | `pages/login.html` | ✅ Live |
-| Sign Up | `/register` | `pages/signup.html` | ✅ Live |
-| Profile | `/profile` | `pages/profile.html` | ✅ Live |
-| Settings | `/settings` | `pages/settings.html` | ✅ Live |
-| AI Disease Detection | `/disease-detection` | `pages/disease-detection.html` | 🚧 Coming Soon |
-| Temperature Monitoring | `/monitoring` | `pages/monitoring.html` | ✅ Live |
-| 404 Not Found | all unmatched | `pages/404.html` | ✅ Live |
+### Served Routes (`middleware/main.go`)
 
-### Disease Detection Page — Coming Soon Overlay
-
-`pages/disease-detection.html` has a **full-screen overlay** injected immediately after `<body>` (visible above all page content):
-
-```html
-<!-- Remove this div when AI service is ready -->
-<div id="coming-soon-overlay" style="position: fixed; inset: 0; z-index: 9999; ...">
-  🔬 AI Disease Detection — Coming Soon
-</div>
-```
-
-**To re-enable the page**: Remove the `<div id="coming-soon-overlay">...</div>` block (marked with comments). The full UI underneath is intact and functional.
-
----
-
-### Temperature Monitoring Page (`/monitoring`)
-
-**File**: `pages/monitoring.html` — fully self-contained, vanilla JS, no build step.
-
-**Design**: Apple Weather-inspired per-coop temperature dashboard.
-
-#### UI Sections (top to bottom)
-1. **Back nav + title bar** — `←` button + "Temperature Monitoring"
-2. **Coop picker** — `<select>` dropdown, populated from `GET /farms/{id}/coops`; switching re-fetches timeline
-3. **Hero** — coop name, large `current_temp °C`, `H: X° at HH:MM · L: Y° at HH:MM`, colour badge (`bg_hint`)
-4. **Hourly scroll strip** — glass card, horizontal scroll, one column per hour (`time + temp`)
-5. **SVG temperature graph** — smooth bezier curve, gradient fill, H circle marker at peak, L circle at trough, x-axis labels: 12 AM / 6 AM / 12 PM / 6 PM
-6. **Daily history list** — glass cards, proportional bar showing daily range, `H X° · L Y°` per day
-
-#### Dynamic background gradient (driven by `bg_hint` from API)
-| Class | Range | Colours |
-|---|---|---|
-| `bg-scorching` | ≥ 35°C | `#7f0000 → #bf2c00 → #e85d04` |
-| `bg-hot`       | ≥ 32°C | `#c1121f → #e85d04 → #f48c06` |
-| `bg-warm`      | ≥ 28°C | `#e85d04 → #f48c06 → #faa307` |
-| `bg-neutral`   | ≥ 24°C | `#2d6a4f → #40916c → #74c69d` |
-| `bg-cool`      | ≥ 20°C | `#023e8a → #0077b6 → #0096c7` |
-| `bg-cold`      | < 20°C | `#03045e → #023e8a → #0077b6` |
-
-#### Auth & data flow
-```js
-// Auth check on page load
-token = localStorage.getItem('token');
-if (!token) window.location.href = '/login';
-
-// API calls
-GET /api/v1/farms             → get farmId
-GET /api/v1/farms/{id}/coops  → populate coop picker
-GET /api/v1/farms/{fid}/coops/{cid}/temperature-timeline?days=7  → render page
-```
-
-#### No sensor handling
-When `sensor_found = false`, the page shows a "No Sensor Found" notice and hides all chart/data sections. No error thrown on the frontend.
-
----
-
-### Current State
-- ✅ Vanilla HTML/CSS/JS files (`frontend/pages/*.html`)
-- ✅ No build step required
-- ✅ Served directly by Go backend via static routes
-- ❌ Code duplication (navbar, header in every page)
-- ❌ Manual DOM updates (water_level, temperature)
-- ❌ No component reusability
-
-### Target State (Phase by Phase)
-- Phase 1: Vue.js 3 CDN (no build step)
-- Phase 2: Component system
-- Phase 3: Vite + TypeScript (optional)
-
----
-
-## Phase 1: Add Vue.js 3 CDN
-
-### Step 1: Update HTML Template
-
-**Before (Vanilla):**
-```html
-<!-- frontend/pages/index.html -->
-<!DOCTYPE html>
-<html lang="km">
-<head>
-    <title>Tokkatot - Home</title>
-    <link rel="stylesheet" href="../css/styleHome.css">
-</head>
-<body>
-    <!-- Header duplicated in every page -->
-    <div id="header-placeholder"></div>
-    
-    <div class="info-section">
-        <h2>ព័ត៌មានបរិយាកាស</h2>
-        <div class="info-card temperature">
-            <span id="current-temp">--</span>
-            <span class="unit">°C</span>
-        </div>
-        <div class="info-card humidity">
-            <span id="current-humidity">--</span>
-            <span class="unit">%</span>
-        </div>
-    </div>
-    
-    <script src="../js/index.js"></script>  <!-- Manual DOM updates -->
-</body>
-</html>
-```
-
-**After (Vue.js 3 CDN):**
-```html
-<!-- frontend/pages/index.html -->
-<!DOCTYPE html>
-<html lang="km">
-<head>
-    <title>Tokkatot - Home</title>
-    <link rel="stylesheet" href="../css/styleHome.css">
-    <!-- Add Vue.js 3 via CDN -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-</head>
-<body>
-    <div id="app">
-        <!-- Vue reactive data -->
-        <navbar-component></navbar-component>
-        
-        <div class="info-section">
-            <h2>ព័ត៌មានបរិយាកាស</h2>
-            <div class="info-card temperature">
-                <span>{{ currentTemp }}</span>  <!-- Auto-updates! -->
-                <span class="unit">°C</span>
-            </div>
-            <div class="info-card humidity">
-                <span>{{ currentHumidity }}</span>
-                <span class="unit">%</span>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-    const { createApp } = Vue
-    
-    createApp({
-        data() {
-            return {
-                currentTemp: 0,
-                currentHumidity: 0,
-                coops: [],
-                selectedCoop: null
-            }
-        },
-        methods: {
-            async fetchCoopData() {
-                const token = localStorage.getItem('access_token')
-                const res = await fetch('/v1/coops/current', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                const data = await res.json()
-                
-                this.currentTemp = data.temperature
-                this.currentHumidity = data.humidity
-            },
-            
-            connectWebSocket() {
-                const ws = new WebSocket('ws://localhost:3000/ws')
-                
-                ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data)
-                    
-                    // Reactive updates - UI changes automatically!
-                    if (data.type === 'temperature') {
-                        this.currentTemp = data.value
-                    } else if (data.type === 'humidity') {
-                        this.currentHumidity = data.value
-                    }
-                }
-            }
-        },
-        mounted() {
-            this.fetchCoopData()
-            this.connectWebSocket()
-        }
-    }).mount('#app')
-    </script>
-</body>
-</html>
-```
-
----
-
-## Phase 2: Component System
-
-### Create Reusable Components
-
-**File: `frontend/components/navbar.js`**
-```javascript
-// Navbar component (reusable across all pages)
-app.component('navbar-component', {
-    data() {
-        return {
-            user: null,
-            currentFarm: null
-        }
-    },
-    template: `
-        <nav class="navbar">
-            <div class="navbar-brand">
-                <img src="/assets/images/tokkatot-logo.png" alt="Tokkatot">
-            </div>
-            <div class="navbar-menu">
-                <a href="/dashboard">ផ្ទះ</a>
-                <a href="/coops">សំបុក</a>
-                <a href="/settings">ការកំណត់</a>
-                <a href="#" @click="logout">ចេញ</a>
-            </div>
-            <div class="navbar-user">
-                <span>{{ user?.name }}</span>
-                <span class="farm-name">{{ currentFarm?.name }}</span>
-            </div>
-        </nav>
-    `,
-    methods: {
-        logout() {
-            localStorage.clear()
-            window.location.href = '/login'
-        }
-    },
-    mounted() {
-        // Load user data
-        const token = localStorage.getItem('access_token')
-        if (token) {
-            fetch('/v1/auth/me', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(res => res.json())
-            .then(data => {
-                this.user = data.user
-                this.currentFarm = data.farms[0]  // Default farm
-            })
-        }
-    }
-})
-```
-
-**File: `frontend/components/coop-card.js`**
-```javascript
-app.component('coop-card', {
-    props: {
-        coop: {
-            type: Object,
-            required: true
-        }
-    },
-    template: `
-        <div class="coop-card" @click="selectCoop">
-            <h3>{{ coop.name }}</h3>
-            <div class="coop-stats">
-                <div class="stat">
-                    <span class="icon">🐔</span>
-                    <span class="value">{{ coop.current_count }}/{{ coop.capacity }}</span>
-                </div>
-                <div class="stat" :class="waterLevelClass">
-                    <span class="icon">💧</span>
-                    <span class="value">{{ coop.waterLevel }}%</span>
-                </div>
-                <div class="stat">
-                    <span class="icon">🌡️</span>
-                    <span class="value">{{ coop.temperature }}°C</span>
-                </div>
-            </div>
-            <div v-if="coop.hasAlert" class="alert">
-                ⚠️ Disease detected
-            </div>
-        </div>
-    `,
-    computed: {
-        waterLevelClass() {
-            return {
-                'low-water': this.coop.waterLevel < 30,
-                'ok-water': this.coop.waterLevel >= 30
-            }
-        }
-    },
-    methods: {
-        selectCoop() {
-            this.$router.push(`/coops/${this.coop.id}`)
-        }
-    }
-})
-```
-
-**Usage in pages:**
-```html
-<!-- frontend/pages/coops.html -->
-<div id="app">
-    <navbar-component></navbar-component>
-    
-    <h1>ជ្រើសរើសសំបុកមាន់</h1>
-    
-    <div class="coop-grid">
-        <coop-card 
-            v-for="coop in coops" 
-            :key="coop.id" 
-            :coop="coop">
-        </coop-card>
-    </div>
-</div>
-
-<script src="../components/navbar.js"></script>
-<script src="../components/coop-card.js"></script>
-<script>
-const { createApp } = Vue
-
-createApp({
-    data() {
-        return {
-            coops: []
-        }
-    },
-    async mounted() {
-        const res = await fetch('/v1/farms/current/coops')
-        const data = await res.json()
-        this.coops = data.coops
-    }
-}).mount('#app')
-</script>
-```
-
----
-
-## Phase 3: Vite Build (Optional - Later)
-
-### When to Add Build Step?
-✅ **Add Vite when:**
-- Need TypeScript
-- Want HMR (Hot Module Replacement)
-- Component count > 10
-- Team size > 2 developers
-
-### Setup Vite
-```powershell
-cd frontend
-
-# Initialize Vue 3 project with Vite
-npm create vite@latest . -- --template vue
-
-# Install dependencies
-npm install
-
-# Install router, pinia (state management)
-npm install vue-router pinia axios
-
-# Dev server with HMR
-npm run dev  # http://localhost:5173
-
-# Production build
-npm run build  # Creates frontend/dist/
-```
-
-**Vite config:**
-```javascript
-// vite.config.js
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-
-export default defineConfig({
-    plugins: [vue()],
-    server: {
-        port: 5173,
-        proxy: {
-            '/v1': 'http://localhost:3000'  // Proxy API to backend
-        }
-    },
-    build: {
-        outDir: 'dist',
-        assetsDir: 'assets'
-    }
-})
-```
-
----
-
-## Key Patterns
-
-### Authentication
-```javascript
-// frontend/js/auth.js
-export const auth = {
-    install(app) {
-        app.config.globalProperties.$auth = {
-            async login(phone, password) {
-                const res = await fetch('/v1/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone, password })
-                })
-                
-                const data = await res.json()
-                if (data.success) {
-                    localStorage.setItem('access_token', data.data.access_token)
-                    localStorage.setItem('refresh_token', data.data.refresh_token)
-                    return true
-                }
-                return false
-            },
-            
-            logout() {
-                localStorage.clear()
-                window.location.href = '/login'
-            },
-            
-            getToken() {
-                return localStorage.getItem ('access_token')
-            },
-            
-            isAuthenticated() {
-                return !!this.getToken()
-            }
-        }
-    }
-}
-
-// Usage in components
-this.$auth.login('012345678', 'password')
-```
-
-### API Helper
-```javascript
-// frontend/js/api.js
-export const api = {
-    async request(url, options = {}) {
-        const token = localStorage.getItem('access_token')
-        
-        const res = await fetch(url, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                ...options.headers
-            }
-        })
-        
-        const data = await res.json()
-        
-        // Auto-refresh token if expired
-        if (data.error?.code === 'token_expired') {
-            await this.refreshToken()
-            return this.request(url, options)  // Retry
-        }
-        
-        return data
-    },
-    
-    async refreshToken() {
-        const refresh = localStorage.getItem('refresh_token')
-        const res = await fetch('/v1/auth/refresh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh_token: refresh })
-        })
-        
-        const data = await res.json()
-        if (data.success) {
-            localStorage.setItem('access_token', data.data.access_token)
-        }
-    },
-    
-    // Shortcuts
-    get(url) {
-        return this.request(url)
-    },
-    
-    post(url, body) {
-        return this.request(url, {
-            method: 'POST',
-            body: JSON.stringify(body)
-        })
-    },
-    
-    patch(url, body) {
-        return this.request(url, {
-            method: 'PATCH',
-            body: JSON.stringify(body)
-        })
-    }
-}
-
-// Usage
-const coops = await api.get('/v1/farms/1/coops')
-await api.post('/v1/devices/123/command', { action: 'on' })
-```
-
-### WebSocket Real-Time Updates
-```javascript
-// frontend/js/websocket.js
-export class WebSocketManager {
-    constructor(url) {
-        this.url = url
-        this.ws = null
-        this.listeners = {}
-        this.reconnectInterval = 5000
-    }
-    
-    connect() {
-        this.ws = new WebSocket(this.url)
-        
-        this.ws.onopen = () => {
-            console.log('✅ WebSocket connected')
-            this.emit('connected')
-        }
-        
-        this.ws.onmessage = (event) => {
-            const data = JSON.parse(event.data)
-            this.emit(data.type, data)
-        }
-        
-        this.ws.onclose = () => {
-            console.log('❌ WebSocket disconnected, reconnecting...')
-            setTimeout(() => this.connect(), this.reconnectInterval)
-        }
-    }
-    
-    on(event, callback) {
-        if (!this.listeners[event]) {
-            this.listeners[event] = []
-        }
-        this.listeners[event].push(callback)
-    }
-    
-    emit(event, data) {
-        if (this.listeners[event]) {
-            this.listeners[event].forEach(cb => cb(data))
-        }
-    }
-    
-    send(type, data) {
-        this.ws.send(JSON.stringify({ type, ...data }))
-    }
-}
-
-// Usage in Vue app
-import { WebSocketManager } from './websocket.js'
-
-const ws = new WebSocketManager('ws://localhost:3000/ws')
-ws.connect()
-
-// Listen for sensor updates
-ws.on('water_level', (data) => {
-    app.waterLevel = data.value
-})
-
-ws.on('temperature', (data) => {
-    app.temperature = data.value
-})
-```
+| Route | File | Auth | Notes |
+|-------|------|------|-------|
+| `/` | `pages/index.html` | ✅ Required | Dashboard, live WebSocket data |
+| `/login` | `pages/login.html` | Public | Redirects to `/` if already authed |
+| `/register` | `pages/signup.html` | Public | Redirects to `/` if already authed |
+| `/profile` | `pages/profile.html` | ✅ Required | View + edit user info |
+| `/settings` | `pages/settings.html` | ✅ Required | Language, notifications, logout |
+| `/schedules` | `pages/schedules.html` | ✅ Required | Full schedule CRUD + sequence builder |
+| `/disease-detection` | `pages/disease-detection.html` | ✅ Required | Coming Soon overlay |
+| `/monitoring` | `pages/monitoring.html` | ✅ Required | Apple Weather-style temp timeline |
+| 404 fallback | `pages/404.html` | Public | — |
 
 ---
 
@@ -578,538 +30,362 @@ ws.on('temperature', (data) => {
 
 ```
 frontend/
-├── pages/                      ← HTML pages (Vue apps)
-│   ├── login.html
-│   ├── index.html              ← Dashboard
-│   ├── coops.html              ← Coop selection
-│   ├── coop-detail.html        ← Single coop view
-│   ├── settings.html
-│   └── profile.html
-│
-├── components/                 ← Vue components (JS files)
-│   ├── navbar.js
-│   ├── header.js
-│   ├── coop-card.js
-│   ├── device-control.js
-│   └── alert-banner.js
-│
-├── js/                         ← Utilities
-│   ├── auth.js                 ← Auth plugin
-│   ├── api.js                  ← API helper
-│   ├── websocket.js            ← WebSocket manager
-│   └── utils.js                ← Formatters, validators
-│
-├── css/                        ← Styles (keep existing)
-│   ├── styleHome.css
-│   ├── stylenavbar.css
-│   └── styleProfile.css
-│
-└── assets/                     ← Static files
-    ├── images/
+├── css/
+│   └── style.css               ← Single global design system (ALL pages use this)
+├── js/
+│   └── utils/
+│       ├── api.js              ← window.API — all HTTP calls + JWT auth
+│       ├── i18n.js             ← window.i18n / window.t() — KM/EN translations
+│       └── components.js       ← window.loadComponents() — injects header + navbar
+├── components/
+│   ├── header.html             ← Top bar: logo, farm name, lang toggle, alert bell
+│   └── navbar.html             ← Bottom nav: 5 items with Material Symbols icons
+├── pages/
+│   ├── index.html              ← Dashboard (Vue 3)
+│   ├── login.html              ← Login (Vue 3, no header/nav)
+│   ├── signup.html             ← Register (Vue 3, no header/nav)
+│   ├── profile.html            ← Profile view/edit (Vue 3)
+│   ├── settings.html           ← Settings + logout (Vue 3)
+│   ├── schedules.html          ← Schedule CRUD + sequence builder (Vue 3)
+│   ├── disease-detection.html  ← Coming Soon overlay + upload UI
+│   ├── monitoring.html         ← Temperature timeline (vanilla JS)
+│   └── 404.html                ← 404 page (no header/nav)
+└── assets/
+    ├── fonts/
     ├── icons/
-    └── fonts/
+    └── images/
 ```
 
 ---
 
-## Accessibility (Farmer-Friendly UI)
+## Design System (`/css/style.css`)
 
-### Design Principles
+### Color Tokens
+
 ```css
-/* Large touch targets */
-.button {
-    min-width: 48px;
-    min-height: 48px;
-    font-size: 18px;
-}
+--color-primary:        #20a39e;   /* Teal — primary actions */
+--color-secondary:      #ffba49;   /* Amber — highlights */
+--color-danger:         #ef5b5b;   /* Red — errors, delete */
+--color-primary-light:  #e6f7f6;   /* Teal tint — hover states */
+--color-bg:             #f4f6f8;   /* Page background */
+--color-surface:        #ffffff;   /* Card/input background */
+--color-text:           #1a1a1a;   /* Primary text */
+--color-text-secondary: #6b7280;   /* Muted text */
+--color-border:         #e5e7eb;   /* Borders */
+```
 
-/* High contrast */
-.text-primary {
-    color: #000000;
-    background: #FFFFFF;
-}
+### Typography
 
-.alert-danger {
-    color: #FFFFFF;
-    background: #DC2626;
-}
+- **Font**: Mi Sans (jsDelivr CDN) + Noto Sans Khmer fallback
+- **Base size**: `--font-size-base: 18px` — large for farmer accessibility
+- **Scale**: `--font-size-sm: 14px` / `--font-size-lg: 20px` / `--font-size-xl: 24px`
 
-/* Large fonts for readability */
+### Spacing & Touch Targets
+
+```css
+--touch-min:     48px;   /* Minimum tap target */
+--space-sm:      8px;
+--space-md:      16px;
+--space-lg:      24px;
+--space-xl:      32px;
+--header-height: 60px;
+--nav-height:    68px;
+```
+
+### Body Padding
+
+Pages with shared header + navbar get padding automatically:
+
+```css
 body {
-    font-size: 16px;  /* Base */
-}
-
-h1 {
-    font-size: 32px;  /* Khmer readable */
-}
-
-.value {
-    font-size: 48px;  /* Sensor values big! */
+  padding-top: var(--header-height);
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
 }
 ```
 
-### Khmer Language Support
-```javascript
-// frontend/js/i18n.js
-export const translations = {
-    km: {
-        home: 'ផ្ទះ',
-        coops: 'សំបុក',
-        settings: 'ការកំណត់',
-        waterLevel: 'កម្រិតទឹក',
-        temperature: 'សីតុណ្ហភាព',
-        humidity: 'សំណើម',
-        turnOn: 'បើក',
-        turnOff: 'បិទ',
-        alert: 'ការព្រមានព័ត៌មាន'
-    },
-    en: {
-        home: 'Home',
-        coops: 'Coops',
-        settings: 'Settings',
-        waterLevel: 'Water Level',
-        temperature: 'Temperature',
-        humidity: 'Humidity',
-        turnOn: 'Turn On',
-        turnOff: 'Turn Off',
-        alert: 'Alert'
-    }
-}
+Pages without nav/header (login, signup, 404) use `body.no-nav.no-header`.
 
-// Usage
-const t = (key) => translations[currentLang][key]
+---
+
+## Utility Scripts
+
+### `window.API` (`/js/utils/api.js`)
+
+Central HTTP client. All pages use this instead of raw `fetch`.
+
+```js
+// HTTP methods — all return parsed JSON
+await API.get('/v1/farms')
+await API.post('/v1/auth/login', { email, password })
+await API.put('/v1/farms/1/schedules/5', payload)
+await API.patch('/v1/auth/me', { name })
+await API.delete('/v1/farms/1/schedules/5')
+await API.upload('/v1/ai/predict-disease', formData)
+
+// Auth helpers
+API.isAuthenticated()        // bool
+API.requireAuth()            // redirects to /login if not authed; returns false
+API.logout()                 // clears storage, redirects to /login
+
+// Farm/coop context
+API.getSelectedFarmId()      // localStorage 'selected_farm_id'
+API.setSelectedFarmId(id)
+API.getSelectedCoopId()
+API.setSelectedCoopId(id)
+```
+
+**Auto-refresh**: On 401, automatically calls `POST /v1/auth/refresh` once. If that fails, redirects to `/login`.
+
+**localStorage keys**:
+- `access_token` — JWT access token
+- `refresh_token`
+- `user_name`
+- `selected_farm_id`
+- `selected_coop_id`
+
+### `window.i18n` + `window.t()` (`/js/utils/i18n.js`)
+
+```js
+t('nav_home')       // → "ផ្ទះ" (KM) or "Home" (EN)
+i18n.setLang('en')
+i18n.toggleLang()   // switches KM ↔ EN, saves to localStorage
+i18n.getLang()      // → 'km' | 'en'
+i18n.applyAll()     // applies all data-i18n attributes on DOM
+```
+
+Default language: **Khmer** (`km`). Stored in `localStorage('language')`.
+
+### `window.loadComponents()` (`/js/utils/components.js`)
+
+Fetches `header.html` and `navbar.html`, injects into `#header-placeholder` / `#navbar-placeholder`.
+
+Uses `document.createRange().createContextualFragment()` so `<script>` tags inside components execute correctly (unlike `innerHTML`).
+
+```js
+await loadComponents();   // call in every page's mounted() or init()
 ```
 
 ---
 
-## Schedule/Automation UI (NEW in v2.0)
+## Page Template
 
-**Purpose**: Allow farmers to create multi-step automation sequences for feeders, conveyors, pumps.
-
-**Real Farmer Need**: "I want my feeder to pulse: ON 30 seconds, pause 10 seconds, repeat 2 times, then turn OFF until next feeding time" (prevents chicken crowding at feed bowl)
-
-### Schedule Pages
-
-**`frontend/pages/schedules.html`** - Schedule management
-- List all schedules with current state (enabled/disabled, next execution time)
-- Create new schedule button (leads to create form)
-- Edit/delete existing schedules
-- Manual "Execute Now" button
-
-**`frontend/pages/schedule-create.html`** - Create/Edit schedule form
-
-### Action Sequence Builder Component
-
-**Visual Multi-Step Pattern Editor** (inspired by automation tools like IFTTT)
+Every authenticated page follows this pattern:
 
 ```html
-<!-- frontend/components/action-sequence-builder.js -->
-<template>
-  <div class="sequence-builder">
-    <h3>បង្កើតលំដាប់សកម្មភាព (Action Sequence)</h3>
-    <p class="help-text">
-      បង្កើតលំដាប់ជាបន្តបន្ទាប់: បើក → ផ្អាក → បើក → ផ្អាក → បិទ<br>
-      Create multi-step pattern: ON → pause → ON → pause → OFF
-    </p>
-    
-    <!-- List of steps -->
-    <div v-for="(step, index) in actionSequence" :key="index" class="step-row">
-      <span class="step-number">{{ index + 1 }}</span>
-      
-      <!-- Action type dropdown -->
-      <select v-model="step.action" class="action-select">
-        <option value="ON">បើក (ON)</option>
-        <option value="OFF">បិទ (OFF)</option>
-      </select>
-      
-      <!-- Duration input -->
-      <input 
-        type="number" 
-        v-model="step.duration" 
-        min="0" 
-        placeholder="រយៈពេល (វិនាទី)"
-        class="duration-input"
-      />
-      <span class="unit">វិនាទី (seconds)</span>
-      
-      <!-- Remove step button -->
-      <button @click="removeStep(index)" class="btn-remove" :disabled="actionSequence.length <= 1">
-        ✕
-      </button>
-    </div>
-    
-    <!-- Add step button -->
-    <button @click="addStep" class="btn-add-step">
-      + បន្ថែមមួយជំហានទៀត (Add Step)
-    </button>
-    
-    <!-- Visual timeline preview -->
-    <div class="timeline-preview">
-      <h4>មើលមុន (Preview)</h4>
-      <div class="timeline">
-        <div v-for="(step, index) in actionSequence" 
-             :key="index"
-             :class="['timeline-block', step.action === 'ON' ? 'on' : 'off']"
-             :style="{ width: getStepWidth(step.duration) }">
-          <span class="timeline-label">{{ step.action }}</span>
-          <span class="timeline-duration">{{ step.duration }}s</span>
-        </div>
-      </div>
-      <p class="total-time">សរុប (Total): {{ totalDuration }}s ({{ formatMinutes(totalDuration) }})</p>
-    </div>
-  </div>
-</template>
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Page Title – Tokkatot</title>
+  <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+</head>
+<body>
 
+<div id="header-placeholder"></div>
+
+<div id="app">
+  <!-- Vue 3 content -->
+</div>
+
+<div id="navbar-placeholder"></div>
+
+<script src="/js/utils/i18n.js"></script>
+<script src="/js/utils/api.js"></script>
+<script src="/js/utils/components.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script>
-export default {
-  data() {
-    return {
-      actionSequence: [
-        { action: 'ON', duration: 30 },
-        { action: 'OFF', duration: 10 }
-      ]
-    }
-  },
-  
-  computed: {
-    totalDuration() {
-      return this.actionSequence.reduce((sum, step) => {
-        return sum + (step.duration === 0 ? 0 : parseInt(step.duration))
-      }, 0)
-    }
-  },
-  
-  methods: {
-    addStep() {
-      this.actionSequence.push({ action: 'ON', duration: 10 })
-    },
-    
-    removeStep(index) {
-      if (this.actionSequence.length > 1) {
-        this.actionSequence.splice(index, 1)
-      }
-    },
-    
-    getStepWidth(duration) {
-      if (duration === 0) return '50px'  // "Until next schedule" step
-      const maxDuration = Math.max(...this.actionSequence.map(s => s.duration))
-      return `${(duration / maxDuration) * 200}px`
-    },
-    
-    formatMinutes(seconds) {
-      const mins = Math.floor(seconds / 60)
-      const secs = seconds % 60
-      return mins > 0 ? `${mins}នាទី ${secs}វិនាទី` : `${secs}វិនាទី`
-    },
-    
-    getSequenceJSON() {
-      // Return JSON for API submission
-      return JSON.stringify(this.actionSequence)
-    }
-  }
-}
-</script>
-```
-
-### Create Schedule Form
-
-**Full schedule creation UI** with action sequence builder:
-
-```javascript
-// frontend/pages/schedule-create.html
+const { createApp } = Vue;
 createApp({
-  data() {
-    return {
-      scheduleType: 'time_based',
-      deviceId: null,
-      scheduleName: '',
-      cronExpression: '0 6 * * *',  // 6 AM daily
-      actionValue: 'on',
-      actionDuration: null,       // Simple auto-off (if not using sequence)
-      actionSequence: null,       // Multi-step pattern (if using)
-      useSequence: false,         // Toggle between simple/sequence
-      priority: 5,
-      devices: []
-    }
-  },
-  
+  data() { return { /* ... */ }; },
   async mounted() {
-    // Load available devices
-    const farmId = localStorage.getItem('selected_farm_id')
-    const response = await fetch(`/api/farms/${farmId}/devices`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
-    })
-    this.devices = await response.json()
+    if (!window.API.requireAuth()) return;
+    await loadComponents();
+    // load data...
   },
-  
-  methods: {
-    async createSchedule() {
-      const payload = {
-        device_id: this.deviceId,
-        name: this.scheduleName,
-        schedule_type: this.scheduleType,
-        cron_expression: this.cronExpression,
-        action_value: this.actionValue,
-        priority: this.priority,
-        is_enabled: true
-      }
-      
-      // Add simple auto-off OR multi-step sequence (mutually exclusive)
-      if (!this.useSequence && this.actionDuration) {
-        payload.action_duration = parseInt(this.actionDuration)
-      } else if (this.useSequence && this.$refs.sequenceBuilder) {
-        payload.action_sequence = this.$refs.sequenceBuilder.getSequenceJSON()
-      }
-      
-      const farmId = localStorage.getItem('selected_farm_id')
-      const response = await fetch(`/api/farms/${farmId}/schedules`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      })
-      
-      if (response.ok) {
-        alert('កាលវិភាគត្រូវបានបង្កើតដោយជោគជ័យ! (Schedule created successfully!)')
-        window.location.href = '/pages/schedules.html'
-      } else {
-        const error = await response.json()
-        alert(`កំហុស: ${error.message}`)
-      }
-    }
-  }
-})
+  methods: { /* ... */ }
+}).mount('#app');
+</script>
+</body>
+</html>
 ```
 
-### CSS for Schedule UI
-
-```css
-/* frontend/css/styleSchedules.css */
-
-.sequence-builder {
-  background: #F9FAFB;
-  padding: 24px;
-  border-radius: 8px;
-  margin: 16px 0;
-}
-
-.step-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: white;
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-
-.step-number {
-  font-size: 20px;
-  font-weight: bold;
-  color: #6B7280;
-  min-width: 32px;
-}
-
-.action-select {
-  font-size: 18px;
-  padding: 12px;
-  min-height: 48px;  /* Farmer accessibility */
-  border: 2px solid #D1D5DB;
-  border-radius: 4px;
-  flex: 1;
-}
-
-.duration-input {
-  font-size: 18px;
-  padding: 12px;
-  min-height: 48px;
-  width: 120px;
-  border: 2px solid #D1D5DB;
-  border-radius: 4px;
-}
-
-.btn-remove {
-  min-width: 48px;
-  min-height: 48px;
-  background: #EF4444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 24px;
-  cursor: pointer;
-}
-
-.btn-add-step {
-  min-height: 48px;
-  width: 100%;
-  background: #10B981;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 18px;
-  margin-top: 8px;
-  cursor: pointer;
-}
-
-/* Timeline preview */
-.timeline-preview {
-  margin-top: 24px;
-  padding: 16px;
-  background: white;
-  border-radius: 4px;
-}
-
-.timeline {
-  display: flex;
-  gap: 4px;
-  margin: 16px 0;
-  height: 60px;
-  align-items: center;
-}
-
-.timeline-block {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  border-radius: 4px;
-  transition: all 0.3s;
-}
-
-.timeline-block.on {
-  background: linear-gradient(135deg, #10B981, #059669);
-  color: white;
-}
-
-.timeline-block.off {
-  background: linear-gradient(135deg, #6B7280, #4B5563);
-  color: white;
-}
-
-.timeline-label {
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.timeline-duration {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.total-time {
-  font-size: 16px;
-  font-weight: bold;
-  color: #1F2937;
-  margin-top: 8px;
-}
-```
-
-### Example Use Cases (See `docs/AUTOMATION_USE_CASES.md`)
-
-**Pulse Feeding** (Prevents chicken crowding):
-- 6 AM: Motor ON 30s → pause 10s → ON 30s → pause 10s → OFF
-- 12 PM: Same pattern
-- 6 PM: Same pattern
-
-**Conveyor Belt Cleaning** (Prevents clogging):
-- ON 2 minutes → pause 30s → ON 2 minutes → OFF
-- Runs every 6 hours
-
-**Climate Control** (Gradual temperature change):
-- Fan 25% → wait 5min → 50% → wait 5min → 75% → stay until temp < 30°C
-
-### API Integration
-
-**Submit schedule with action_sequence**:
-```javascript
-POST /api/farms/{farm_id}/schedules
-{
-  "device_id": "feeder_uuid",
-  "name": "Pulse Feeding - Morning",
-  "schedule_type": "time_based",
-  "cron_expression": "0 6 * * *",
-  "action_value": "on",
-  "action_sequence": [
-    {"action": "ON", "duration": 30},
-    {"action": "OFF", "duration": 10},
-    {"action": "ON", "duration": 30},
-    {"action": "OFF", "duration": 10},
-    {"action": "OFF", "duration": 0}  // Stay OFF until next schedule
-  ],
-  "priority": 5
-}
-```
-
-**Backend validates**:
-- Maximum 20 steps per sequence
-- Each step has `action` (ON/OFF) and `duration` (0-3600 seconds)
-- Total duration < 1 hour (prevents runaway sequences)
+Public pages (login, signup, 404) — omit placeholders, add `body.no-nav.no-header`.
 
 ---
 
-## Migration Checklist
+## Page Reference
 
-**Phase 1: CDN Setup**
-- [ ] Add Vue.js 3 CDN to all pages
-- [ ] Convert `index.html` to Vue reactive data
-- [ ] Convert `login.html` to Vue form handling
-- [ ] Test all pages still work
+### `index.html` — Dashboard
 
-**Phase 2: Components**
-- [ ] Create `navbar.js` component
-- [ ] Create `coop-card.js` component
-- [ ] Create `device-control.js` component
-- [ ] Remove duplicated HTML code
+**API**:
+- `GET /v1/farms` → farm selector
+- `GET /v1/farms/:id/coops` → coop pills
+- `GET /v1/devices?coop_id=` → device list
+- `POST /v1/devices/:id/command` — `{ command_type: 'turn_on' | 'turn_off' }`
+- WebSocket: `ws(s)://host/v1/ws?token=&farm_id=&coop_id=` → reactive temp/humidity
 
-**Phase 3: Real-Time**
-- [ ] Implement WebSocket manager
-- [ ] Connect to backend WebSocket
-- [ ] Live water level updates
-- [ ] Live temperature updates
-- [ ] Live alerts
-
-**Phase 4: Authentication**
-- [ ] Create auth plugin
-- [ ] Implement login flow
-- [ ] Token auto-refresh
-- [ ] Protected routes
-
-**Phase 5: Polish**
-- [ ] PWA service worker (offline)
-- [ ] Push notifications
-- [ ] Loading states
-- [ ] Error handling
-- [ ] Khmer translations
+**UI**: Farm banner, coop selector pills, 2-col metrics grid, devices list with toggles, quick action grid.
 
 ---
 
-## Testing
+### `login.html`
 
-```javascript
-// Test Vue reactive data
-console.log('Initial temp:', app.currentTemp)
-app.currentTemp = 30  // Should update UI immediately
-console.log('New temp:', app.currentTemp)
+**API**: `POST /v1/auth/login` → stores `access_token`, `refresh_token`, `user_name` → redirects to `/`
 
-// Test WebSocket
-ws.emit('temperature', { value: 35 })  // Should update UI
+---
 
-// Test API
-await api.post('/v1/devices/123/command', { action: 'on' })
-// Should see device turn on in backend logs
+### `signup.html`
+
+**Browser URL**: `/register`  
+**API**: `POST /v1/auth/signup`
+
+```json
+{ "name": "...", "email": "...", "password": "...", "registration_key": "...", "phone": "..." }
+```
+
+`phone` is optional. On success → shows message → redirects to `/login` after 1.8s.
+
+---
+
+### `profile.html`
+
+**API**:
+- `GET /v1/auth/me` → load
+- `PATCH /v1/auth/me` → save name + phone
+
+View mode: avatar initials, role badge, read-only fields. Edit mode: name + phone inputs.
+
+---
+
+### `settings.html`
+
+- Language toggle (KM ↔ EN)
+- Notifications toggle
+- Logout with `v-if` confirm modal (no `window.confirm`)
+
+---
+
+### `schedules.html`
+
+**API**:
+- `GET /v1/farms/:id/schedules`
+- `POST /v1/farms/:id/schedules`
+- `PUT /v1/farms/:id/schedules/:sid`
+- `DELETE /v1/farms/:id/schedules/:sid`
+- `POST /v1/farms/:id/schedules/:sid/execute-now`
+
+**Features**:
+- Schedule cards with enabled toggle, Run Now, Edit, Delete
+- Bottom-sheet modal form (Vue `v-if`) for create/edit
+- **Multi-step sequence builder**: toggleable, add/remove ON/OFF steps with per-step duration (seconds)
+- **Auto-off duration**: `action_duration` field (0 = disabled)
+- FAB `+` button
+- Cron expression field with human-readable hint
+
+**Sequence payload** (stored in `action_sequence` as JSON string):
+```json
+[{"action":"ON","duration":30},{"action":"OFF","duration":10}]
 ```
 
 ---
 
-## Next Steps
+### `disease-detection.html`
 
-1. Start with `login.html` (simplest page)
-2. Migrate to `index.html` (dashboard with real-time)
-3. Create reusable components
-4. Add WebSocket for live updates
-5. Test on low-end Android devices
+**Status**: Coming Soon overlay active.
 
-**Goal**: Farmer-friendly, reactive, real-time IoT dashboard! 🐔💧📱
+To enable: remove `<div id="coming-soon-overlay">...</div>` (marked with comments in file).
+
+**Full UI underneath**:
+- Upload zone (camera capture + file picker + drag & drop)
+- Image preview
+- Confidence bar, healthy/disease badge, recommendation text
+- `POST /v1/ai/predict-disease` with `FormData` (field: `image`)
+
+---
+
+### `monitoring.html`
+
+Apple Weather-style. Uses `window.API` (vanilla JS, no Vue).
+
+**API**: `GET /v1/farms/:fid/coops/:cid/temperature-timeline?days=7`
+
+**UI**:
+1. Coop picker `<select>`
+2. Hero — large temp, H/L peak times, bg_hint badge
+3. Hourly scroll strip
+4. SVG bezier curve graph with gradient fill + H/L markers
+5. Daily history with proportional range bars
+
+**Dynamic background** (`bg_hint` from API):
+
+| Class | Condition | Gradient |
+|---|---|---|
+| `bg-scorching` | ≥ 35°C | `#7f0000 → #e85d04` |
+| `bg-hot` | ≥ 32°C | `#c1121f → #f48c06` |
+| `bg-warm` | ≥ 28°C | `#e85d04 → #faa307` |
+| `bg-neutral` | ≥ 24°C | `#2d6a4f → #74c69d` |
+| `bg-cool` | ≥ 20°C | `#023e8a → #0096c7` |
+| `bg-cold` | < 20°C | `#03045e → #0077b6` |
+
+---
+
+### `404.html`
+
+No header/navbar. Khmer "រកទំព័រមិនឃើញ", teal 404, home button to `/`.
+
+---
+
+## Components
+
+### `header.html`
+
+```
+[Logo + Farm Name]              [🌐 lang] [🔔 alerts] [👤]
+```
+
+- `#header-farm-name` — set by `loadComponents()` from `GET /v1/farms`
+- `#lang-toggle-btn` → calls `window.headerToggleLang()`
+- Alert bell with `#header-alert-badge`
+- Profile icon links to `/profile`
+
+### `navbar.html`
+
+| Icon (Material) | Key | Route |
+|---|---|---|
+| `home` | `nav_home` | `/` |
+| `monitor_heart` | `nav_monitoring` | `/monitoring` |
+| `biotech` | `nav_disease` | `/disease-detection` |
+| `calendar_clock` | `nav_schedules` | `/schedules` |
+| `settings` | `nav_settings` | `/settings` |
+
+Active item highlighted via `data-nav` attribute matched by `components.js`.
+
+---
+
+## i18n Key Reference
+
+| Key | Khmer | English |
+|-----|-------|---------|
+| `nav_home` | ផ្ទះ | Home |
+| `nav_monitoring` | ត្រួតពិនិត្យ | Monitoring |
+| `nav_disease` | ជំងឺ | Disease |
+| `nav_schedules` | កាលវិភាគ | Schedules |
+| `nav_settings` | ការកំណត់ | Settings |
+| `login` | ចូលគណនី | Login |
+| `logout` | ចេញ | Logout |
+| `save` | រក្សាទុក | Save |
+| `cancel` | បោះបង់ | Cancel |
+| `delete` | លុប | Delete |
+| `enabled` | បើកដំណើរការ | Enabled |
+| `disabled` | បិទ | Disabled |
+| `temperature` | សីតុណ្ហភាព | Temperature |
+| `humidity` | សំណើម | Humidity |
+| `devices` | ឧបករណ៍ | Devices |
+| `schedules` | កាលវិភាគ | Schedules |
+| `add_schedule` | បន្ថែមកាលវិភាគ | Add Schedule |
+| `edit_schedule` | កែកាលវិភាគ | Edit Schedule |
+| `no_data` | មិនមានទិន្នន័យ | No data |
+| `error` | កំហុស | Error |

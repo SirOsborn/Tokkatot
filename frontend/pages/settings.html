@@ -1,229 +1,168 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="km">
-	<head>
-		<meta charset="UTF-8" />
-		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>ការកំណត់ - Smart Poultry</title>
-		<link rel="icon" href="../assets/images/tokkatot logo-02.png" type="image/x-icon" />
-		<link rel="stylesheet" href="../css/styleSettings.css" />
-		<link rel="stylesheet" href="../css/styleHeader.css" />
-		<link rel="stylesheet" href="../css/stylenavbar.css" />
-	</head>
-	<body>
-		<div class="container">
-			<!-- Header Placeholder -->
-			<div id="header-placeholder"></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Tokkatot - ការកំណត់</title>
+  <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    .section-label { font-size: var(--font-size-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-secondary); padding: var(--space-md) var(--space-md) var(--space-xs); }
+    .logout-btn { width: calc(100% - 2*var(--space-md)); margin: var(--space-md); }
+  </style>
+</head>
+<body>
 
-			<section class="main-controls">
-				<h2>ការកំណត់ទូទៅ</h2>
-				<div class="control-cards">
-					<div class="control-card">
-						<span class="icon">
-							<img src="../assets/icons/auto_mode.png" alt="Auto Mode" />
-						</span>
-						<p>ប្រព័ន្ធស្វ័យប្រវត្តិ</p>
-						<label class="switch">
-							<input type="checkbox" id="autoModeToggle" />
-							<span class="slider"></span>
-						</label>
-					</div>
-					<div class="control-card">
-						<span class="icon">
-							<img src="../assets/icons/recycle.png" alt="Conveyer Toggle" />
-						</span>
-						<p>បង្វែរលាមក</p>
-						<label class="switch">
-							<input type="checkbox" id="conveyerToggle" />
-							<span class="slider"></span>
-						</label>
-					</div>
-				</div>
-			</section>
+<div id="header-placeholder"></div>
 
-			<section class="sensor-controls">
-				<h2>ការគ្រប់គ្រង</h2>
-				<div class="control-cards">
-					<div class="control-card">
-						<span class="icon">
-							<img
-								src="../assets/icons/cooling-fan.png"
-								alt="Fan"
-							/>
-						</span>
-						<p>កង្ហារត្រជាក់</p>
-						<label class="switch">
-							<input type="checkbox" id="fanToggle" />
-							<span class="slider"></span>
-						</label>
-					</div>
-					<div class="control-card">
-						<span class="icon">
-							<img src="../assets/icons/lamp.png" alt="Light" />
-						</span>
-						<p>អំពូលពងមាន់</p>
-						<label class="switch">
-							<input type="checkbox" id="lightToggle" />
-							<span class="slider"></span>
-						</label>
-					</div>
-					<div class="control-card">
-						<span class="icon">
-							<img
-								src="../assets/icons/feeding.png"
-								alt="Feeding"
-							/>
-						</span>
-						<p>ទម្លាក់ចំណី</p>
-						<label class="switch">
-							<input type="checkbox" id="feederToggle" />
-							<span class="slider"></span>
-						</label>
-					</div>
-					<div class="control-card">
-						<span class="icon">
-							<img src="../assets/icons/faucet.png" alt="Water" />
-						</span>
-						<p>បើកទឹក</p>
-						<label class="switch">
-							<input type="checkbox" id="pumpToggle" />
-							<span class="slider"></span>
-						</label>
-					</div>
-				</div>
-			</section>
+<div id="app">
 
-			<!-- Schedule Configuration Modal -->
-	<!--	<div id="scheduleModal" class="modal">
-				<div class="modal-content">
-					<span class="close-button">&times;</span>
-					<h2>ការកំណត់កាលវិភាគ</h2>
+  <!-- Confirm dialog overlay -->
+  <div v-if="showLogoutConfirm" style="position:fixed;inset:0;background:var(--color-overlay);z-index:300;display:flex;align-items:center;justify-content:center;padding:var(--space-md);">
+    <div class="card" style="max-width:340px;width:100%;padding:var(--space-xl);text-align:center;">
+      <span class="material-symbols-outlined" style="font-size:48px;color:var(--color-danger);">logout</span>
+      <h2 style="margin:var(--space-md) 0 var(--space-sm);" data-i18n="logout">ចាកចេញ</h2>
+      <p class="color-muted" style="font-size:var(--font-size-base);margin-bottom:var(--space-lg);" data-i18n="logout_confirm">តើអ្នកចង់ចាកចេញ?</p>
+      <div style="display:flex;gap:var(--space-md);">
+        <button class="btn btn-ghost flex-1" @click="showLogoutConfirm=false" data-i18n="cancel">បោះបង់</button>
+        <button class="btn btn-danger flex-1" @click="confirmLogout" data-i18n="yes">បាទ/ចាស</button>
+      </div>
+    </div>
+  </div>
 
-					<div class="schedule-section">
-						<h3>កាលវិភាគបើកភ្លើង</h3>
-						<div class="time-inputs">
-							<div class="input-group">
-								<label for="lightStart">ម៉ោងចាប់ផ្តើម:</label>
-								<input
-									type="time"
-									id="lightStart"
-									value="06:00"
-								/>
-							</div>
-							<div class="input-group">
-								<label for="lightEnd">ម៉ោងបិទ:</label>
-								<input
-									type="time"
-									id="lightEnd"
-									value="18:00"
-								/>
-							</div>
-						</div>
-					</div>
+  <div class="page-title" data-i18n="settings">ការកំណត់</div>
 
-					<div class="schedule-section">
-						<h3>កាលវិភាគចំណី</h3>
-						<div id="feedingTimes">
-							<div class="feeding-time">
-								<input type="time" value="07:00" />
-								<button class="remove-time">លុប</button>
-							</div>
-							<div class="feeding-time">
-								<input type="time" value="12:00" />
-								<button class="remove-time">លុប</button>
-							</div>
-							<div class="feeding-time">
-								<input type="time" value="17:00" />
-								<button class="remove-time">លុប</button>
-							</div>
-						</div>
-						<button id="addFeedingTime">បន្ថែមម៉ោង</button>
-					</div>
+  <!-- Account -->
+  <div class="section-label" data-i18n="account">គណនី</div>
+  <div class="list-group" style="margin:0 var(--space-md);">
+    <a href="/profile" class="list-item">
+      <div class="list-item-icon"><span class="material-symbols-outlined">account_circle</span></div>
+      <div class="list-item-content">
+        <div class="list-item-title" data-i18n="my_profile">គណនីខ្ញុំ</div>
+        <div class="list-item-subtitle">{{ userName }}</div>
+      </div>
+      <span class="list-item-chevron material-symbols-outlined">chevron_right</span>
+    </a>
+  </div>
 
-					<div class="schedule-section">
-						<h3>ប្រព័ន្ធទឹក</h3>
-						<div class="input-group">
-							<label for="waterInterval"
-								>ចន្លោះពេលត្រួតពិនិត្យ (នាទី):</label
-							>
-							<input
-								type="number"
-								id="waterInterval"
-								value="60"
-								min="15"
-								max="120"
-							/>
-						</div>
-					</div>
+  <!-- General -->
+  <div class="section-label" data-i18n="system">ប្រព័ន្ធ</div>
+  <div class="list-group" style="margin:0 var(--space-md);">
 
-					<div class="threshold-section">
-						<h3>កម្រិតបរិស្ថាន</h3>
-						<div class="threshold-inputs">
-							<div class="input-group">
-								<label for="tempMin"
-									>សីតុណ្ហភាពអប្បបរមា (°C):</label
-								>
-								<input
-									type="number"
-									id="tempMin"
-									value="20"
-									min="15"
-									max="30"
-								/>
-							</div>
-							<div class="input-group">
-								<label for="tempMax"
-									>សីតុណ្ហភាពអតិបរមា (°C):</label
-								>
-								<input
-									type="number"
-									id="tempMax"
-									value="25"
-									min="20"
-									max="35"
-								/>
-							</div>
-							<div class="input-group">
-								<label for="humidityMin"
-									>សំណើមអប្បបរមា (%):</label
-								>
-								<input
-									type="number"
-									id="humidityMin"
-									value="40"
-									min="30"
-									max="60"
-								/>
-							</div>
-							<div class="input-group">
-								<label for="humidityMax"
-									>សំណើមអតិបរមា (%):</label
-								>
-								<input
-									type="number"
-									id="humidityMax"
-									value="60"
-									min="40"
-									max="70"
-								/>
-							</div>
-						</div>
-					</div>
+    <!-- Language -->
+    <div class="list-item">
+      <div class="list-item-icon"><span class="material-symbols-outlined">language</span></div>
+      <div class="list-item-content">
+        <div class="list-item-title" data-i18n="language">ភាសា</div>
+        <div class="list-item-subtitle">{{ lang === 'km' ? 'ខ្មែរ' : 'English' }}</div>
+      </div>
+      <label class="toggle-switch" style="margin-left:8px;">
+        <input type="checkbox" :checked="lang === 'en'" @change="toggleLang" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
 
-					<div class="modal-buttons">
-						<button id="saveSchedule">រក្សាទុក</button>
-						<button id="cancelSchedule">បោះបង់</button>
-					</div>
-				</div>
-			</div>
-			//-->
+    <!-- Notifications -->
+    <div class="list-item">
+      <div class="list-item-icon"><span class="material-symbols-outlined">notifications</span></div>
+      <div class="list-item-content">
+        <div class="list-item-title" data-i18n="notifications">ការជូនដំណឹង</div>
+        <div class="list-item-subtitle">{{ notifEnabled ? t('enabled') : t('disabled') }}</div>
+      </div>
+      <label class="toggle-switch" style="margin-left:8px;">
+        <input type="checkbox" v-model="notifEnabled" @change="saveNotifSetting" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
 
-			<!-- Notification Toast -->
-			<div id="notification" class="notification"></div>
-		</div>
-		<script src="../js/index.js"></script>
-		<script src="../js/scriptSettings.js"></script>
-		<script src="../js/header.js"></script>
-		<script src="../js/navbar.js"></script>
-	</body>
+  </div>
+
+  <!-- Schedules shortcut -->
+  <div class="section-label" data-i18n="schedules">កាលវិភាគ</div>
+  <div class="list-group" style="margin:0 var(--space-md);">
+    <a href="/schedules" class="list-item">
+      <div class="list-item-icon" style="background:var(--color-secondary-light);">
+        <span class="material-symbols-outlined" style="color:var(--color-secondary-dark);">schedule</span>
+      </div>
+      <div class="list-item-content">
+        <div class="list-item-title" data-i18n="schedules">គ្រប់គ្រងកាលវិភាគ</div>
+        <div class="list-item-subtitle">Automation schedules</div>
+      </div>
+      <span class="list-item-chevron material-symbols-outlined">chevron_right</span>
+    </a>
+  </div>
+
+  <!-- About -->
+  <div class="section-label" data-i18n="about">អំពី</div>
+  <div class="list-group" style="margin:0 var(--space-md);">
+    <div class="list-item">
+      <div class="list-item-icon" style="background:var(--color-primary-light);">
+        <img src="/assets/images/tokkatot logo-02.png" style="width:28px;height:28px;object-fit:contain;" alt="logo" />
+      </div>
+      <div class="list-item-content">
+        <div class="list-item-title">Tokkatot</div>
+        <div class="list-item-subtitle">v2.0 — Smart Poultry Farm</div>
+      </div>
+    </div>
+    <a href="https://camtech.edu.kh" target="_blank" class="list-item">
+      <div class="list-item-icon"><span class="material-symbols-outlined">school</span></div>
+      <div class="list-item-content">
+        <div class="list-item-title">CamTech University</div>
+        <div class="list-item-subtitle">camtech.edu.kh</div>
+      </div>
+      <span class="list-item-chevron material-symbols-outlined">open_in_new</span>
+    </a>
+  </div>
+
+  <!-- Logout -->
+  <button class="btn btn-danger btn-lg logout-btn" @click="showLogoutConfirm = true">
+    <span class="material-symbols-outlined">logout</span>
+    <span data-i18n="logout">ចាកចេញ</span>
+  </button>
+
+  <div style="height:var(--space-xl);"></div>
+</div><!-- #app -->
+
+<div id="navbar-placeholder"></div>
+
+<script src="/js/utils/i18n.js"></script>
+<script src="/js/utils/api.js"></script>
+<script src="/js/utils/components.js"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+const { createApp } = Vue;
+createApp({
+  data() {
+    return {
+      lang: window.i18n ? window.i18n.getLang() : 'km',
+      notifEnabled: localStorage.getItem('notif_enabled') !== 'false',
+      showLogoutConfirm: false,
+      userName: localStorage.getItem('user_name') || ''
+    };
+  },
+  async mounted() {
+    if (!window.API.requireAuth()) return;
+    await loadComponents();
+    if (window.i18n) window.i18n.applyAll();
+  },
+  methods: {
+    t(k) { return window.i18n ? window.i18n.t(k) : k; },
+    toggleLang() {
+      if (window.i18n) {
+        window.i18n.toggleLang();
+        this.lang = window.i18n.getLang();
+        if (window.i18n.applyAll) window.i18n.applyAll();
+      }
+    },
+    saveNotifSetting() {
+      localStorage.setItem('notif_enabled', this.notifEnabled ? 'true' : 'false');
+    },
+    confirmLogout() {
+      window.API.logout();
+    }
+  }
+}).mount('#app');
+</script>
+</body>
 </html>

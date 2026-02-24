@@ -1,760 +1,228 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="km">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <meta name="description" content="ប្រព័ន្ធរកជំងឺមាន់ដោយប្រើបច្ចេកវិទ្យា AI - តុក្កតត">
-    <meta name="keywords" content="AI, ជំងឺមាន់, ការវិភាគរូបភាព, កសិកម្មឆ្លាតវៃ">
-    <meta name="author" content="CamTech University">
-    
-    <!-- Progressive Web App -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>AI Disease Detection - Tokkatot</title>
-    <link rel="stylesheet" href="../css/styleHeader.css">
-    <link rel="stylesheet" href="../css/stylenavbar.css">
-    <link rel="stylesheet" href="../css/styleHome.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AI រកជំងឺ - Tokkatot</title>
+    <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <style>
-        /* Mobile-first approach with app's color scheme */
         body {
-            background-color: var(--color-background);
-            min-height: 100vh;
-            padding: 8px;
-            margin: 0;
-            font-family: 'Kantumruy Pro', sans-serif;
+            background: var(--color-bg);
         }
-
-        .disease-detection-container {
-            max-width: 100%;
-            margin: 8px auto;
-            padding: 16px;
-            background: var(--color-white);
-            border-radius: var(--card-border-radius);
-            box-shadow: var(--box-shadow);
-        }
-
-        .page-title {
-            color: var(--color-dark);
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .upload-zone {
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl) var(--space-lg);
             text-align: center;
-            justify-content: center;
-        }
-
-        .page-subtitle {
-            color: #666;
-            margin-bottom: 20px;
-            font-size: 14px;
-            text-align: center;
-            line-height: 1.4;
-        }
-
-        .upload-area {
-            border: 2px dashed #ddd;
-            border-radius: var(--card-border-radius);
-            padding: 24px 16px;
-            text-align: center;
-            margin-bottom: 16px;
-            transition: all 0.3s ease;
             cursor: pointer;
-            background: #f8f9fa;
-            min-height: 180px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            background: var(--color-surface);
+            transition: border-color 0.2s;
         }
-
-        .upload-area:hover {
+        .upload-zone:hover, .upload-zone.dragover {
             border-color: var(--color-primary);
-            background: #fff;
+            background: var(--color-primary-light);
         }
-
-        .upload-area.dragover {
-            border-color: var(--color-primary);
-            background-color: #fff5e6;
-        }
-
-        .upload-area h3 {
-            color: var(--color-dark);
-            margin-bottom: 12px;
-            font-size: 18px;
-        }
-
-        .camera-button, .upload-button {
-            background: var(--color-primary);
-            color: var(--color-dark);
-            border: none;
-            padding: 14px 20px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 500;
-            margin: 6px 0;
-            cursor: pointer;
-            display: block;
-            width: 100%;
-            max-width: 280px;
-            text-align: center;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .camera-button:hover, .upload-button:hover {
-            background: #e6a541;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(255, 186, 73, 0.3);
-        }
-
-        .camera-button:active, .upload-button:active {
-            transform: translateY(0);
-            background: #d4942f;
-        }
-
-        .image-preview {
-            max-width: 100%;
-            max-height: 250px;
-            width: auto;
-            height: auto;
-            border-radius: var(--card-border-radius);
-            margin: 16px 0;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .result-container {
-            margin-top: 20px;
-            padding: 16px;
-            border-radius: var(--card-border-radius);
-            display: none;
-            box-shadow: var(--box-shadow);
-        }
-
-        .result-healthy {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            border: 1px solid #b8dabd;
-            color: #155724;
-        }
-
-        .result-disease {
-            background: linear-gradient(135deg, #f8d7da 0%, #f1c2c7 100%);
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .confidence-bar {
-            width: 100%;
-            height: 20px;
-            background: #e9ecef;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 12px 0;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--color-primary) 0%, #e6a541 100%);
-            transition: width 0.6s ease;
-            border-radius: 10px;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 24px 0;
-            color: var(--color-dark);
-        }
-
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--color-primary);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 12px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .recommendations {
-            margin-top: 16px;
-            padding: 16px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px;
-            border-left: 4px solid var(--color-primary);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .recommendations strong {
-            color: var(--color-dark);
-            font-size: 15px;
-        }
-
-        .recommendations p {
-            margin-top: 8px;
-            line-height: 1.5;
-            color: #495057;
-            font-size: 14px;
-        }
-
-        .reset-button {
-            background: var(--color-background);
-            color: var(--color-white);
-            border: none;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            display: block;
-            width: 100%;
-            max-width: 280px;
-            margin: 16px auto 0;
-            text-align: center;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .reset-button:hover {
-            background: #1a8d89;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(32, 163, 158, 0.3);
-        }
-
-        .reset-button:active {
-            transform: translateY(0);
-            background: #167a76;
-        }
-
-        .upload-instruction {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 16px;
-            line-height: 1.4;
-        }
-
-        .upload-instruction strong {
-            color: var(--color-dark);
-        }
-
-        .confidence-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 500;
-            margin-bottom: 4px;
-            color: var(--color-dark);
-            font-size: 14px;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Button container for better mobile layout */
-        .button-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-        }
-
-        /* Tablet styles (768px and up) */
-        @media (min-width: 768px) {
-            body {
-                padding: 16px;
-            }
-            
-            .disease-detection-container {
-                max-width: 500px;
-                margin: 16px auto;
-                padding: 24px;
-            }
-
-            .page-title {
-                font-size: 22px;
-                margin-bottom: 12px;
-            }
-
-            .page-subtitle {
-                font-size: 15px;
-                margin-bottom: 24px;
-            }
-            
-            .upload-area {
-                padding: 32px 24px;
-                min-height: 200px;
-            }
-
-            .upload-area h3 {
-                font-size: 19px;
-                margin-bottom: 14px;
-            }
-
-            .button-container {
-                flex-direction: row;
-                justify-content: center;
-                gap: 12px;
-            }
-
-            .camera-button, .upload-button {
-                width: auto;
-                min-width: 140px;
-                flex: 0 0 auto;
-            }
-
-            .image-preview {
-                max-height: 280px;
-                margin: 20px 0;
-            }
-
-            .result-container {
-                padding: 20px;
-                margin-top: 24px;
-            }
-
-            .confidence-bar {
-                height: 22px;
-                margin: 14px 0;
-            }
-
-            .recommendations {
-                padding: 18px;
-                margin-top: 18px;
-            }
-
-            .recommendations strong {
-                font-size: 16px;
-            }
-
-            .recommendations p {
-                font-size: 15px;
-                margin-top: 10px;
-            }
-
-            .reset-button {
-                width: auto;
-                min-width: 200px;
-                margin-top: 18px;
-            }
-        }
-
-        /* Desktop styles (1024px and up) */
-        @media (min-width: 1024px) {
-            body {
-                padding: 24px;
-            }
-            
-            .disease-detection-container {
-                max-width: 600px;
-                margin: 24px auto;
-                padding: 32px;
-            }
-
-            .page-title {
-                font-size: 24px;
-                margin-bottom: 14px;
-                justify-content: flex-start;
-            }
-
-            .page-subtitle {
-                font-size: 16px;
-                margin-bottom: 28px;
-                text-align: left;
-            }
-            
-            .upload-area {
-                padding: 40px;
-                min-height: 220px;
-            }
-
-            .upload-area h3 {
-                font-size: 20px;
-                margin-bottom: 16px;
-            }
-
-            .upload-instruction {
-                font-size: 15px;
-                margin-bottom: 20px;
-            }
-
-            .camera-button, .upload-button {
-                padding: 12px 24px;
-                font-size: 16px;
-                min-width: 160px;
-            }
-
-            .image-preview {
-                max-height: 320px;
-                margin: 24px 0;
-            }
-
-            .result-container {
-                padding: 28px;
-                margin-top: 28px;
-            }
-
-            .confidence-bar {
-                height: 24px;
-                margin: 16px 0;
-            }
-
-            .confidence-label {
-                font-size: 15px;
-            }
-
-            .recommendations {
-                padding: 20px;
-                margin-top: 20px;
-            }
-
-            .loading {
-                margin: 32px 0;
-            }
-
-            .spinner {
-                width: 50px;
-                height: 50px;
-                border-width: 4px;
-                margin-bottom: 16px;
-            }
-        }
-
-        /* Large desktop styles (1200px and up) */
-        @media (min-width: 1200px) {
-            .disease-detection-container {
-                max-width: 700px;
-            }
-        }
+        .upload-icon { font-size: 56px; color: var(--color-primary); opacity: 0.5; }
+        .preview-img { width: 100%; max-height: 280px; object-fit: cover; border-radius: var(--radius-lg); margin: var(--space-md) 0; display: none; }
+        .result-card { display: none; }
+        .confidence-bar-wrap { background: var(--color-border); border-radius: 99px; height: 10px; margin: var(--space-sm) 0; overflow: hidden; }
+        .confidence-bar-fill { height: 100%; background: var(--color-primary); border-radius: 99px; transition: width 0.5s; }
+        .healthy-badge   { color: #16a34a; background: #dcfce7; }
+        .disease-badge   { color: #dc2626; background: #fee2e2; }
     </style>
 </head>
 <body>
+
 <!-- =====================================================
      COMING SOON OVERLAY — remove this div when AI is live
      ===================================================== -->
 <div id="coming-soon-overlay" style="
     position: fixed; inset: 0; z-index: 9999;
-    background: linear-gradient(160deg, #1a2e1a 0%, #0d1f0d 100%);
+    background: var(--color-bg, #f4f6f8);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    padding: 32px; text-align: center;
-    font-family: 'Noto Sans Khmer', 'Segoe UI', sans-serif;
+    padding: 40px 32px; text-align: center;
 ">
-    <div style="font-size: 72px; margin-bottom: 16px;">🔬</div>
-    <h1 style="color: #4caf50; font-size: 28px; margin: 0 0 8px;">AI Disease Detection</h1>
-    <p style="color: #a5d6a7; font-size: 18px; margin: 0 0 4px;">ការរកឃើញជំងឺដោយ AI</p>
+    <span class="material-symbols-outlined" style="font-size:72px;color:var(--color-primary,#20a39e);margin-bottom:16px;">science</span>
+    <h1 style="color:var(--color-text,#1a1a1a);font-size:24px;margin:0 0 8px;font-weight:800;">AI រកជំងឺមាន់</h1>
+    <p style="color:var(--color-text-secondary,#6b7280);font-size:18px;margin:0 0 4px;">AI Disease Detection</p>
     <div style="
-        background: #4caf50; color: #fff;
-        font-size: 12px; font-weight: 700; letter-spacing: 2px;
+        background: var(--color-primary,#20a39e); color: #fff;
+        font-size: 11px; font-weight: 700; letter-spacing: 2px;
         padding: 4px 14px; border-radius: 20px;
-        margin: 20px 0 28px; text-transform: uppercase;
+        margin: 16px 0 24px; text-transform: uppercase;
     ">Coming Soon</div>
-    <p style="color: #81c784; font-size: 15px; max-width: 320px; line-height: 1.6; margin: 0 0 40px;">
-        We are training our AI models to detect chicken diseases from photos.
-        This feature will be available in the next update.
+    <p style="color:var(--color-text-secondary,#6b7280);font-size:16px;max-width:300px;line-height:1.7;margin:0 0 40px;">
+        យើងកំពុងបណ្ដុះបណ្ដាល AI ដើម្បីរកជំងឺ​មាន់​ពីរូប​ភាព​។
+        មុខ​ងារ​នេះ​នឹង​អាច​ប្រើ​បាន​ក្នុង​កំណែ​បន្ទាប់​។
     </p>
-    <a href="/index.html" style="
-        background: #4caf50; color: #fff;
-        padding: 14px 32px; border-radius: 12px;
-        text-decoration: none; font-size: 16px; font-weight: 600;
-        display: inline-block;
-    ">← Back to Home</a>
+    <a href="/" style="text-decoration:none;">
+        <button class="btn btn-primary" style="min-width:180px;font-size:16px;">
+            <span class="material-symbols-outlined">arrow_back</span>
+            ទៅ​ទំព័រ​ដើម
+        </button>
+    </a>
 </div>
 <!-- END COMING SOON OVERLAY -->
-    <div id="header-placeholder"></div>
-    <div id="navbar"></div>
 
-    <div class="disease-detection-container">
-        <h2 class="page-title">
-            🔬 ប្រព័ន្ធពិនិត្យជំងឺមាន់ដោយប្រើ AI
-        </h2>
-        <p class="page-subtitle">ថតរូប ឬបញ្ចូលរូបភាពលាមក​មាន់ ដើម្បីរកជំងឺដោយប្រើបច្ចេកវិទ្យា AI</p>
+<div id="header-placeholder"></div>
 
-        <div class="upload-area" id="uploadArea">
-            <div>
-                <h3>📸 ថតរូប ឬបញ្ចូលរូបភាព</h3>
-                <p class="upload-instruction">
-                    អូសរូបភាពមកទីនេះ ឬប្រើប៊ូតុងខាងក្រោម
-                </p>
-                
-                <div class="button-container">
-                    <button class="camera-button" id="cameraBtn">
-                        📷 ថតរូប
-                    </button>
-                    <button class="upload-button" id="uploadBtn">
-                        📁 បញ្ចូលរូបភាព
-                    </button>
+<div id="app">
+    <div class="page-title" data-i18n="disease">រក​ជំងឺ​មាន់</div>
+
+    <!-- Upload zone -->
+    <div class="section" style="padding-top:0;">
+        <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">
+                <span class="material-symbols-outlined" style="font-size:56px;">photo_camera</span>
+            </div>
+            <p style="font-size:var(--font-size-lg);font-weight:700;margin:var(--space-sm) 0;">
+                ថតរូប ឬ​ជ្រើស​រូបភាព
+            </p>
+            <p class="color-muted text-sm">ដ្រាប់រូបភាព ឬ​ចុចដើម្បីជ្រើស</p>
+            <div style="display:flex;gap:var(--space-md);justify-content:center;margin-top:var(--space-md);">
+                <button class="btn btn-primary" onclick="document.getElementById('cameraInput').click()">
+                    <span class="material-symbols-outlined">photo_camera</span>
+                    ថតរូប
+                </button>
+                <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
+                    <span class="material-symbols-outlined">upload</span>
+                    ជ្រើស​ឯកសារ
+                </button>
+            </div>
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
+            <input type="file" id="fileInput" accept="image/*" style="display:none;">
+        </div>
+
+        <img id="previewImg" class="preview-img" alt="Preview" />
+
+        <!-- Loading -->
+        <div id="loadingState" style="display:none;text-align:center;padding:var(--space-xl);">
+            <div class="spinner" style="margin:0 auto var(--space-md);"></div>
+            <p style="font-size:var(--font-size-lg);">កំពុង​វិភាគ​រូបភាព​ដោយ AI…</p>
+        </div>
+
+        <!-- Result -->
+        <div id="resultCard" class="card result-card" style="margin-top:var(--space-md);">
+            <div class="card-body">
+                <div id="resultBadge" class="badge" style="font-size:var(--font-size-base);padding:8px 16px;margin-bottom:var(--space-md);"></div>
+                <div style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin-bottom:4px;">
+                    កម្រិត​ជឿ​ជាក់
                 </div>
-                
-                <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
-                <input type="file" id="uploadInput" accept="image/*" style="display: none;">
+                <div class="confidence-bar-wrap">
+                    <div id="confBar" class="confidence-bar-fill" style="width:0%"></div>
+                </div>
+                <div id="confText" style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin-bottom:var(--space-md);"></div>
+                <div style="font-weight:700;margin-bottom:var(--space-sm);">ការ​ណែ​នាំ</div>
+                <div id="recommendation" style="font-size:var(--font-size-base);line-height:1.7;color:var(--color-text-secondary);"></div>
+                <button class="btn btn-ghost w-full" style="margin-top:var(--space-md);" onclick="resetDetection()">
+                    <span class="material-symbols-outlined">refresh</span>
+                    សាកល្បង​ម្ដង​ទៀត
+                </button>
             </div>
-        </div>
-
-        <img id="imagePreview" class="image-preview hidden" alt="Image preview">
-
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p><strong>កំពុងវិភាគរូបភាពដោយ AI...</strong></p>
-        </div>
-
-        <div class="result-container" id="resultContainer">
-            <h3 id="resultTitle"></h3>
-            <div class="confidence-label">
-                <strong>កម្រិតជឿជាក់:</strong>
-                <span id="confidenceText"></span>
-            </div>
-            <div class="confidence-bar">
-                <div class="confidence-fill" id="confidenceFill"></div>
-            </div>
-            
-            <div class="recommendations" id="recommendations">
-                <strong>ការណែនាំ:</strong>
-                <p id="recommendationText"></p>
-            </div>
-
-            <button class="reset-button" onclick="resetDetection()">
-                🔄 វិភាគរូបភាពផ្សេងទៀត
-            </button>
         </div>
     </div>
+</div>
 
-    <script src="../js/index.js"></script>
-    <script src="../js/header.js"></script>
-    <script src="../js/navbar.js"></script>
-    <script src="../js/scriptHome.js"></script>
-    <script src="../js/scriptSettings.js"></script>
-    
-    <script>
-        const uploadArea = document.getElementById('uploadArea');
-        const cameraBtn = document.getElementById('cameraBtn');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const fileInput = document.getElementById('fileInput');
-        const uploadInput = document.getElementById('uploadInput');
-        const imagePreview = document.getElementById('imagePreview');
-        const loading = document.getElementById('loading');
-        const resultContainer = document.getElementById('resultContainer');
+<div id="navbar-placeholder"></div>
 
-        // Event listeners
-        cameraBtn.addEventListener('click', () => fileInput.click());
-        uploadBtn.addEventListener('click', () => uploadInput.click());
-        fileInput.addEventListener('change', handleFileSelect);
-        uploadInput.addEventListener('change', handleFileSelect);
+<script src="/js/utils/i18n.js"></script>
+<script src="/js/utils/api.js"></script>
+<script src="/js/utils/components.js"></script>
+<script>
+    async function init() {
+        if (!window.API.requireAuth()) return;
+        await loadComponents();
+    }
 
-        // Mobile-friendly drag and drop functionality
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
+    // ── File inputs ───────────────────────────────────────────────────────────
+    document.getElementById('cameraInput').addEventListener('change', e => handleFile(e.target.files[0]));
+    document.getElementById('fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
 
-        uploadArea.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-        });
+    // ── Drag & drop ───────────────────────────────────────────────────────────
+    const zone = document.getElementById('uploadZone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+        e.preventDefault(); zone.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                processFile(files[0]);
-            }
-        });
+    function handleFile(file) {
+        if (!file || !file.type.startsWith('image/')) return;
+        if (file.size > 10 * 1024 * 1024) { alert('ឯកសារ​ត្រូវ​តែ​តិច​ជាង 10MB'); return; }
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = document.getElementById('previewImg');
+            img.src = e.target.result;
+            img.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+        uploadAndAnalyze(file);
+    }
 
-        // Touch event handling for mobile
-        uploadArea.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-        });
-
-        uploadArea.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            // Trigger file selection on touch
-            uploadInput.click();
-        });
-
-        // Prevent zoom on double tap for buttons
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                e.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
-
-        function handleFileSelect(e) {
-            const file = e.target.files[0];
-            if (file) {
-                processFile(file);
-            }
+    async function uploadAndAnalyze(file) {
+        document.getElementById('loadingState').style.display = 'block';
+        document.getElementById('resultCard').style.display = 'none';
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+            const token = localStorage.getItem('access_token');
+            const res = await fetch('/v1/ai/predict-disease', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token },
+                body: formData
+            });
+            const result = await res.json();
+            document.getElementById('loadingState').style.display = 'none';
+            if (result.success) showResult(result.prediction);
+            else showResult(null, result.message || 'ការ​វិភាគ​បរាជ័យ');
+        } catch(e) {
+            document.getElementById('loadingState').style.display = 'none';
+            showResult(null, 'បញ្ហា​បណ្ដាញ: ' + e.message);
         }
+    }
 
-        function processFile(file) {
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                showMobileAlert('សូមជ្រើសរើសឯកសាររូបភាព។');
-                return;
-            }
+    function showResult(pred, error) {
+        const card    = document.getElementById('resultCard');
+        const badge   = document.getElementById('resultBadge');
+        const confBar = document.getElementById('confBar');
+        const confTxt = document.getElementById('confText');
+        const rec     = document.getElementById('recommendation');
 
-            // Validate file size (10MB limit)
-            if (file.size > 10 * 1024 * 1024) {
-                showMobileAlert('ទំហំឯកសារត្រូវតែតិចជាង 10MB។');
-                return;
-            }
-
-            // Show image preview
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                imagePreview.src = e.target.result;
-                imagePreview.classList.remove('hidden');
-                
-                // Scroll to preview on mobile
-                if (window.innerWidth < 768) {
-                    setTimeout(() => {
-                        imagePreview.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'center' 
-                        });
-                    }, 100);
-                }
-            };
-            reader.readAsDataURL(file);
-
-            // Upload and analyze
-            uploadAndAnalyze(file);
+        card.style.display = 'block';
+        if (error || !pred) {
+            badge.textContent = '❌ ការ​វិភាគ​បរាជ័យ';
+            badge.className = 'badge disease-badge';
+            confBar.style.width = '0%';
+            confTxt.textContent = '';
+            rec.textContent = error || 'Unknown error';
+            return;
         }
-
-        // Mobile-friendly alert function
-        function showMobileAlert(message) {
-            // Use a simple alert for now, could be enhanced with a custom modal
-            alert(message);
+        const pct = Math.round(pred.confidence * 100);
+        if (pred.is_healthy) {
+            badge.textContent = '✅ ' + pred.predicted_disease;
+            badge.className = 'badge healthy-badge';
+        } else {
+            badge.textContent = '⚠️ រក​ឃើញ​ជំងឺ: ' + pred.predicted_disease;
+            badge.className = 'badge disease-badge';
         }
+        confBar.style.width = pct + '%';
+        confTxt.textContent = pct + '% ជឿ​ជាក់';
+        rec.textContent = pred.recommendation || '';
+    }
 
-        async function uploadAndAnalyze(file) {
-            try {
-                // Show loading
-                loading.style.display = 'block';
-                resultContainer.style.display = 'none';
+    function resetDetection() {
+        document.getElementById('previewImg').style.display = 'none';
+        document.getElementById('previewImg').src = '';
+        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('cameraInput').value = '';
+        document.getElementById('fileInput').value = '';
+    }
 
-                // Create form data
-                const formData = new FormData();
-                formData.append('image', file);
-
-                // Make API request
-                const response = await fetch('/api/ai/predict-disease', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                // Hide loading
-                loading.style.display = 'none';
-
-                if (result.success) {
-                    displayResult(result.prediction);
-                } else {
-                    // Show detailed error message
-                    const errorMsg = result.details || result.error || 'Failed to analyze image';
-                    displayError(errorMsg);
-                }
-
-            } catch (error) {
-                loading.style.display = 'none';
-                displayError('បញ្ហាបណ្តាញ: ' + error.message + '. សូមព្យាយាមម្តងទៀត។');
-            }
-        }
-
-        function displayResult(prediction) {
-            const { predicted_disease, confidence, is_healthy, recommendation } = prediction;
-
-            // Set result title and style
-            const resultTitle = document.getElementById('resultTitle');
-            const resultContainer = document.getElementById('resultContainer');
-            
-            if (is_healthy) {
-                resultTitle.textContent = `✅ ${predicted_disease}`;
-                resultContainer.className = 'result-container result-healthy';
-            } else {
-                resultTitle.textContent = `⚠️ រកឃើញជំងឺ ${predicted_disease}`;
-                resultContainer.className = 'result-container result-disease';
-            }
-
-            // Set confidence
-            const confidencePercent = Math.round(confidence * 100);
-            document.getElementById('confidenceFill').style.width = confidencePercent + '%';
-            document.getElementById('confidenceText').textContent = confidencePercent + '%';
-
-            // Set recommendation
-            document.getElementById('recommendationText').textContent = recommendation;
-
-            // Show result
-            resultContainer.style.display = 'block';
-
-            // Scroll to results on mobile
-            if (window.innerWidth < 768) {
-                setTimeout(() => {
-                    resultContainer.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                    });
-                }, 100);
-            }
-        }
-
-        function displayError(error) {
-            const resultContainer = document.getElementById('resultContainer');
-            resultContainer.className = 'result-container result-disease';
-            document.getElementById('resultTitle').textContent = '❌ ការវិភាគបរាជ័យ';
-            document.getElementById('confidenceFill').style.width = '0%';
-            document.getElementById('confidenceText').textContent = '';
-            document.getElementById('recommendationText').textContent = error;
-            resultContainer.style.display = 'block';
-        }
-
-        function resetDetection() {
-            imagePreview.classList.add('hidden');
-            resultContainer.style.display = 'none';
-            loading.style.display = 'none';
-            fileInput.value = '';
-            uploadInput.value = '';
-        }
-
-        // Check AI service health on page load
-        async function checkAIHealth() {
-            try {
-                const response = await fetch('/api/ai/health');
-                const health = await response.json();
-                
-                if (!health.model_loaded) {
-                    console.warn('គំរូ AI មិនត្រូវបានផ្ទុកទេ។ ការរកជំងឺអាចនឹងមិនដំណើរការ។');
-                }
-            } catch (error) {
-                console.error('AI បរាជ័យ:', error);
-            }
-        }
-
-        // Check health when page loads
-        document.addEventListener('DOMContentLoaded', checkAIHealth);
-    </script>
+    init().catch(console.error);
+</script>
 </body>
 </html>
