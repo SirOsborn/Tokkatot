@@ -212,7 +212,7 @@ tokkatot/
 │   │   └── SETUP.md             # Complete setup guide (PostgreSQL, Go, frontend)
 │   │
 │   ├── implementation/          # Component Development
-│   │   ├── API.md               # Backend API (Go + Fiber, 66 endpoints)
+│   │   ├── API.md               # Backend API (Go + Fiber, 67 endpoints)
 │   │   ├── DATABASE.md          # Database schema (PostgreSQL, 8 tables)
 │   │   ├── FRONTEND.md          # Frontend (Vue.js 3 migration guide)
 │   │   ├── AI_SERVICE.md        # AI service (Python + PyTorch, disease detection)
@@ -419,7 +419,7 @@ This project is **proprietary software** developed for Tokkatot Startup. See the
 - ✅ ESP32 sensor integration
 
 ### Version 2.0 🚀 (In Development - Production)
-- 🔄 **Backend:** Go REST API (66 endpoints, JWT auth, PostgreSQL)
+- 🔄 **Backend:** Go REST API (67 endpoints, JWT auth, PostgreSQL)
 - 🔄 **Frontend:** Vue.js 3 (CDN build, WCAG AAA, Khmer language)
 - 🔄 **AI Service:** PyTorch ensemble (EfficientNetB0 + DenseNet121)
 - 🔄 **Embedded:** ESP32 firmware (MQTT, OTA updates)

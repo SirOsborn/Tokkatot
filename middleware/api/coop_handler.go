@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"strconv"
+	"time"
 
 	"middleware/database"
 	"middleware/models"
@@ -346,6 +347,213 @@ func DeleteCoopHandler(c *fiber.Ctx) error {
 }
 
 // ===== HELPER FUNCTIONS =====
+
+// TemperatureTimelineHandler returns Apple Weather-style temperature data for a coop
+// @GET /v1/farms/:farm_id/coops/:coop_id/temperature-timeline?days=7
+func TemperatureTimelineHandler(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return utils.Unauthorized(c, "Invalid token")
+	}
+
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	coopID, err := uuid.Parse(c.Params("coop_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid coop ID")
+	}
+
+	if err := checkFarmAccess(userID, farmID, "viewer"); err != nil {
+		return err
+	}
+
+	days, _ := strconv.Atoi(c.Query("days", "7"))
+	if days > 30 {
+		days = 30
+	}
+	if days < 1 {
+		days = 1
+	}
+
+	// Find coop name
+	var coopName string
+	database.DB.QueryRow(`SELECT name FROM coops WHERE id = $1`, coopID).Scan(&coopName)
+
+	// Find the temperature sensor device in this coop
+	var deviceID uuid.UUID
+	err = database.DB.QueryRow(`
+		SELECT id FROM devices
+		WHERE coop_id = $1 AND is_active = true AND type = 'sensor'
+		ORDER BY is_main_controller DESC, created_at ASC LIMIT 1
+	`, coopID).Scan(&deviceID)
+
+	if err == sql.ErrNoRows {
+		return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+			"coop_id":      coopID,
+			"coop_name":    coopName,
+			"sensor_found": false,
+			"current_temp": nil,
+			"bg_hint":      "warm",
+			"today":        nil,
+			"history":      []interface{}{},
+		}, "No temperature sensor found in this coop")
+	}
+	if err != nil {
+		log.Printf("Temperature timeline device lookup: %v", err)
+		return utils.InternalError(c, "Failed to find sensor device")
+	}
+
+	// ── 1. Current temperature (latest reading) ──────────────────────────────
+	var currentTemp *float64
+	database.DB.QueryRow(`
+		SELECT ROUND(value::numeric, 1)::float FROM device_readings
+		WHERE device_id = $1 AND sensor_type = 'temperature'
+		ORDER BY timestamp DESC LIMIT 1
+	`, deviceID).Scan(&currentTemp)
+
+	// ── 2. Today's hourly averages ────────────────────────────────────────────
+	type HourlyPoint struct {
+		Hour string  `json:"hour"` // "14:00"
+		Temp float64 `json:"temp"`
+	}
+	hourlyData := []HourlyPoint{}
+	hRows, hErr := database.DB.Query(`
+		SELECT
+			TO_CHAR(DATE_TRUNC('hour', timestamp), 'HH24:MI') AS hour_label,
+			ROUND(AVG(value)::numeric, 1)::float AS avg_temp
+		FROM device_readings
+		WHERE device_id = $1 AND sensor_type = 'temperature'
+		  AND timestamp >= CURRENT_DATE
+		  AND timestamp < CURRENT_DATE + INTERVAL '1 day'
+		GROUP BY DATE_TRUNC('hour', timestamp)
+		ORDER BY DATE_TRUNC('hour', timestamp) ASC
+	`, deviceID)
+	if hErr == nil {
+		defer hRows.Close()
+		for hRows.Next() {
+			var hp HourlyPoint
+			if err := hRows.Scan(&hp.Hour, &hp.Temp); err == nil {
+				hourlyData = append(hourlyData, hp)
+			}
+		}
+	}
+
+	// ── 3. Today's peak high and low with timestamps ─────────────────────────
+	type TempPeak struct {
+		Temp float64 `json:"temp"`
+		Time string  `json:"time"` // "14:00"
+	}
+	var todayHigh, todayLow TempPeak
+	database.DB.QueryRow(`
+		SELECT ROUND(value::numeric, 1)::float, TO_CHAR(timestamp, 'HH24:MI')
+		FROM device_readings
+		WHERE device_id = $1 AND sensor_type = 'temperature'
+		  AND timestamp >= CURRENT_DATE AND timestamp < CURRENT_DATE + INTERVAL '1 day'
+		ORDER BY value DESC LIMIT 1
+	`, deviceID).Scan(&todayHigh.Temp, &todayHigh.Time)
+	database.DB.QueryRow(`
+		SELECT ROUND(value::numeric, 1)::float, TO_CHAR(timestamp, 'HH24:MI')
+		FROM device_readings
+		WHERE device_id = $1 AND sensor_type = 'temperature'
+		  AND timestamp >= CURRENT_DATE AND timestamp < CURRENT_DATE + INTERVAL '1 day'
+		ORDER BY value ASC LIMIT 1
+	`, deviceID).Scan(&todayLow.Temp, &todayLow.Time)
+
+	// ── 4. Daily history (past N days including today) ────────────────────────
+	type DayEntry struct {
+		Date  string   `json:"date"`  // "2026-02-23"
+		Label string   `json:"label"` // "Yesterday", "Mon"
+		High  TempPeak `json:"high"`
+		Low   TempPeak `json:"low"`
+	}
+	history := []DayEntry{}
+
+	todayStr := time.Now().Format("2006-01-02")
+	yesterdayStr := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+
+	dRows, dErr := database.DB.Query(`
+		SELECT
+			TO_CHAR(DATE(timestamp), 'YYYY-MM-DD') AS day,
+			ROUND(MAX(value)::numeric, 1)::float    AS high_temp,
+			ROUND(MIN(value)::numeric, 1)::float    AS low_temp
+		FROM device_readings
+		WHERE device_id = $1 AND sensor_type = 'temperature'
+		  AND timestamp >= CURRENT_DATE - ($2 * INTERVAL '1 day')
+		  AND timestamp < CURRENT_DATE + INTERVAL '1 day'
+		GROUP BY DATE(timestamp)
+		ORDER BY DATE(timestamp) DESC
+	`, deviceID, days)
+
+	if dErr == nil {
+		defer dRows.Close()
+		for dRows.Next() {
+			var entry DayEntry
+			if err := dRows.Scan(&entry.Date, &entry.High.Temp, &entry.Low.Temp); err != nil {
+				continue
+			}
+			// Get exact time of the high and low for this day
+			database.DB.QueryRow(`
+				SELECT TO_CHAR(timestamp, 'HH24:MI') FROM device_readings
+				WHERE device_id = $1 AND sensor_type = 'temperature' AND DATE(timestamp) = $2::date
+				ORDER BY value DESC LIMIT 1
+			`, deviceID, entry.Date).Scan(&entry.High.Time)
+			database.DB.QueryRow(`
+				SELECT TO_CHAR(timestamp, 'HH24:MI') FROM device_readings
+				WHERE device_id = $1 AND sensor_type = 'temperature' AND DATE(timestamp) = $2::date
+				ORDER BY value ASC LIMIT 1
+			`, deviceID, entry.Date).Scan(&entry.Low.Time)
+
+			switch entry.Date {
+			case todayStr:
+				entry.Label = "Today"
+			case yesterdayStr:
+				entry.Label = "Yesterday"
+			default:
+				t, _ := time.Parse("2006-01-02", entry.Date)
+				entry.Label = t.Format("Mon") // "Mon", "Tue", etc.
+			}
+			history = append(history, entry)
+		}
+	}
+
+	// ── 5. Background colour hint ─────────────────────────────────────────────
+	bgHint := "warm"
+	if currentTemp != nil {
+		switch {
+		case *currentTemp >= 35:
+			bgHint = "scorching"
+		case *currentTemp >= 32:
+			bgHint = "hot"
+		case *currentTemp >= 28:
+			bgHint = "warm"
+		case *currentTemp >= 24:
+			bgHint = "neutral"
+		case *currentTemp >= 20:
+			bgHint = "cool"
+		default:
+			bgHint = "cold"
+		}
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+		"coop_id":      coopID,
+		"coop_name":    coopName,
+		"farm_id":      farmID,
+		"device_id":    deviceID,
+		"sensor_found": true,
+		"current_temp": currentTemp,
+		"bg_hint":      bgHint,
+		"today": fiber.Map{
+			"date":   todayStr,
+			"hourly": hourlyData,
+			"high":   todayHigh,
+			"low":    todayLow,
+		},
+		"history": history,
+	}, "Temperature timeline fetched")
+}
 
 // checkFarmAccess verifies user has at least minimum role for farm
 func checkFarmAccess(userID, farmID uuid.UUID, minRole string) error {

@@ -7,7 +7,7 @@
 **📖 Read First**: `../AI_INSTRUCTIONS.md` (project overview, business model, farmer context)
 
 **📖 Full Documentation**:
-- API Spec: `../docs/implementation/API.md` (66 endpoints, all MVP endpoints implemented)
+- API Spec: `../docs/implementation/API.md` (67 endpoints, all MVP endpoints implemented + temperature timeline)
 - Database: `../docs/implementation/DATABASE.md` (14 tables, PostgreSQL only)
 - Security: `../docs/implementation/SECURITY.md` (JWT, registration keys)
 - Automation: `../docs/AUTOMATION_USE_CASES.md` (real-world farmer scenarios)
@@ -16,7 +16,7 @@
 
 ## 🎯 What This Component Does
 
-**RESTful API Gateway** serving 66+ endpoints:
+**RESTful API Gateway** serving 67 endpoints:
 - **Authentication**: Phone/Email login, JWT tokens, registration keys
 - **Farms & Coops**: Hierarchical management (Farm → Coop → Device)
 - **Farm Members**: Invite, role management, remove members
@@ -36,7 +36,7 @@
 
 ```
 middleware/
-├── main.go                    Entry point, Fiber server setup, routes (66+ routes)
+├── main.go                    Entry point, Fiber server setup, routes (67 routes)
 ├── go.mod/go.sum             Go 1.23 dependencies (no sqlite3)
 ├── .env                      DATABASE_URL, JWT_SECRET (GITIGNORE'D)
 │
@@ -44,7 +44,7 @@ middleware/
 │   ├── auth_handler.go       Login, signup, token refresh, verify, forgot/reset password (8 endpoints)
 │   ├── auth_middleware.go    JWT extraction & farm access checks (checkFarmAccess)
 │   ├── farm_handler.go       Farm CRUD + member management (9 endpoints)
-│   ├── coop_handler.go       Coop CRUD (5 endpoints)
+│   ├── coop_handler.go       Coop CRUD (5 endpoints) + TemperatureTimelineHandler
 │   ├── device_handler.go     Device control, commands, CRUD, advanced ops (17 endpoints)
 │   ├── schedule_handler.go   Schedule automation (7 endpoints) ⭐
 │   ├── alert_handler.go      Farm alerts + user subscriptions (8 endpoints) ⭐ NEW
@@ -63,6 +63,55 @@ middleware/
 └── utils/
     └── utils.go              JWT, bcrypt, error responses
 ```
+
+---
+
+## 🌡️ Temperature Timeline (New Feb 24, 2026)
+
+**Handler**: `TemperatureTimelineHandler` in `api/coop_handler.go`  
+**Route**: `GET /v1/farms/:farm_id/coops/:coop_id/temperature-timeline?days=7`  
+**Frontend page**: `/monitoring` (`pages/monitoring.html`)
+
+### Pattern
+```go
+// Device lookup: find sensor in coop
+SELECT id FROM devices
+WHERE coop_id = $1 AND is_active = true AND type = 'sensor'
+ORDER BY is_main_controller DESC, created_at ASC LIMIT 1
+
+// If no sensor: return sensor_found: false (HTTP 200, no error)
+// Only query sensor_type = 'temperature' — humidity excluded everywhere
+```
+
+### Response shape
+```json
+{
+  "sensor_found": true,
+  "current_temp": 34.2,
+  "bg_hint": "hot",          // scorching/hot/warm/neutral/cool/cold
+  "today": {
+    "date": "2026-02-24",
+    "hourly": [{"hour":"14:00","temp":34.2}],
+    "high": {"temp":34.5, "time":"14:00"},
+    "low":  {"temp":24.1, "time":"05:00"}
+  },
+  "history": [
+    {"date":"2026-02-24","label":"Today",   "high":{"temp":34.5,"time":"14:00"}, "low":{"temp":24.1,"time":"05:00"}},
+    {"date":"2026-02-23","label":"Yesterday","high":{...},"low":{...}},
+    {"date":"2026-02-22","label":"Fri",      "high":{...},"low":{...}}
+  ]
+}
+```
+
+### bg_hint logic
+| Value | Range | CSS class |
+|---|---|---|
+| `scorching` | >= 35°C | deep red gradient |
+| `hot`       | >= 32°C | red-orange gradient |
+| `warm`      | >= 28°C | orange gradient |
+| `neutral`   | >= 24°C | green gradient |
+| `cool`      | >= 20°C | blue gradient |
+| `cold`      | < 20°C  | dark blue gradient |
 
 ---
 

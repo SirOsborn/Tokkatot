@@ -1,7 +1,7 @@
 # 🤖 AI Agent Instructions for Tokkatot 2.0
 
-**Last Updated**: February 23, 2026  
-**Version**: 2.2 (Updated with accurate DB schema: devices coop_id/is_main_controller, device_commands field names, event_logs structure, schedule_executions status enum)  
+**Last Updated**: February 24, 2026  
+**Version**: 2.3 (Added temperature monitoring dashboard: TemperatureTimelineHandler + /monitoring page)  
 **Purpose**: Guide for AI agents assisting with Tokkatot development
 
 ---
@@ -20,6 +20,7 @@
   - AI-powered disease detection from chicken feces images (camera above manure conveyor belt)
   - Real-time monitoring (water levels, temperature, humidity)
   - Automated alerts (disease outbreak, low water, equipment failure)
+  - **Temperature timeline dashboard** (`/monitoring`) — Apple Weather-style per-coop temperature graph with H/L peaks, hourly strip, daily history, dynamic colour gradient
 - **Architecture**: Farm → Coops → Devices (hierarchical, farmer can own multiple farms)
 
 ---
@@ -715,10 +716,19 @@ When reviewing AI-generated PRs, check:
 ```markdown
 ## Version History
 
-### v2.0 (Current)
+### v2.0
 - **Multi-step automation**: action_sequence field for pulse feeding, conveyor operations
 - **Auto-turn-off timers**: action_duration for water pumps, lights
 - **AI documentation consolidation**: Removed 2,310 lines of duplication across 5 files
+
+### v2.1 (Current — February 24, 2026)
+- **Temperature Monitoring Dashboard**: `TemperatureTimelineHandler` in `coop_handler.go`
+  - Endpoint: `GET /v1/farms/:farm_id/coops/:coop_id/temperature-timeline?days=7`
+  - Returns `current_temp`, `bg_hint`, today's hourly averages, H/L peaks with exact timestamps, N-day history
+  - `bg_hint` values: `scorching` (≥35°C), `hot` (≥32°C), `warm` (≥28°C), `neutral` (≥24°C), `cool` (≥20°C), `cold` (<20°C)
+  - Frontend page `/monitoring`: full-page dynamic gradient, SVG bezier curve, H/L circle markers, scrollable hourly strip, daily bar history
+  - Gracefully returns `sensor_found: false` when no active temperature sensor is in coop
+  - Temperature only — humidity completely excluded from all queries
 ```
 
 This provides timeline context for future developers.

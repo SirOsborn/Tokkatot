@@ -1,6 +1,6 @@
 # 🤖 Tokkatot Automation Use Cases
 
-**Last Updated**: February 23, 2026  
+**Last Updated**: February 24, 2026  
 **Purpose**: Real-world automation scenarios for Cambodian poultry farmers  
 **Audience**: Developers implementing schedule features, farmers configuring automation
 
@@ -678,3 +678,50 @@ This document should be referenced when:
 ---
 
 **End of Document**
+
+---
+
+## 🌡️ Temperature Monitoring Dashboard
+
+**Last Updated**: February 24, 2026  
+**Feature**: Apple Weather-style temperature timeline  
+**Endpoint**: `GET /v1/farms/:farm_id/coops/:coop_id/temperature-timeline?days=7`  
+**Frontend**: `/monitoring` (`pages/monitoring.html`)
+
+### Farmer Problem
+
+**Farmer Quote**: _"In the hot season, I need to know how hot my coop got today and whether it was dangerous for my chickens — without reading numbers"_
+
+Cambodian farmers deal with extreme heat (30–42°C in dry season). High coop temperatures cause:
+- Heat stress (reduced weight gain, egg production drops)
+- Sudden death in broilers above 38°C
+- Cascading flock illness
+
+Farmers need to **understand temperature at a glance**, not read data tables.
+
+### Solution: Visual Temperature Timeline
+
+**What it shows:**
+- Current temperature as a large number (like a weather app)
+- Background gradient colour that instinctively signals danger (scorching red = danger, cool blue = fine)
+- Today’s highest and lowest temperature **with the exact time they occurred** (e.g. “H: 38.5° at 14:00”)
+- Scrollable hourly strip — tap to see what happened hour by hour
+- Smooth SVG temperature curve for the full day
+- Daily history for the past week (Yesterday, Mon, Tue…)
+
+### bg_hint Farmer Impact
+
+| Colour hint | Temperature | What the farmer should do |
+|---|---|---|
+| `scorching` | ≥ 35°C | Open vents immediately, turn on fans, reduce feeding |
+| `hot`       | ≥ 32°C | Monitor closely, consider fan schedule |
+| `warm`      | ≥ 28°C | Normal summer day — no action needed |
+| `neutral`   | ≥ 24°C | Ideal temperature range |
+| `cool`      | ≥ 20°C | Fine for most breeds |
+| `cold`      | < 20°C  | Consider heater for brooder chicks |
+
+### Technical Notes
+- **No humidity**: `sensor_type = 'temperature'` filter only — humidity removed from all queries
+- **No crash on missing sensor**: Returns `sensor_found: false` with HTTP 200 (farmers with no sensor still see the page)
+- **Per-coop scope**: Farmer selects coop via dropdown; each coop has its own timeline
+- **Days parameter**: `?days=7` (default), max 30

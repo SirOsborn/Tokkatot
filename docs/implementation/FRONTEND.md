@@ -18,6 +18,7 @@ All pages are static HTML served by the Go backend via named routes in `middlewa
 | Profile | `/profile` | `pages/profile.html` | ✅ Live |
 | Settings | `/settings` | `pages/settings.html` | ✅ Live |
 | AI Disease Detection | `/disease-detection` | `pages/disease-detection.html` | 🚧 Coming Soon |
+| Temperature Monitoring | `/monitoring` | `pages/monitoring.html` | ✅ Live |
 | 404 Not Found | all unmatched | `pages/404.html` | ✅ Live |
 
 ### Disease Detection Page — Coming Soon Overlay
@@ -35,7 +36,46 @@ All pages are static HTML served by the Go backend via named routes in `middlewa
 
 ---
 
-## Migration Strategy
+### Temperature Monitoring Page (`/monitoring`)
+
+**File**: `pages/monitoring.html` — fully self-contained, vanilla JS, no build step.
+
+**Design**: Apple Weather-inspired per-coop temperature dashboard.
+
+#### UI Sections (top to bottom)
+1. **Back nav + title bar** — `←` button + "Temperature Monitoring"
+2. **Coop picker** — `<select>` dropdown, populated from `GET /farms/{id}/coops`; switching re-fetches timeline
+3. **Hero** — coop name, large `current_temp °C`, `H: X° at HH:MM · L: Y° at HH:MM`, colour badge (`bg_hint`)
+4. **Hourly scroll strip** — glass card, horizontal scroll, one column per hour (`time + temp`)
+5. **SVG temperature graph** — smooth bezier curve, gradient fill, H circle marker at peak, L circle at trough, x-axis labels: 12 AM / 6 AM / 12 PM / 6 PM
+6. **Daily history list** — glass cards, proportional bar showing daily range, `H X° · L Y°` per day
+
+#### Dynamic background gradient (driven by `bg_hint` from API)
+| Class | Range | Colours |
+|---|---|---|
+| `bg-scorching` | ≥ 35°C | `#7f0000 → #bf2c00 → #e85d04` |
+| `bg-hot`       | ≥ 32°C | `#c1121f → #e85d04 → #f48c06` |
+| `bg-warm`      | ≥ 28°C | `#e85d04 → #f48c06 → #faa307` |
+| `bg-neutral`   | ≥ 24°C | `#2d6a4f → #40916c → #74c69d` |
+| `bg-cool`      | ≥ 20°C | `#023e8a → #0077b6 → #0096c7` |
+| `bg-cold`      | < 20°C | `#03045e → #023e8a → #0077b6` |
+
+#### Auth & data flow
+```js
+// Auth check on page load
+token = localStorage.getItem('token');
+if (!token) window.location.href = '/login';
+
+// API calls
+GET /api/v1/farms             → get farmId
+GET /api/v1/farms/{id}/coops  → populate coop picker
+GET /api/v1/farms/{fid}/coops/{cid}/temperature-timeline?days=7  → render page
+```
+
+#### No sensor handling
+When `sensor_found = false`, the page shows a "No Sensor Found" notice and hides all chart/data sections. No error thrown on the frontend.
+
+---
 
 ### Current State
 - ✅ Vanilla HTML/CSS/JS files (`frontend/pages/*.html`)

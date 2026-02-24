@@ -121,6 +121,7 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Get("/farms/:farm_id/coops/:coop_id", api.GetCoopHandler)
 	protected.Put("/farms/:farm_id/coops/:coop_id", api.UpdateCoopHandler)
 	protected.Delete("/farms/:farm_id/coops/:coop_id", api.DeleteCoopHandler)
+	protected.Get("/farms/:farm_id/coops/:coop_id/temperature-timeline", api.TemperatureTimelineHandler)
 
 	// Device management endpoints
 	protected.Get("/farms/:farm_id/devices", api.ListDevicesHandler)
@@ -206,6 +207,9 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	// Disease detection: coming soon overlay is embedded in the page itself
 	app.Get("/disease-detection", func(c *fiber.Ctx) error {
 		return c.SendFile(filepath.Join(frontendPath, "pages", "disease-detection.html"))
+	})
+	app.Get("/monitoring", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "monitoring.html"))
 	})
 
 	// 404 Handler
