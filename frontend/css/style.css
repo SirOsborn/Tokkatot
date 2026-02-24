@@ -278,15 +278,25 @@ h5 { font-size: var(--font-size-base); font-weight: 600; }
 }
 
 .lang-toggle {
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-primary);
-  padding: 6px 12px;
   border: 2px solid var(--color-primary);
   border-radius: var(--radius-full);
-  min-height: var(--touch-min);
+  background: none;
   display: flex;
   align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.lang-toggle:active {
+  background: var(--color-primary-light);
 }
 
 /* --------------------------------------------------------------------------

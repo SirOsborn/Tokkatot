@@ -47,8 +47,7 @@
     var btn = document.getElementById('lang-toggle-btn');
     if (!btn) return;
     var lang = window.i18n ? window.i18n.getLang() : 'km';
-    btn.textContent = lang === 'km' ? '\uD83C\uDDF0\uD83C\uDDED' : '\uD83C\uDDFA\uD83C\uDDF8';
-    btn.title = lang === 'km' ? 'Switch to English' : 'ប្តូរទៅភាសាខ្មែរ';
+    btn.textContent = lang === 'km' ? 'ខ្មែរ' : 'EN';
   }
 
   function updateAvatarImg() {
