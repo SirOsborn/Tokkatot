@@ -44,18 +44,7 @@
   }
 
   function updateLangButton() {
-    var btn = document.getElementById('lang-toggle-btn');
-    if (!btn) return;
-    var lang = window.i18n ? window.i18n.getLang() : 'km';
-    if (lang === 'km') {
-      btn.textContent = 'ខ្មែរ';
-      btn.style.fontSize = '9px';
-      btn.style.letterSpacing = '0';
-    } else {
-      btn.textContent = 'EN';
-      btn.style.fontSize = '13px';
-      btn.style.letterSpacing = '0.05em';
-    }
+    /* icon-only button — nothing to update */
   }
 
   function updateAvatarImg() {

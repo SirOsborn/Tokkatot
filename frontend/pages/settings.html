@@ -50,19 +50,6 @@
   <div class="section-label" data-i18n="system">ប្រព័ន្ធ</div>
   <div class="list-group" style="margin:0 var(--space-md);">
 
-    <!-- Language -->
-    <div class="list-item">
-      <div class="list-item-icon"><span class="material-symbols-outlined">language</span></div>
-      <div class="list-item-content">
-        <div class="list-item-title" data-i18n="language">ភាសា</div>
-        <div class="list-item-subtitle">{{ lang === 'km' ? 'ខ្មែរ' : 'English' }}</div>
-      </div>
-      <label class="toggle-switch" style="margin-left:8px;">
-        <input type="checkbox" :checked="lang === 'en'" @change="toggleLang" />
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-
     <!-- Notifications -->
     <div class="list-item">
       <div class="list-item-icon"><span class="material-symbols-outlined">notifications</span></div>
