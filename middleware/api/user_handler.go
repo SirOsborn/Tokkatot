@@ -25,6 +25,25 @@ func GetCurrentUserHandler(c *fiber.Ctx) error {
 		return utils.Unauthorized(c, "Invalid token")
 	}
 
+	// Admin has a separate table
+	if role, _ := c.Locals("role").(string); role == "admin" {
+		var id uuid.UUID
+		var name string
+		var email, phone, language *string
+		var isActive bool
+		aerr := database.DB.QueryRow(`
+		SELECT id, name, email, phone, language, is_active
+		FROM admins WHERE id = $1
+		`, userID).Scan(&id, &name, &email, &phone, &language, &isActive)
+		if aerr != nil {
+			return utils.NotFound(c, "Admin not found")
+		}
+		return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+			"id": id, "name": name, "email": email, "phone": phone,
+			"language": language, "role": "admin", "is_active": isActive,
+		}, "Admin fetched successfully")
+	}
+
 	var user models.User
 	query := `
 	SELECT id, email, phone, name, language, timezone, avatar_url, is_active, contact_verified, last_login, created_at
@@ -70,21 +89,25 @@ func GetCurrentUserHandler(c *fiber.Ctx) error {
 		"created_at":       user.CreatedAt,
 	}
 
-	// Fetch farm membership (farm_id, role, farm_name)
+	// Fetch farm membership (farm_id, role, farm_name, province)
 	var farmID uuid.UUID
 	var farmRole, farmName string
+	var farmProvince *string
 	farmErr := database.DB.QueryRow(`
-	SELECT fu.farm_id, fu.role, f.name
+	SELECT fu.farm_id, fu.role, f.name, f.province
 	FROM farm_users fu
 	JOIN farms f ON f.id = fu.farm_id
 	WHERE fu.user_id = $1 AND fu.is_active = true
 	LIMIT 1
-	`, userID).Scan(&farmID, &farmRole, &farmName)
+	`, userID).Scan(&farmID, &farmRole, &farmName, &farmProvince)
 
 	if farmErr == nil {
 		resp["farm_id"] = farmID
 		resp["role"] = farmRole
 		resp["farm_name"] = farmName
+		if farmProvince != nil {
+			resp["province"] = *farmProvince
+		}
 	}
 
 	return utils.SuccessResponse(c, fiber.StatusOK, resp, "User fetched successfully")

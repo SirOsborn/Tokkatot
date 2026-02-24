@@ -178,6 +178,18 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	// Device heartbeat (for IoT devices - no AuthMiddleware, uses device key)
 	v1.Post("/devices/:hardware_id/heartbeat", api.UpdateDeviceHeartbeatHandler)
 
+	// ===== ADMIN ROUTES (role="admin" required) =====
+	admin := v1.Group("/admin")
+	admin.Use(api.AuthMiddleware, api.AdminMiddleware)
+	admin.Get("/stats", api.GetAdminStatsHandler)
+	admin.Get("/farmers", api.ListFarmersHandler)
+	admin.Post("/farmers", api.RegisterFarmerHandler)
+	admin.Delete("/farmers/:user_id", api.DeactivateFarmerHandler)
+	admin.Get("/farmers/:user_id/profile", api.GetFarmerProfileHandler)
+	admin.Get("/viewers", api.ListViewersHandler)
+	admin.Get("/reg-keys", api.ListRegKeysHandler)
+	admin.Put("/profile", api.UpdateAdminProfileHandler)
+
 	// ===== FRONTEND STATIC ROUTES =====
 	// Serve static files
 	app.Static("/assets", filepath.Join(frontendPath, "assets"))

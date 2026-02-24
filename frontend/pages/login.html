@@ -161,8 +161,10 @@ createApp({
         if (data && data.success && data.data) {
           localStorage.setItem('access_token',  data.data.access_token);
           localStorage.setItem('refresh_token', data.data.refresh_token);
-          if (data.data.user && data.data.user.name) {
-            localStorage.setItem('user_name', data.data.user.name);
+          if (data.data.user) {
+            if (data.data.user.name)  localStorage.setItem('user_name', data.data.user.name);
+            if (data.data.user.role)  localStorage.setItem('user_role', data.data.user.role);
+            if (data.data.user.id)    localStorage.setItem('user_id',   data.data.user.id);
           }
           window.location.href = '/';
         } else {

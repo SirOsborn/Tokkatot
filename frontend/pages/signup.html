@@ -231,8 +231,10 @@ createApp({
             if (loginData && loginData.success && loginData.data) {
               localStorage.setItem('access_token',  loginData.data.access_token);
               localStorage.setItem('refresh_token', loginData.data.refresh_token);
-              if (loginData.data.user && loginData.data.user.name) {
-                localStorage.setItem('user_name', loginData.data.user.name);
+              if (loginData.data.user) {
+                if (loginData.data.user.name) localStorage.setItem('user_name', loginData.data.user.name);
+                if (loginData.data.user.role) localStorage.setItem('user_role', loginData.data.user.role);
+                if (loginData.data.user.id)   localStorage.setItem('user_id',   loginData.data.user.id);
               }
               window.location.href = '/';
               return;

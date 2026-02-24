@@ -76,12 +76,42 @@ func CreateSchema() error {
 		owner_id UUID NOT NULL REFERENCES users(id),
 		name TEXT NOT NULL,
 		location TEXT,
+		province VARCHAR(100),
 		timezone VARCHAR(40) DEFAULT 'Asia/Phnom_Penh',
 		latitude DECIMAL(10,8),
 		longitude DECIMAL(11,8),
 		description TEXT,
 		image_url TEXT,
 		is_active BOOLEAN DEFAULT true,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);
+
+	-- Admins table (Tokkatot staff only — separate from farmer/viewer users)
+	CREATE TABLE IF NOT EXISTS admins (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		name VARCHAR(255) NOT NULL,
+		email VARCHAR(255) UNIQUE,
+		phone VARCHAR(20) UNIQUE,
+		password_hash TEXT NOT NULL,
+		language VARCHAR(10) DEFAULT 'km',
+		is_active BOOLEAN DEFAULT true,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		last_login TIMESTAMP
+	);
+
+	-- Farmer profiles (national ID info stored by admin during on-site setup)
+	CREATE TABLE IF NOT EXISTS farmer_profiles (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		national_id_number VARCHAR(50),
+		full_name_kh TEXT,
+		full_name_en TEXT,
+		sex VARCHAR(10),
+		province VARCHAR(100),
+		district VARCHAR(100),
+		notes TEXT,
+		created_by_admin UUID REFERENCES admins(id),
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
@@ -391,6 +421,8 @@ func CreateSchema() error {
 		`ALTER TABLE farm_users ADD CONSTRAINT farm_users_role_check CHECK (role IN ('farmer', 'viewer'))`,
 		// Ensure legacy 'owner'/'manager' rows are updated to 'farmer'
 		`UPDATE farm_users SET role = 'farmer' WHERE role IN ('owner', 'manager')`,
+		// Add province column to farms if not already present
+		`ALTER TABLE farms ADD COLUMN IF NOT EXISTS province VARCHAR(100)`,
 	}
 	for _, m := range migrations {
 		if _, merr := DB.Exec(m); merr != nil {

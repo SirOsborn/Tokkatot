@@ -63,6 +63,7 @@ type Farm struct {
 	OwnerID     uuid.UUID `json:"owner_id"`
 	Name        string    `json:"name"`
 	Location    *string   `json:"location,omitempty"`
+	Province    *string   `json:"province,omitempty"`
 	Timezone    string    `json:"timezone"`
 	Latitude    *float64  `json:"latitude,omitempty"`
 	Longitude   *float64  `json:"longitude,omitempty"`

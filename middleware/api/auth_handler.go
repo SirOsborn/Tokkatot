@@ -286,7 +286,56 @@ func LoginHandler(c *fiber.Ctx) error {
 	)
 
 	if err == sql.ErrNoRows {
-		return utils.Unauthorized(c, "Invalid credentials")
+		// Not a regular user — check admins table
+		var adminID uuid.UUID
+		var adminName, adminHash string
+		var adminEmail, adminPhone, adminLang *string
+		var adminActive bool
+		aerr := database.DB.QueryRow(`
+		SELECT id, name, email, phone, password_hash, language, is_active
+		FROM admins
+		WHERE ($1::TEXT IS NOT NULL AND email = $1) OR ($2::TEXT IS NOT NULL AND phone = $2)
+		`, req.Email, req.Phone).Scan(&adminID, &adminName, &adminEmail, &adminPhone, &adminHash, &adminLang, &adminActive)
+
+		if aerr == sql.ErrNoRows {
+			return utils.Unauthorized(c, "Invalid credentials")
+		}
+		if aerr != nil {
+			return utils.InternalError(c, "Database error")
+		}
+		if !adminActive {
+			return utils.Unauthorized(c, "Account is inactive")
+		}
+		if bcrypt.CompareHashAndPassword([]byte(adminHash), []byte(req.Password)) != nil {
+			return utils.Unauthorized(c, "Invalid credentials")
+		}
+
+		lang := "km"
+		if adminLang != nil {
+			lang = *adminLang
+		}
+		accessToken, terr := utils.GenerateAccessToken(adminID, adminEmail, adminPhone, uuid.Nil, "admin")
+		if terr != nil {
+			return utils.InternalError(c, "Failed to generate token")
+		}
+		refreshToken, terr := utils.GenerateRefreshToken(adminID)
+		if terr != nil {
+			return utils.InternalError(c, "Failed to generate token")
+		}
+		database.DB.Exec("UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE id = $1", adminID)
+		return utils.SuccessResponse(c, fiber.StatusOK, models.TokenResponse{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+			ExpiresIn:    int64(utils.AccessTokenExpiry.Seconds()),
+			User: models.UserInfo{
+				ID:       adminID,
+				Name:     adminName,
+				Email:    adminEmail,
+				Phone:    adminPhone,
+				Role:     "admin",
+				Language: lang,
+			},
+		}, "Login successful")
 	}
 
 	if err != nil {

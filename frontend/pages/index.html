@@ -54,15 +54,165 @@
     <span data-i18n="loading">កំពុងផ្ទុក...</span>
   </div>
 
-  <!-- No farm setup -->
-  <div v-else-if="farms.length === 0" class="setup-card">
+  <!-- ===== ADMIN DASHBOARD ===== -->
+  <template v-else-if="isAdmin">
+    <!-- Admin banner -->
+    <div style="margin:var(--space-md);padding:var(--space-lg);background:linear-gradient(135deg,var(--color-primary),var(--color-primary-dark));border-radius:var(--radius-xl);color:#fff;">
+      <div style="font-size:var(--font-size-xl);font-weight:700;">Tokkatot Admin</div>
+      <div style="font-size:var(--font-size-sm);opacity:.8;margin-top:4px;">{{ lang==='km' ? 'ផ្ទាំងគ្រប់គ្រងប្រព័ន្ធ' : 'System Management' }}</div>
+    </div>
+
+    <!-- Stats grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm);padding:0 var(--space-md);">
+      <div class="card" style="text-align:center;padding:var(--space-md);">
+        <div style="font-size:2rem;font-weight:700;color:var(--color-primary);">{{ adminStats.farmers || 0 }}</div>
+        <div class="text-sm color-muted">{{ lang==='km' ? 'ម្ចាស់ចម្ការ' : 'Farmers' }}</div>
+      </div>
+      <div class="card" style="text-align:center;padding:var(--space-md);">
+        <div style="font-size:2rem;font-weight:700;color:#3b82f6;">{{ adminStats.viewers || 0 }}</div>
+        <div class="text-sm color-muted">{{ lang==='km' ? 'កម្មករ' : 'Workers' }}</div>
+      </div>
+      <div class="card" style="text-align:center;padding:var(--space-md);">
+        <div style="font-size:2rem;font-weight:700;color:#10b981;">{{ adminStats.farms || 0 }}</div>
+        <div class="text-sm color-muted">{{ lang==='km' ? 'ចម្ការ' : 'Farms' }}</div>
+      </div>
+      <div class="card" style="text-align:center;padding:var(--space-md);">
+        <div style="font-size:2rem;font-weight:700;color:#f59e0b;">{{ adminStats.reg_keys_unused || 0 }}</div>
+        <div class="text-sm color-muted">{{ lang==='km' ? 'សោនៅសល់' : 'Keys Free' }}</div>
+      </div>
+    </div>
+
+    <!-- Register Farmer -->
+    <div class="section" style="margin-top:var(--space-md);">
+      <div class="section-header">
+        <span class="section-title">{{ lang==='km' ? 'ចុះឈ្មោះ' : 'Register Farmer' }}</span>
+        <button class="btn btn-primary btn-sm" @click="showRegForm=!showRegForm">
+          <span class="material-symbols-outlined" style="font-size:18px;">{{ showRegForm ? 'close' : 'person_add' }}</span>
+          {{ showRegForm ? (lang==='km' ? 'បិទ' : 'Cancel') : (lang==='km' ? '+ ចុះ' : '+ Register') }}
+        </button>
+      </div>
+      <div v-if="regFormError" class="alert alert-danger mb-md">
+        <span class="material-symbols-outlined">error</span>{{ regFormError }}
+      </div>
+      <div v-if="regFormSuccess" class="alert alert-success mb-md" style="word-break:break-all;">
+        <span class="material-symbols-outlined">check_circle</span>{{ regFormSuccess }}
+      </div>
+      <div v-if="showRegForm" style="background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-md);border:1px solid var(--color-border);display:flex;flex-direction:column;gap:var(--space-sm);">
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'ឈ្មោះ *' : 'Name *' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">person</span>
+            <input class="form-input" type="text" v-model="rf.name" :placeholder="lang==='km' ? 'ឈ្មោះ' : 'Full name'" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'ទូរស័ព្ទ *' : 'Phone *' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">phone</span>
+            <input class="form-input" type="tel" v-model="rf.phone" placeholder="0XX XXX XXX" inputmode="tel" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'អ៊ីមែល' : 'Email' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">mail</span>
+            <input class="form-input" type="email" v-model="rf.email" placeholder="example@gmail.com" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'លេខសម្ងាត់ *' : 'Password *' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">lock</span>
+            <input class="form-input" :type="rf.showPwd ? 'text' : 'password'" v-model="rf.password" />
+            <button type="button" @click="rf.showPwd=!rf.showPwd" style="background:none;border:none;cursor:pointer;margin-right:8px;">
+              <span class="material-symbols-outlined" style="font-size:20px;color:var(--color-text-secondary);">{{ rf.showPwd ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+        </div>
+        <div style="font-size:var(--font-size-sm);font-weight:600;color:var(--color-text-secondary);padding:4px 0;">
+          {{ lang==='km' ? 'ព័ត៌មានបន្ថែម (ស្ងាត់ជ្រៅ)' : 'Profile Info (Optional)' }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'ខេត្ត/ក្រុង' : 'Province' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">location_on</span>
+            <input class="form-input" type="text" v-model="rf.province" :placeholder="lang==='km' ? 'ខេត្ត' : 'e.g. Phnom Penh'" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'ស្រុក' : 'District' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">map</span>
+            <input class="form-input" type="text" v-model="rf.district" :placeholder="lang==='km' ? 'ស្រុក' : 'District'" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'លេខអត្តសញ្ញាណបណ្ណ' : 'National ID' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">badge</span>
+            <input class="form-input" type="text" v-model="rf.national_id" :placeholder="lang==='km' ? 'លេខ' : 'ID number'" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'ឈ្មោះខ្មែរ' : 'Name (Khmer)' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">person</span>
+            <input class="form-input" type="text" v-model="rf.full_name_kh" :placeholder="lang==='km' ? 'ឈ្មោះតាម ID' : 'As on ID'" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'ឈ្មោះអង់គ្លេស' : 'Name (English)' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">person</span>
+            <input class="form-input" type="text" v-model="rf.full_name_en" placeholder="DARA SOK" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'ភេទ' : 'Sex' }}</label>
+          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">wc</span>
+            <select class="form-input" v-model="rf.sex">
+              <option value="">{{ lang==='km' ? '-- ជ្រើស --' : '-- Select --' }}</option>
+              <option value="male">{{ lang==='km' ? 'ភេទប្រុស' : 'Male' }}</option>
+              <option value="female">{{ lang==='km' ? 'ភេទស្រី' : 'Female' }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ lang==='km' ? 'សម្គាល់' : 'Notes' }}</label>
+          <textarea class="form-input" v-model="rf.notes" rows="2" style="height:auto;" :placeholder="lang==='km' ? 'សម្គាល់...' : 'Notes...'"></textarea>
+        </div>
+        <button class="btn btn-primary btn-full" @click="submitRegFarmer" :disabled="regSubmitting">
+          <span v-if="regSubmitting" class="spinner" style="width:22px;height:22px;border-width:3px;"></span>
+          <span v-else>{{ lang==='km' ? 'ចុះឈ្មោះ' : 'Register Farmer' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Farmer list -->
+    <div class="section" style="padding-top:0;">
+      <div class="section-header">
+        <span class="section-title">{{ lang==='km' ? 'ម្ចាស់ចម្ការទាំងអស់' : 'All Farmers' }}</span>
+        <span class="badge badge-neutral">{{ adminFarmers.length }}</span>
+      </div>
+      <div v-if="adminFarmers.length === 0" class="text-sm color-muted" style="padding:var(--space-md);">
+        {{ lang==='km' ? 'មិនទាន់មាន' : 'None yet.' }}
+      </div>
+      <div class="list-group" v-else>
+        <div class="list-item" v-for="farmer in adminFarmers" :key="farmer.id">
+          <div class="list-item-icon"><span class="material-symbols-outlined">agriculture</span></div>
+          <div class="list-item-content" style="min-width:0;">
+            <div class="list-item-title">{{ farmer.name }}</div>
+            <div class="list-item-subtitle">{{ farmer.phone || farmer.email || '--' }}</div>
+            <div class="list-item-subtitle" style="margin-top:2px;">
+              {{ farmer.farm_name }}<span v-if="farmer.province"> · {{ farmer.province }}</span>
+            </div>
+          </div>
+          <div v-if="farmer.reg_key" style="font-size:11px;background:var(--color-primary-light);color:var(--color-primary);border-radius:6px;padding:4px 8px;font-weight:700;letter-spacing:.5px;flex-shrink:0;">
+            {{ farmer.reg_key }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </template><!-- /admin -->
+  <div v-else-if="!isAdmin && farms.length === 0" class="setup-card">
     <span class="material-symbols-outlined" style="font-size:64px;color:var(--color-border);">agriculture</span>
     <h2 style="margin-top:var(--space-md);margin-bottom:var(--space-sm);" data-i18n="no_farm">មិនទាន់មានចំការ</h2>
     <p class="color-muted text-sm">Contact your farm owner to get access.</p>
   </div>
 
   <!-- Dashboard content -->
-  <template v-else>
+  <template v-else-if="!isAdmin">
 
     <!-- Farm selector (if multiple) -->
     <div v-if="farms.length > 1" style="padding: var(--space-sm) var(--space-md) 0;">
@@ -212,6 +362,15 @@ createApp({
   data() {
     return {
       loading:      true,
+      isAdmin:      false,
+      adminStats:   {},
+      adminFarmers: [],
+      showRegForm:  false,
+      regFormError: '',
+      regFormSuccess: '',
+      regSubmitting: false,
+      rf: { name:'', phone:'', email:'', password:'', showPwd:false, province:'', district:'', national_id:'', full_name_kh:'', full_name_en:'', sex:'', notes:'' },
+      lang: window.i18n ? window.i18n.getLang() : 'km',
       farms:        [],
       selectedFarmId: null,
       coops:        [],
@@ -234,10 +393,60 @@ createApp({
   async mounted() {
     if (!window.API.requireAuth()) return;
     await loadComponents();
-    await this.loadFarms();
+    this.lang = window.i18n ? window.i18n.getLang() : 'km';
+    if (localStorage.getItem('user_role') === 'admin') {
+      this.isAdmin = true;
+      await this.loadAdminData();
+    } else {
+      await this.loadFarms();
+    }
   },
   methods: {
     t(k) { return window.i18n ? window.i18n.t(k) : k; },
+
+    async loadAdminData() {
+      this.loading = true;
+      try {
+        const [statsRes, farmersRes] = await Promise.all([
+          window.API.get('/v1/admin/stats'),
+          window.API.get('/v1/admin/farmers')
+        ]);
+        this.adminStats   = (statsRes   && statsRes.data)   ? statsRes.data   : {};
+        this.adminFarmers = (farmersRes && farmersRes.data && Array.isArray(farmersRes.data)) ? farmersRes.data : [];
+      } catch(e) { console.error('[Admin]', e); }
+      finally { this.loading = false; }
+    },
+
+    async submitRegFarmer() {
+      this.regFormError = ''; this.regFormSuccess = '';
+      if (!this.rf.name || !this.rf.phone || !this.rf.password) {
+        this.regFormError = this.lang === 'km' ? 'សូមបំពេញឈ្មោះ ទូរស័ព្ទ និងលើកសម្ងាត់' : 'Name, phone and password are required.';
+        return;
+      }
+      this.regSubmitting = true;
+      try {
+        const payload = { name: this.rf.name, phone: this.rf.phone, password: this.rf.password };
+        if (this.rf.email)        payload.email              = this.rf.email;
+        if (this.rf.province)     payload.province           = this.rf.province;
+        if (this.rf.district)     payload.district           = this.rf.district;
+        if (this.rf.national_id)  payload.national_id_number = this.rf.national_id;
+        if (this.rf.full_name_kh) payload.full_name_kh       = this.rf.full_name_kh;
+        if (this.rf.full_name_en) payload.full_name_en       = this.rf.full_name_en;
+        if (this.rf.sex)          payload.sex                = this.rf.sex;
+        if (this.rf.notes)        payload.notes              = this.rf.notes;
+        const res = await window.API.post('/v1/admin/farmers', payload);
+        if (res && res.success && res.data) {
+          const keyMsg = (this.lang === 'km' ? 'សោចុះឈ្មោះ: ' : 'Reg key: ') + (res.data.reg_key || '');
+          this.regFormSuccess = (this.lang === 'km' ? 'ចុះឈ្មោះបានជោជោ១! ' : 'Registered! ') + keyMsg;
+          this.rf = { name:'', phone:'', email:'', password:'', showPwd:false, province:'', district:'', national_id:'', full_name_kh:'', full_name_en:'', sex:'', notes:'' };
+          this.showRegForm = false;
+          await this.loadAdminData();
+        } else {
+          this.regFormError = (res && res.message) || 'Registration failed';
+        }
+      } catch(e) { this.regFormError = 'Error: ' + (e.message || e); }
+      finally { this.regSubmitting = false; }
+    },
 
     async loadFarms() {
       this.loading = true;

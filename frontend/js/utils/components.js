@@ -94,6 +94,17 @@
     updateLangButton();
     loadFarmName();
 
+    /* Hide farmer-specific nav tabs for admin */
+    var role = localStorage.getItem('user_role');
+    if (role === 'admin') {
+      var hiddenNavKeys = ['monitoring', 'disease', 'schedules'];
+      document.querySelectorAll('#app-navbar .nav-item').forEach(function (item) {
+        if (hiddenNavKeys.indexOf(item.getAttribute('data-nav')) !== -1) {
+          item.style.display = 'none';
+        }
+      });
+    }
+
     if (window.i18n && window.i18n.applyAll) {
       window.i18n.applyAll();
     }

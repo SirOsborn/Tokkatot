@@ -277,6 +277,7 @@ func UpdateFarmHandler(c *fiber.Ctx) error {
 	var req struct {
 		Name        *string  `json:"name,omitempty"`
 		Location    *string  `json:"location,omitempty"`
+		Province    *string  `json:"province,omitempty"`
 		Timezone    *string  `json:"timezone,omitempty"`
 		Latitude    *float64 `json:"latitude,omitempty"`
 		Longitude   *float64 `json:"longitude,omitempty"`
@@ -294,23 +295,24 @@ func UpdateFarmHandler(c *fiber.Ctx) error {
 	UPDATE farms SET
 		name = COALESCE($1, name),
 		location = COALESCE($2, location),
-		timezone = COALESCE($3, timezone),
-		latitude = COALESCE($4, latitude),
-		longitude = COALESCE($5, longitude),
-		description = COALESCE($6, description),
-		image_url = COALESCE($7, image_url),
+		province = COALESCE($3, province),
+		timezone = COALESCE($4, timezone),
+		latitude = COALESCE($5, latitude),
+		longitude = COALESCE($6, longitude),
+		description = COALESCE($7, description),
+		image_url = COALESCE($8, image_url),
 		updated_at = CURRENT_TIMESTAMP
-	WHERE id = $8
-	RETURNING id, owner_id, name, location, timezone, latitude, longitude, description, image_url, is_active, created_at, updated_at
+	WHERE id = $9
+	RETURNING id, owner_id, name, location, province, timezone, latitude, longitude, description, image_url, is_active, created_at, updated_at
 	`
 
 	var farm models.Farm
 	err = database.DB.QueryRow(
 		query,
-		req.Name, req.Location, req.Timezone, req.Latitude, req.Longitude,
+		req.Name, req.Location, req.Province, req.Timezone, req.Latitude, req.Longitude,
 		req.Description, req.ImageURL, farmID,
 	).Scan(
-		&farm.ID, &farm.OwnerID, &farm.Name, &farm.Location, &farm.Timezone,
+		&farm.ID, &farm.OwnerID, &farm.Name, &farm.Location, &farm.Province, &farm.Timezone,
 		&farm.Latitude, &farm.Longitude, &farm.Description, &farm.ImageURL,
 		&farm.IsActive, &farm.CreatedAt, &farm.UpdatedAt,
 	)
