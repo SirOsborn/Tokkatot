@@ -1,0 +1,210 @@
+/* 
+ * TOKKATOT ADMIN TOOLKIT STYLES
+ */
+
+body.admin-page .page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-xl);
+    padding-top: 20px; /* Adjust if header is not fixed */
+    background: transparent;
+    box-shadow: none;
+}
+
+[v-cloak] { display: none; }
+
+.admin-container {
+    padding: 0;
+    max-width: 100%;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    background: var(--tok-surface);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.admin-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: var(--space-lg);
+    border-bottom: 2px solid var(--tok-surface-light);
+    padding-bottom: var(--space-xs);
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.admin-nav-item {
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--tok-text-secondary);
+    transition: all 0.2s;
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-nav-item:hover {
+    background-color: var(--tok-surface-light);
+}
+
+.admin-nav-item.active {
+    color: var(--tok-teal);
+    background-color: rgba(0, 137, 123, 0.1);
+}
+
+/* Re-using tok-card but adding admin flare */
+.tok-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tok-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* Stats */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.admin-stat-card {
+    background: white;
+    border: 1px solid var(--tok-surface-light);
+    border-radius: var(--border-radius-lg);
+    padding: var(--space-lg);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+
+.admin-stat-label {
+    font-size: var(--font-size-sm);
+    color: var(--tok-text-secondary);
+    margin-bottom: var(--space-xs);
+    font-weight: 500;
+}
+
+.admin-stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--tok-teal);
+}
+
+/* Data Cards */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-md);
+}
+
+.data-card {
+    background: #fdfdfd;
+    border-radius: var(--border-radius-md);
+    border: 1px solid #edf2f7;
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.data-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #edf2f7;
+    padding-bottom: var(--space-sm);
+}
+
+.key-code {
+    font-family: monospace;
+    background: #f1f5f9;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--tok-teal-dark);
+    letter-spacing: 1px;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-active { background: #dcfce7; color: #15803d; }
+.status-inactive { background: #fee2e2; color: #991b1b; }
+
+.data-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.data-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #334155;
+}
+
+.data-row .material-symbols-outlined {
+    font-size: 18px;
+    color: #64748b;
+}
+
+.data-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #edf2f7;
+    padding-top: var(--space-sm);
+    margin-top: auto;
+}
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--space-md);
+}
+
+.modal-content {
+    background: white;
+    padding: var(--space-xl);
+    border-radius: var(--border-radius-lg);
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .cards-grid { grid-template-columns: 1fr; }
+    .admin-container { padding: var(--space-md); }
+}

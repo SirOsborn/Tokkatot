@@ -1,0 +1,110 @@
+/* 
+ * TOKKATOT DESIGN SYSTEM
+ * Centralized variables for a premium, accessible, and fast UI.
+ */
+
+@import url('https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Khmer/MiSansKhmer-Regular.min.css');
+@import url('https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Regular.min.css');
+
+:root {
+    /* Brand Colors (Agri-tech palette) */
+    --tok-teal: #00897B;
+    --tok-teal-light: #4DB6AC;
+    --tok-teal-dark: #00695C;
+    --tok-amber: #FFA000;
+    --tok-coral: #FF7043;
+    
+    /* HSL Tokens for dynamic transparency */
+    --tok-teal-hsl: 174, 100%, 27%;
+    --tok-amber-hsl: 38, 100%, 50%;
+    --tok-coral-hsl: 14, 100%, 63%;
+    --tok-blue-hsl: 217, 91%, 60%;
+    
+    /* Semantic Colors (Light Theme) */
+    --tok-bg: #F4F7F6; /* Softer, slightly greenish grey */
+    --tok-surface: #FFFFFF;
+    --tok-surface-light: #F0F4F3;
+    --tok-text-primary: #121417;
+    --tok-text-secondary: #5C636D;
+    --tok-text-disabled: #A1A7B0;
+    --tok-accent: var(--tok-teal);
+    --tok-success: #10B981;
+    --tok-warning: #F59E0B;
+    --tok-error: #EF4444;
+    
+    /* Typography */
+    --font-primary: 'MiSans Latin', 'MiSans Khmer', 'Inter', -apple-system, sans-serif;
+    --font-khmer: 'MiSans Khmer', 'MiSans Latin', sans-serif;
+    --font-size-base: 16px;
+    --font-size-lg: 18px;
+    --font-size-sm: 14px;
+    --font-size-xs: 12px;
+    --line-height-tight: 1.25;
+    --line-height-base: 1.6;
+    
+    /* Accessibility (Elderly-farmer friendly) */
+    --touch-target-min: 48px;
+    --border-radius-sm: 10px;
+    --border-radius-md: 16px;
+    --border-radius-lg: 28px;
+    
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    
+    /* Shadows & Effects (Modern, soft elevation) */
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+    --shadow-md: 0 10px 30px rgba(0, 137, 123, 0.08);
+    --shadow-lg: 0 15px 45px rgba(0, 137, 123, 0.12);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-blur: blur(20px);
+    --border-glass: 1px solid rgba(255, 255, 255, 0.4);
+    --tok-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base Resets */
+[v-cloak] { display: none; }
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--tok-bg);
+    color: var(--tok-text-primary);
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+}
+
+/* Utility Classes */
+.tok-glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: var(--border-glass);
+    border-radius: var(--border-radius-md);
+}
+
+.tok-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-md);
+}
+
+.tok-flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

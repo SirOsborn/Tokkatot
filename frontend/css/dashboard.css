@@ -1,0 +1,158 @@
+/* 
+ * TOKKATOT DASHBOARD STYLES
+ * Metrics, Device Controls, and Farm Banner.
+ */
+
+/* Farm Banner */
+.farm-banner {
+    background: linear-gradient(135deg, var(--tok-teal), var(--tok-teal-dark));
+    color: white;
+    padding: var(--space-lg);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: var(--space-xl);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    position: relative;
+    overflow: hidden;
+    border: none;
+}
+
+.farm-banner::after {
+    content: '';
+    position: absolute;
+    top: -20%;
+    right: -10%;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+    pointer-events: none;
+    border-radius: 50%;
+}
+
+.farm-banner-text {
+    flex: 1;
+    z-index: 1;
+}
+
+.farm-banner-name {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.farm-banner-sub {
+    font-size: 14px;
+    opacity: 0.95;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+.farm-banner-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    z-index: 1;
+}
+
+/* Metric card container override (Layout only) */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+/* Device Rows */
+.device-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--tok-surface);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 12px;
+    border: 1px solid var(--tok-surface-light);
+    transition: var(--tok-transition);
+}
+
+.device-row:active {
+    transform: scale(0.98);
+}
+
+.device-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.device-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--tok-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.device-status {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tok-text-secondary);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.device-status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.device-status.online { color: var(--tok-success); }
+.device-status.online::before { background: var(--tok-success); box-shadow: 0 0 8px var(--tok-success); }
+
+.device-status.offline { color: var(--tok-text-disabled); }
+.device-status.offline::before { background: var(--tok-text-disabled); }
+
+/* Coop Pills */
+.coop-pills { 
+    display: flex; 
+    gap: 12px; 
+    overflow-x: auto; 
+    padding: 8px 4px 24px; 
+    scrollbar-width: none; 
+}
+.coop-pills::-webkit-scrollbar { display: none; }
+
+.coop-pill { 
+    flex-shrink: 0; 
+    padding: 12px 24px; 
+    border-radius: 40px; 
+    border: 2px solid var(--tok-surface-light); 
+    font-size: 15px; 
+    font-weight: 700; 
+    background: var(--tok-surface); 
+    color: var(--tok-text-secondary); 
+    cursor: pointer; 
+    white-space: nowrap; 
+    transition: var(--tok-transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.coop-pill.active { 
+    border-color: var(--tok-teal); 
+    background: var(--tok-teal); 
+    color: #fff; 
+    box-shadow: 0 8px 16px rgba(0, 137, 123, 0.2);
+    transform: translateY(-2px);
+}

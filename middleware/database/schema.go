@@ -211,6 +211,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 CREATE TABLE IF NOT EXISTS alerts (
     id UUID PRIMARY KEY,
     farm_id UUID NOT NULL REFERENCES farms(id),
+    coop_id UUID REFERENCES coops(id),
     device_id UUID REFERENCES devices(id),
     alert_type VARCHAR(50) NOT NULL,
     severity VARCHAR(20) NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
@@ -307,6 +308,7 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_refresh ON user_sessions(refresh_token);
 CREATE INDEX IF NOT EXISTS idx_alerts_farm_id ON alerts(farm_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_coop_id ON alerts(coop_id);
 CREATE INDEX IF NOT EXISTS idx_alerts_device_id ON alerts(device_id);
 CREATE INDEX IF NOT EXISTS idx_alerts_is_active ON alerts(is_active);
 CREATE INDEX IF NOT EXISTS idx_alerts_severity ON alerts(severity);

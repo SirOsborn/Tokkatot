@@ -12,6 +12,7 @@ type Alert struct {
 	FarmID         uuid.UUID  `json:"farm_id"`
 	DeviceID       *uuid.UUID `json:"device_id,omitempty"`
 	CoopID         *uuid.UUID `json:"coop_id,omitempty"`
+	CoopName       string     `json:"coop_name,omitempty"`
 	AlertType      string     `json:"alert_type"`
 	Severity       string     `json:"severity"`
 	Message        string     `json:"message"`

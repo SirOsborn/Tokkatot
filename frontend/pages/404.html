@@ -5,33 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>404 – Tokkatot</title>
   <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#00897B" />
+  
+  <!-- Tokkatot Design System (Modular) -->
+  <link rel="stylesheet" href="/css/theme.css?v=1.5" />
+  <link rel="stylesheet" href="/css/components.css?v=1.5" />
+  <link rel="stylesheet" href="/css/layout.css?v=1.5" />
+  
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
-    body.no-nav.no-header {
+    body.error-page {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      background: var(--color-bg);
+      background: var(--tok-bg);
+      margin: 0;
+      font-family: var(--font-main);
     }
-    .error-wrap { padding: var(--space-xl) var(--space-lg); max-width: 360px; }
-    .error-code  { font-size: 80px; font-weight: 800; line-height: 1; color: var(--color-primary); }
-    .error-title { font-size: var(--font-size-xl); font-weight: 700; margin: var(--space-sm) 0; }
-    .error-text  { font-size: var(--font-size-base); color: var(--color-text-secondary); margin-bottom: var(--space-xl); line-height: 1.6; }
+    .error-wrap { padding: 32px 24px; max-width: 360px; width: 100%; box-sizing: border-box; }
+    .error-code  { font-size: 80px; font-weight: 800; line-height: 1; color: var(--tok-teal); }
+    .error-title { font-size: 20px; font-weight: 700; margin: 16px 0; color: var(--tok-text-primary); }
+    .error-text  { font-size: 16px; color: var(--tok-text-secondary); margin-bottom: 32px; line-height: 1.6; }
   </style>
 </head>
-<body class="no-nav no-header">
-  <div class="error-wrap">
+<body class="error-page">
+  <div id="app" class="error-wrap" v-cloak>
     <div class="error-code">404</div>
-    <div class="error-title">រកទំព័រមិនឃើញ</div>
-    <p class="error-text">ទំព័រដែលអ្នកកំពុងរកមិនមានទេ<br>ឬត្រូវបានផ្លាស់ប្ដូរ</p>
-    <a href="/" class="btn btn-primary w-full" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;">
+    <div class="error-title" data-i18n="page_not_found">Page Not Found</div>
+    <p class="error-text" data-i18n="page_not_found_msg">The page you are looking for does not exist <br> or has been moved.</p>
+    <a href="/" class="tok-btn tok-btn-primary" style="text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px;">
       <span class="material-symbols-outlined">home</span>
-      ទៅទំព័រដើម
+      <span data-i18n="go_home">Go Home</span>
     </a>
   </div>
+
   <script src="/js/utils/i18n.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script>
+    const { createApp } = Vue;
+    createApp({
+      methods: {
+        t(k) { return window.i18n ? window.i18n.t(k) : k; }
+      }
+    }).mount('#app');
+  </script>
 </body>
 </html>

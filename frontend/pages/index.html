@@ -3,651 +3,250 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Tokkatot - ផ្ទះ</title>
+  <title>Tokkatot - Smart Farming</title>
   <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#00897B" />
+  
+  <!-- Tokkatot Design System (Modular) -->
+  <link rel="stylesheet" href="/css/theme.css?v=1.5" />
+  <link rel="stylesheet" href="/css/components.css?v=1.5" />
+  <link rel="stylesheet" href="/css/layout.css?v=1.5" />
+  <link rel="stylesheet" href="/css/dashboard.css?v=1.5" />
+  
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
-    /* Coop selector pill row */
-    .coop-pills { display: flex; gap: var(--space-sm); overflow-x: auto; padding: var(--space-sm) var(--space-md); scrollbar-width: none; }
+    /* Page Specific Overrides */
+    .coop-pills { display: flex; gap: var(--space-sm); overflow-x: auto; padding: 12px 16px; scrollbar-width: none; }
     .coop-pills::-webkit-scrollbar { display: none; }
-    .coop-pill { flex-shrink: 0; padding: 10px var(--space-md); border-radius: var(--radius-full); border: 2px solid var(--color-border); font-size: var(--font-size-base); font-weight: 600; background: var(--color-surface); color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; min-height: var(--touch-min); display: flex; align-items: center; }
-    .coop-pill.active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
-    /* Metric cards */
-    .metric-card.temp-card { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); color: #fff; }
-    .metric-card.temp-card .metric-label,
-    .metric-card.temp-card .metric-unit { color: rgba(255,255,255,0.8); }
-    .metric-card.temp-card .metric-value { color: #fff; }
-    .metric-card.temp-card .metric-icon { color: rgba(255,255,255,0.9); }
-    .metric-card.hum-card { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; }
-    .metric-card.hum-card .metric-label,
-    .metric-card.hum-card .metric-unit { color: rgba(255,255,255,0.8); }
-    .metric-card.hum-card .metric-value { color: #fff; }
-    .metric-card.hum-card .metric-icon { color: rgba(255,255,255,0.9); }
-    /* Chicken count card */
-    .count-card { background: var(--color-secondary-light); border-color: var(--color-secondary); }
-    .count-card .metric-icon { color: var(--color-secondary-dark); }
-    /* Device grid */
-    .devices-grid { display: flex; flex-direction: column; gap: var(--space-sm); padding: 0 var(--space-md) var(--space-md); }
-    /* Control button */
-    .ctrl-btn { min-width: 80px; min-height: 40px; font-size: var(--font-size-sm); border-radius: var(--radius-full); font-weight: 600; }
-    .ctrl-btn.on  { background: var(--color-primary); color: #fff; }
-    .ctrl-btn.off { background: var(--color-bg); color: var(--color-text-secondary); border: 2px solid var(--color-border); }
-    /* Quick action row */
-    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); padding: 0 var(--space-md) var(--space-md); }
-    .quick-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-md); min-height: 88px; font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-secondary); box-shadow: var(--shadow-sm); border: 1px solid var(--color-border); cursor: pointer; transition: background 0.15s; }
-    .quick-btn .material-symbols-outlined { font-size: 32px; color: var(--color-primary); }
-    .quick-btn:active { background: var(--color-primary-light); }
-    /* No farm state */
-    .setup-card { margin: var(--space-md); padding: var(--space-xl); background: var(--color-surface); border-radius: var(--radius-xl); box-shadow: var(--shadow-md); text-align: center; }
+    .coop-pill { 
+      flex-shrink: 0; padding: 10px 20px; border-radius: 40px; 
+      border: 2px solid var(--tok-surface-light); font-size: 15px; 
+      font-weight: 600; background: white; color: var(--tok-text-secondary); 
+      cursor: pointer; white-space: nowrap; min-height: 48px; 
+      display: flex; align-items: center; transition: all 0.2s;
+    }
+    .coop-pill.active { border-color: var(--tok-teal); background: var(--tok-teal); color: #fff; }
   </style>
 </head>
 <body>
 
 <div id="header-placeholder"></div>
 
-<div id="app">
+<div id="app" v-cloak class="page-container">
 
   <!-- Loading state -->
-  <div v-if="loading" class="loading-spinner">
-    <div class="spinner"></div>
-    <span data-i18n="loading">កំពុងផ្ទុក...</span>
+  <div v-if="loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; color: var(--tok-text-secondary);">
+    <div style="width: 44px; height: 44px; border: 4px solid var(--tok-surface-light); border-top-color: var(--tok-teal); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+    <span style="margin-top: 16px;" data-i18n="loading">Loading...</span>
   </div>
 
-  <!-- ===== ADMIN DASHBOARD ===== -->
-  <template v-else-if="isAdmin">
-    <!-- Admin banner -->
-    <div style="margin:var(--space-md);padding:var(--space-lg);background:linear-gradient(135deg,var(--color-primary),var(--color-primary-dark));border-radius:var(--radius-xl);color:#fff;">
-      <div style="font-size:var(--font-size-xl);font-weight:700;">Tokkatot Admin</div>
-      <div style="font-size:var(--font-size-sm);opacity:.8;margin-top:4px;">{{ lang==='km' ? 'ផ្ទាំងគ្រប់គ្រងប្រព័ន្ធ' : 'System Management' }}</div>
-    </div>
+  <!-- Regular User Dashboard -->
+  <div v-else-if="!isAdmin" class="dashboard-content">
 
-    <!-- Stats grid -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm);padding:0 var(--space-md);">
-      <div class="card" style="text-align:center;padding:var(--space-md);">
-        <div style="font-size:2rem;font-weight:700;color:var(--color-primary);">{{ adminStats.farmers || 0 }}</div>
-        <div class="text-sm color-muted">{{ lang==='km' ? 'ម្ចាស់ចម្ការ' : 'Farmers' }}</div>
+    <!-- Case 1: No Farms Yet -->
+    <div v-if="farms.length === 0" class="tok-card" style="text-align: center; padding: 48px 24px; margin-bottom: 32px;">
+      <div class="tok-flex-center" style="width: 80px; height: 80px; background: rgba(0, 137, 123, 0.1); border-radius: 50%; margin: 0 auto 24px;">
+        <span class="material-symbols-outlined" style="font-size: 40px; color: var(--tok-teal);">agriculture</span>
       </div>
-      <div class="card" style="text-align:center;padding:var(--space-md);">
-        <div style="font-size:2rem;font-weight:700;color:#3b82f6;">{{ adminStats.viewers || 0 }}</div>
-        <div class="text-sm color-muted">{{ lang==='km' ? 'កម្មករ' : 'Workers' }}</div>
-      </div>
-      <div class="card" style="text-align:center;padding:var(--space-md);">
-        <div style="font-size:2rem;font-weight:700;color:#10b981;">{{ adminStats.farms || 0 }}</div>
-        <div class="text-sm color-muted">{{ lang==='km' ? 'ចម្ការ' : 'Farms' }}</div>
-      </div>
-      <div class="card" style="text-align:center;padding:var(--space-md);">
-        <div style="font-size:2rem;font-weight:700;color:#f59e0b;">{{ adminStats.reg_keys_unused || 0 }}</div>
-        <div class="text-sm color-muted">{{ lang==='km' ? 'សោនៅសល់' : 'Keys Free' }}</div>
-      </div>
-    </div>
-
-    <!-- Register Farmer -->
-    <div class="section" style="margin-top:var(--space-md);">
-      <div class="section-header">
-        <span class="section-title">{{ lang==='km' ? 'ចុះឈ្មោះ' : 'Register Farmer' }}</span>
-        <button class="btn btn-primary btn-sm" @click="showRegForm=!showRegForm">
-          <span class="material-symbols-outlined" style="font-size:18px;">{{ showRegForm ? 'close' : 'person_add' }}</span>
-          {{ showRegForm ? (lang==='km' ? 'បិទ' : 'Cancel') : (lang==='km' ? '+ ចុះ' : '+ Register') }}
-        </button>
-      </div>
-      <div v-if="regFormError" class="alert alert-danger mb-md">
-        <span class="material-symbols-outlined">error</span>{{ regFormError }}
-      </div>
-      <div v-if="regFormSuccess" class="alert alert-success mb-md" style="word-break:break-all;">
-        <span class="material-symbols-outlined">check_circle</span>{{ regFormSuccess }}
-      </div>
-      <div v-if="showRegForm" style="background:var(--color-surface);border-radius:var(--radius-lg);padding:var(--space-md);border:1px solid var(--color-border);display:flex;flex-direction:column;gap:var(--space-sm);">
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'ឈ្មោះ *' : 'Name *' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">person</span>
-            <input class="form-input" type="text" v-model="rf.name" :placeholder="lang==='km' ? 'ឈ្មោះ' : 'Full name'" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'ទូរស័ព្ទ *' : 'Phone *' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">phone</span>
-            <input class="form-input" type="tel" v-model="rf.phone" placeholder="0XX XXX XXX" inputmode="tel" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'អ៊ីមែល' : 'Email' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">mail</span>
-            <input class="form-input" type="email" v-model="rf.email" placeholder="example@gmail.com" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'លេខសម្ងាត់ *' : 'Password *' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">lock</span>
-            <input class="form-input" :type="rf.showPwd ? 'text' : 'password'" v-model="rf.password" />
-            <button type="button" @click="rf.showPwd=!rf.showPwd" style="background:none;border:none;cursor:pointer;margin-right:8px;">
-              <span class="material-symbols-outlined" style="font-size:20px;color:var(--color-text-secondary);">{{ rf.showPwd ? 'visibility_off' : 'visibility' }}</span>
-            </button>
-          </div>
-        </div>
-        <div style="font-size:var(--font-size-sm);font-weight:600;color:var(--color-text-secondary);padding:4px 0;">
-          {{ lang==='km' ? 'ព័ត៌មានបន្ថែម (ស្ងាត់ជ្រៅ)' : 'Profile Info (Optional)' }}
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'ខេត្ត/ក្រុង' : 'Province' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">location_on</span>
-            <input class="form-input" type="text" v-model="rf.province" :placeholder="lang==='km' ? 'ខេត្ត' : 'e.g. Phnom Penh'" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'ស្រុក' : 'District' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">map</span>
-            <input class="form-input" type="text" v-model="rf.district" :placeholder="lang==='km' ? 'ស្រុក' : 'District'" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'លេខអត្តសញ្ញាណបណ្ណ' : 'National ID' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">badge</span>
-            <input class="form-input" type="text" v-model="rf.national_id" :placeholder="lang==='km' ? 'លេខ' : 'ID number'" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'ឈ្មោះខ្មែរ' : 'Name (Khmer)' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">person</span>
-            <input class="form-input" type="text" v-model="rf.full_name_kh" :placeholder="lang==='km' ? 'ឈ្មោះតាម ID' : 'As on ID'" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'ឈ្មោះអង់គ្លេស' : 'Name (English)' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">person</span>
-            <input class="form-input" type="text" v-model="rf.full_name_en" placeholder="DARA SOK" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'ភេទ' : 'Sex' }}</label>
-          <div class="form-input-icon"><span class="input-icon material-symbols-outlined">wc</span>
-            <select class="form-input" v-model="rf.sex">
-              <option value="">{{ lang==='km' ? '-- ជ្រើស --' : '-- Select --' }}</option>
-              <option value="male">{{ lang==='km' ? 'ភេទប្រុស' : 'Male' }}</option>
-              <option value="female">{{ lang==='km' ? 'ភេទស្រី' : 'Female' }}</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ lang==='km' ? 'សម្គាល់' : 'Notes' }}</label>
-          <textarea class="form-input" v-model="rf.notes" rows="2" style="height:auto;" :placeholder="lang==='km' ? 'សម្គាល់...' : 'Notes...'"></textarea>
-        </div>
-        <button class="btn btn-primary btn-full" @click="submitRegFarmer" :disabled="regSubmitting">
-          <span v-if="regSubmitting" class="spinner" style="width:22px;height:22px;border-width:3px;"></span>
-          <span v-else>{{ lang==='km' ? 'ចុះឈ្មោះ' : 'Register Farmer' }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Farmer list -->
-    <div class="section" style="padding-top:0;">
-      <div class="section-header">
-        <span class="section-title">{{ lang==='km' ? 'ម្ចាស់ចម្ការទាំងអស់' : 'All Farmers' }}</span>
-        <span class="badge badge-neutral">{{ adminFarmers.length }}</span>
-      </div>
-      <div v-if="adminFarmers.length === 0" class="text-sm color-muted" style="padding:var(--space-md);">
-        {{ lang==='km' ? 'មិនទាន់មាន' : 'None yet.' }}
-      </div>
-      <div class="list-group" v-else>
-        <div class="list-item" v-for="farmer in adminFarmers" :key="farmer.id">
-          <div class="list-item-icon"><span class="material-symbols-outlined">agriculture</span></div>
-          <div class="list-item-content" style="min-width:0;">
-            <div class="list-item-title">{{ farmer.name }}</div>
-            <div class="list-item-subtitle">{{ farmer.phone || farmer.email || '--' }}</div>
-            <div class="list-item-subtitle" style="margin-top:2px;">
-              {{ farmer.farm_name }}<span v-if="farmer.province"> · {{ farmer.province }}</span>
-            </div>
-          </div>
-          <div v-if="farmer.reg_key" style="font-size:11px;background:var(--color-primary-light);color:var(--color-primary);border-radius:6px;padding:4px 8px;font-weight:700;letter-spacing:.5px;flex-shrink:0;">
-            {{ farmer.reg_key }}
-          </div>
-        </div>
-      </div>
-    </div>
-  </template><!-- /admin -->
-  <div v-else-if="!isAdmin && farms.length === 0" class="setup-card">
-    <span class="material-symbols-outlined" style="font-size:64px;color:var(--color-border);">agriculture</span>
-    <template v-if="userRole === 'farmer'">
-      <h2 style="margin-top:var(--space-md);margin-bottom:var(--space-sm);">{{ lang==='km' ? 'មិនទាន់មានចំការ' : 'No Farm Yet' }}</h2>
-      <p class="color-muted text-sm" style="margin-bottom:var(--space-lg);">{{ lang==='km' ? 'បង្កើតចំការដំបូងរបស់អ្នក' : 'Create your first farm to get started.' }}</p>
-      <button class="btn btn-primary" @click="showAddFarm = true" style="gap:8px;">
-        <span class="material-symbols-outlined" style="font-size:20px;">add</span>
-        {{ lang==='km' ? 'បង្កើតចំការ' : 'Add Farm' }}
+      <h2 style="margin-top: 0; font-weight: 800; color: var(--tok-text-primary);" data-i18n="no_farm">No Farm Yet</h2>
+      <p style="color: var(--tok-text-secondary); margin-bottom: 32px; font-size: 15px;" data-i18n="no_farm_msg">Create your first farm to get started</p>
+      <button class="tok-btn tok-btn-primary" style="width: 100%;" @click="showAddFarm = true">
+         <span class="material-symbols-outlined" style="margin-right:8px;">add</span> <span data-i18n="add_farm">Add Farm</span>
       </button>
-      <!-- Add farm modal -->
-      <div v-if="showAddFarm" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;" @click.self="showAddFarm=false">
-        <div style="background:var(--color-surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;width:100%;padding:var(--space-xl) var(--space-md);max-width:600px;margin:0 auto;">
-          <h3 style="margin-bottom:var(--space-lg);">{{ lang==='km' ? 'បង្កើតចំការ' : 'Create Farm' }}</h3>
-          <div class="form-group">
-            <label class="form-label">{{ lang==='km' ? 'ឈ្មោះចំការ' : 'Farm Name' }}</label>
-            <input class="form-input" v-model="newFarm.name" :placeholder="lang==='km'?'ឈ្មោះចំការ...':'Farm name...'" />
+    </div>
+
+    <!-- Case 2: Has Farms -->
+    <div v-else>
+      <!-- Farm selector (if multiple) -->
+      <div v-if="farms.length > 1" style="margin-bottom: 16px;">
+        <select class="tok-input" v-model="selectedFarmId" @change="onFarmChange">
+          <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
+        </select>
+      </div>
+
+      <!-- Farm Banner -->
+      <div v-if="currentFarm" class="farm-banner">
+        <div class="farm-banner-text">
+          <div class="farm-banner-name">{{ formatFarmName(currentFarm.name) }}</div>
+          <div class="farm-banner-sub">{{ coops.length }} {{ t('coops') }} • {{ currentFarm.province }}</div>
+        </div>
+        <div class="farm-banner-icon">
+           <span class="material-symbols-outlined" style="font-size: 40px;">potted_plant</span>
+        </div>
+      </div>
+
+      <!-- Handle Access Denied (If worker but no coops assigned etc) -->
+      <div v-if="farms.length > 0 && !currentFarm" class="tok-card" style="text-align: center; padding: 32px;">
+         <h3 style="color: var(--tok-error);">{{ t('no_farm_access') }}</h3>
+         <p style="color: var(--tok-text-secondary); margin-top: 8px;">{{ t('contact_owner') }}</p>
+      </div>
+
+      <!-- Coop selector pills -->
+      <div v-if="coops.length > 0" class="coop-pills">
+        <button
+          v-for="c in coops"
+          :key="c.id"
+          class="coop-pill"
+          :class="{ active: c.id === selectedCoopId }"
+          @click="selectCoop(c)"
+        >{{ c.name }}</button>
+      </div>
+
+      <!-- Environment metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card temp-card">
+          <div class="metric-label">{{ t('temperature') }}</div>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <div class="metric-value">{{ temp !== null ? temp : '--' }}</div>
+            <div class="metric-unit">°C</div>
           </div>
-          <div class="form-group">
-            <label class="form-label">{{ lang==='km' ? 'ខេត្ត/ក្រុង' : 'Province / City' }}</label>
-            <div class="form-input-icon">
-              <span class="input-icon material-symbols-outlined">location_on</span>
-              <select class="form-input" v-model="newFarm.province" style="padding-left:40px;">
-                <option value="">{{ lang==='km' ? '-- ជ្រើសរើសខេត្ត --' : '-- Select Province --' }}</option>
-                <option value="Phnom Penh">ភ្នំពេញ / Phnom Penh</option>
-                <option value="Banteay Meanchey">បន្ទាយមានជ័យ / Banteay Meanchey</option>
-                <option value="Battambang">បាត់ដំបង / Battambang</option>
-                <option value="Kampong Cham">កំពង់ចាម / Kampong Cham</option>
-                <option value="Kampong Chhnang">កំពង់ឆ្នាំង / Kampong Chhnang</option>
-                <option value="Kampong Speu">កំពង់ស្ពឺ / Kampong Speu</option>
-                <option value="Kampong Thom">កំពង់ធំ / Kampong Thom</option>
-                <option value="Kampot">កំពត / Kampot</option>
-                <option value="Kandal">កណ្ដាល / Kandal</option>
-                <option value="Kep">កែប / Kep</option>
-                <option value="Koh Kong">កោះកុង / Koh Kong</option>
-                <option value="Kratié">ក្រចេះ / Kratié</option>
-                <option value="Mondulkiri">មណ្ឌលគីរី / Mondulkiri</option>
-                <option value="Oddar Meanchey">ឧត្តរមានជ័យ / Oddar Meanchey</option>
-                <option value="Pailin">បៃលិន / Pailin</option>
-                <option value="Preah Sihanouk">ព្រះសីហនុ / Preah Sihanouk</option>
-                <option value="Preah Vihear">ព្រះវិហារ / Preah Vihear</option>
-                <option value="Prey Veng">ព្រៃវែង / Prey Veng</option>
-                <option value="Pursat">ពោធិ៍សាត់ / Pursat</option>
-                <option value="Ratanakiri">រតនគីរី / Ratanakiri</option>
-                <option value="Siem Reap">សៀមរាប / Siem Reap</option>
-                <option value="Stung Treng">ស្ទឹងត្រែង / Stung Treng</option>
-                <option value="Svay Rieng">ស្វាយរៀង / Svay Rieng</option>
-                <option value="Takeo">តាកែវ / Takeo</option>
-                <option value="Tboung Khmum">ត្បូងឃ្មុំ / Tboung Khmum</option>
-              </select>
+          <span class="material-symbols-outlined metric-icon">device_thermostat</span>
+        </div>
+
+        <div class="metric-card hum-card">
+          <div class="metric-label">{{ t('humidity') }}</div>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <div class="metric-value">{{ humidity !== null ? humidity : '--' }}</div>
+            <div class="metric-unit">%</div>
+          </div>
+          <span class="material-symbols-outlined metric-icon">humidity_percentage</span>
+        </div>
+      </div>
+
+      <!-- Chicken count + last updated -->
+      <div class="section">
+        <div style="display:flex;gap: 16px;">
+          <div class="metric-card count-card" style="flex:1;">
+            <div class="metric-label">{{ t('chickens') }}</div>
+            <div style="display:flex;align-items:baseline;gap:6px;">
+              <div style="font-size: 32px; font-weight:700;">{{ coopChickens !== null ? coopChickens : '--' }}</div>
+              <div class="metric-unit" v-if="coopCapacity" style="color: #d97706;">/ {{ coopCapacity }}</div>
             </div>
           </div>
-          <div v-if="addFarmError" class="alert alert-danger" style="margin-bottom:var(--space-md);">{{ addFarmError }}</div>
-          <div style="display:flex;gap:var(--space-sm);">
-            <button class="btn btn-ghost btn-full" @click="showAddFarm=false">{{ lang==='km' ? 'បោះបង់' : 'Cancel' }}</button>
-            <button class="btn btn-primary btn-full" @click="createFarm" :disabled="addFarmLoading">
-              <span v-if="addFarmLoading" class="spinner" style="width:18px;height:18px;border-width:2px;"></span>
-              <span v-else>{{ lang==='km' ? 'បង្កើត' : 'Create' }}</span>
+          <div class="tok-card" style="flex:1;display:flex;flex-direction:column;gap:4px; justify-content: center;">
+            <div style="font-size: 11px; color: var(--tok-text-secondary);">{{ t('now') }}</div>
+            <div style="font-size: 14px; font-weight: 600;">{{ lastUpdated }}</div>
+            <div class="tok-badge" :class="wsConnected ? 'tok-badge-active' : ''" style="align-self: flex-start; margin-top: 4px;">
+              {{ wsConnected ? t('online') : t('offline') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Devices section -->
+      <div class="section">
+        <div class="section-header" style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span class="section-title" style="font-weight: 800; font-size: 18px;">{{ t('devices') }}</span>
+          <a href="/schedules" style="font-size: 14px; color: var(--tok-teal); font-weight: 600; text-decoration: none;">{{ t('nav_schedules') }}</a>
+        </div>
+        
+        <div v-if="devices.length > 0">
+          <div class="device-row" v-for="d in devices.slice(0, 6)" :key="d.id">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0, 137, 123, 0.1); display: flex; align-items: center; justify-content: center; color: var(--tok-teal);">
+              <span class="material-symbols-outlined">{{ deviceIcon(d.type) }}</span>
+            </div>
+            <div class="device-info" style="margin-left: 12px;">
+              <div class="device-name">{{ d.name }}</div>
+              <div class="device-status" :class="d.status === 'online' ? 'online' : 'offline'">
+                {{ d.status === 'online' ? t('online') : t('offline') }}
+              </div>
+            </div>
+            <button
+              class="tok-btn"
+              style="padding: 8px 16px; font-size: 13px; min-width: 90px;"
+              :class="d.last_state === 'on' ? 'tok-btn-primary' : 'tok-btn-secondary'"
+              @click="toggleDevice(d)"
+              :disabled="d.loading"
+            >
+              <span v-if="d.loading" class="spinner" style="width:16px;height:16px;border-width:2px;"></span>
+              <span v-else>{{ d.last_state === 'on' ? t('turn_off') : t('turn_on') }}</span>
             </button>
           </div>
         </div>
-      </div>
-    </template>
-    <template v-else>
-      <h2 style="margin-top:var(--space-md);margin-bottom:var(--space-sm);">{{ lang==='km' ? 'មិនទាន់មានចំការ' : 'No Farm Access' }}</h2>
-      <p class="color-muted text-sm">{{ lang==='km' ? 'សូមទំនាក់ទំនងម្ចាស់ចំការ' : 'Contact your farm owner to get access.' }}</p>
-    </template>
-  </div>
-
-  <!-- Dashboard content -->
-  <template v-else-if="!isAdmin">
-
-    <!-- Farm selector (if multiple) -->
-    <div v-if="farms.length > 1" style="padding: var(--space-sm) var(--space-md) 0;">
-      <select class="form-select" v-model="selectedFarmId" @change="onFarmChange">
-        <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
-      </select>
-    </div>
-
-    <!-- Farm banner -->
-    <div class="farm-banner" style="margin: var(--space-sm) var(--space-md); border-radius: var(--radius-lg);">
-      <span class="material-symbols-outlined" style="font-size:32px;">agriculture</span>
-      <div class="farm-banner-text">
-        <div class="farm-banner-name">{{ currentFarm ? currentFarm.name : '...' }}</div>
-        <div class="farm-banner-sub">{{ coops.length }} {{ t('coops') }}</div>
-      </div>
-    </div>
-
-    <!-- Coop selector pills -->
-    <div v-if="coops.length > 0" class="coop-pills">
-      <button
-        v-for="c in coops"
-        :key="c.id"
-        class="coop-pill"
-        :class="{ active: c.id === selectedCoopId }"
-        @click="selectCoop(c)"
-      >{{ c.name }}</button>
-    </div>
-
-    <!-- Environment metrics -->
-    <div class="metrics-grid">
-      <!-- Temperature -->
-      <div class="metric-card temp-card">
-        <div class="metric-label" data-i18n="temperature">សីតុណ្ហភាព</div>
-        <div style="display:flex;align-items:flex-end;gap:4px;">
-          <div class="metric-value">{{ temp !== null ? temp : '--' }}</div>
-          <div class="metric-unit" style="margin-bottom:8px;">°C</div>
-        </div>
-        <span class="metric-icon material-symbols-outlined">thermometer</span>
-      </div>
-
-      <!-- Humidity -->
-      <div class="metric-card hum-card">
-        <div class="metric-label" data-i18n="humidity">សំណើម</div>
-        <div style="display:flex;align-items:flex-end;gap:4px;">
-          <div class="metric-value">{{ humidity !== null ? humidity : '--' }}</div>
-          <div class="metric-unit" style="margin-bottom:8px;">%</div>
-        </div>
-        <span class="metric-icon material-symbols-outlined">water_drop</span>
-      </div>
-    </div>
-
-    <!-- Chicken count + last updated -->
-    <div class="section" style="padding-top:0;">
-      <div style="display:flex;gap:var(--space-md);">
-        <div class="metric-card count-card" style="flex:1;">
-          <div class="metric-label" data-i18n="chickens">មាន់</div>
-          <div style="display:flex;align-items:baseline;gap:6px;">
-            <div style="font-size:var(--font-size-2xl);font-weight:700;">{{ coopChickens !== null ? coopChickens : '--' }}</div>
-            <div class="metric-unit" v-if="coopCapacity">/ {{ coopCapacity }}</div>
-          </div>
-        </div>
-        <div class="card" style="flex:1;display:flex;flex-direction:column;gap:4px;">
-          <div class="text-sm color-muted">{{ t('now') }}</div>
-          <div style="font-size:var(--font-size-sm);font-weight:600;">{{ lastUpdated }}</div>
-          <div class="badge" :class="wsConnected ? 'badge-success' : 'badge-neutral'" style="align-self:flex-start;margin-top:4px;">
-            {{ wsConnected ? t('online') : t('offline') }}
-          </div>
+        <div v-else class="tok-card" style="text-align: center; padding: 32px;">
+          <span class="material-symbols-outlined" style="font-size:48px; color: var(--tok-surface-light);">devices</span>
+          <p style="font-size: 14px; color: var(--tok-text-secondary); margin-top: 8px;">{{ t('no_devices') }}</p>
         </div>
       </div>
-    </div>
 
-    <!-- Quick actions -->
-    <div class="section" style="padding-top:0;">
-      <div class="section-header">
-        <span class="section-title" data-i18n="devices">ឧបករណ៍</span>
-        <a href="/schedules" class="section-action" data-i18n="schedules">កាលវិភាគ</a>
+      <!-- Quick shortcuts grid -->
+      <div class="section">
+         <div class="metrics-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
+            <a href="/monitoring" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">analytics</span>
+              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_monitoring') }}</div>
+            </a>
+            <a href="/disease-detection" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">biotech</span>
+              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_disease') }}</div>
+            </a>
+            <a href="/schedules" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">calendar_month</span>
+              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_schedules') }}</div>
+            </a>
+            <a href="/profile" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">account_circle</span>
+              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('my_profile') }}</div>
+            </a>
+         </div>
       </div>
-      <div class="devices-grid" v-if="devices.length > 0">
-        <div
-          class="device-row"
-          v-for="d in devices.slice(0, 6)"
-          :key="d.id"
-        >
-          <div class="list-item-icon">
-            <span class="material-symbols-outlined">{{ deviceIcon(d.type) }}</span>
-          </div>
-          <div class="device-info">
-            <div class="device-name">{{ d.name }}</div>
-            <div class="device-status" :class="d.status === 'online' ? 'online' : 'offline'">
-              {{ d.status === 'online' ? t('online') : t('offline') }}
-            </div>
-          </div>
-          <button
-            class="btn ctrl-btn"
-            :class="d.last_state === 'on' ? 'on' : 'off'"
-            @click="toggleDevice(d)"
-            :disabled="d.loading"
-          >
-            <span v-if="d.loading" class="spinner" style="width:18px;height:18px;border-width:2px;"></span>
-            <span v-else>{{ d.last_state === 'on' ? t('turn_off') : t('turn_on') }}</span>
+    </div> <!-- End has farms else -->
+
+    <!-- Add farm modal (Shared) -->
+    <div v-if="showAddFarm" class="modal-overlay" @click.self="showAddFarm=false">
+      <div class="modal-content" style="border-radius: 24px 24px 0 0; position: fixed; bottom: 0; max-width: 480px;">
+        <h3 style="margin-bottom: 24px; font-weight: 800;">{{ t('add_farm') }}</h3>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('farm_name') }}</label>
+          <input class="tok-input" v-model="newFarm.name" :placeholder="t('farm_name') + '...'" />
+        </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('province_city') }}</label>
+          <select class="tok-input" v-model="newFarm.province">
+              <option value="">{{ t('select_province') }}</option>
+              <option v-for="p in provinces" :key="p.en" :value="p.en">
+                {{ lang === 'km' ? p.km : p.en }}
+              </option>
+          </select>
+        </div>
+        <div v-if="addFarmError" class="tok-badge tok-badge-alert" style="margin-bottom: 24px; width: 100%; text-align: center; padding: 8px;">{{ addFarmError }}</div>
+        <div style="display:flex;gap: 16px;">
+          <button class="tok-btn tok-btn-secondary" style="flex: 1;" @click="showAddFarm=false">{{ t('cancel') }}</button>
+          <button class="tok-btn tok-btn-primary" style="flex: 1;" @click="createFarm" :disabled="addFarmLoading">
+            <span v-if="addFarmLoading" class="spinner" style="width:18px;height:18px;border-width:2px;"></span>
+            <span v-else>{{ t('create') }}</span>
           </button>
         </div>
       </div>
-      <div v-else class="empty-state" style="padding:var(--space-lg);">
-        <span class="material-symbols-outlined" style="font-size:48px;">devices</span>
-        <span class="text-sm color-muted" data-i18n="no_devices">មិនទាន់មានឧបករណ៍</span>
-      </div>
     </div>
+  </div>
 
-    <!-- Quick nav shortcuts -->
-    <div class="section" style="padding-top:0;">
-      <div class="quick-actions">
-        <a href="/monitoring" class="quick-btn">
-          <span class="material-symbols-outlined">thermostat</span>
-          <span data-i18n="monitoring">ការត្រួតពិនិត្យ</span>
-        </a>
-        <a href="/disease-detection" class="quick-btn">
-          <span class="material-symbols-outlined">biotech</span>
-          <span data-i18n="disease_detection">ការរកឃើញជំងឺ</span>
-        </a>
-        <a href="/schedules" class="quick-btn">
-          <span class="material-symbols-outlined">schedule</span>
-          <span data-i18n="schedules">កាលវិភាគ</span>
-        </a>
-        <a href="/profile" class="quick-btn">
-          <span class="material-symbols-outlined">account_circle</span>
-          <span data-i18n="my_profile">គណនីខ្ញុំ</span>
-        </a>
-      </div>
-    </div>
+  <!-- Admin View -->
+  <div v-else-if="isAdmin" class="dashboard-content">
+     <!-- Admin Toolkit (Handled separately) -->
+     <div id="admin-toolkit-placeholder"></div>
+     <div class="tok-card" style="text-align: center; padding: 48px 24px;">
+        <span class="material-symbols-outlined" style="font-size: 48px; color: var(--tok-teal);">shield_person</span>
+        <h2 style="margin-top: 16px;">Admin Access</h2>
+        <p style="color: var(--tok-text-secondary); margin-top: 8px;">You are currently logged in with administrative privileges.</p>
+        <a href="/admin" class="tok-btn tok-btn-primary" style="margin-top: 24px; width: 100%; text-decoration: none;">Go to Admin Portal</a>
+     </div>
+  </div>
 
-  </template>
-
-</div><!-- #app -->
+</div>
 
 <div id="navbar-placeholder"></div>
 
 <!-- Scripts -->
-<script src="/js/utils/i18n.js"></script>
-<script src="/js/utils/api.js"></script>
-<script src="/js/utils/components.js"></script>
+<script src="/js/utils/i18n.js?v=1.5"></script>
+<script src="/js/utils/api.js?v=1.5"></script>
+<script src="/js/utils/components.js?v=1.5"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script>
-const { createApp } = Vue;
+<script src="/js/index.js?v=1.5"></script>
 
-createApp({
-  data() {
-    return {
-      loading:      true,
-      isAdmin:      false,
-      userRole:     localStorage.getItem('user_role') || 'viewer',
-      adminStats:   {},
-      adminFarmers: [],
-      showRegForm:  false,
-      regFormError: '',
-      regFormSuccess: '',
-      regSubmitting: false,
-      rf: { name:'', phone:'', email:'', password:'', showPwd:false, province:'', district:'', national_id:'', full_name_kh:'', full_name_en:'', sex:'', notes:'' },
-      showAddFarm:  false,
-      newFarm:      { name: '', province: '' },
-      addFarmError: '',
-      addFarmLoading: false,
-      lang: window.i18n ? window.i18n.getLang() : 'km',
-      farms:        [],
-      selectedFarmId: null,
-      coops:        [],
-      selectedCoopId: null,
-      temp:         null,
-      humidity:     null,
-      coopChickens: null,
-      coopCapacity: null,
-      devices:      [],
-      lastUpdated:  '--',
-      wsConnected:  false,
-      ws:           null,
-    };
-  },
-  computed: {
-    currentFarm() {
-      return this.farms.find(f => f.id === this.selectedFarmId) || null;
-    }
-  },
-  async mounted() {
-    if (!window.API.requireAuth()) return;
-    await loadComponents();
-    this.lang = window.i18n ? window.i18n.getLang() : 'km';
-    if (localStorage.getItem('user_role') === 'admin') {
-      this.isAdmin = true;
-      await this.loadAdminData();
-    } else {
-      await this.loadFarms();
-    }
-  },
-  methods: {
-    t(k) { return window.i18n ? window.i18n.t(k) : k; },
-
-    async loadAdminData() {
-      this.loading = true;
-      try {
-        const [statsRes, farmersRes] = await Promise.all([
-          window.API.get('/v1/admin/stats'),
-          window.API.get('/v1/admin/farmers')
-        ]);
-        this.adminStats   = (statsRes   && statsRes.data)   ? statsRes.data   : {};
-        this.adminFarmers = (farmersRes && farmersRes.data && Array.isArray(farmersRes.data)) ? farmersRes.data : [];
-      } catch(e) { console.error('[Admin]', e); }
-      finally { this.loading = false; }
-    },
-
-    async submitRegFarmer() {
-      this.regFormError = ''; this.regFormSuccess = '';
-      if (!this.rf.name || !this.rf.phone || !this.rf.password) {
-        this.regFormError = this.lang === 'km' ? 'សូមបំពេញឈ្មោះ ទូរស័ព្ទ និងលើកសម្ងាត់' : 'Name, phone and password are required.';
-        return;
-      }
-      this.regSubmitting = true;
-      try {
-        const payload = { name: this.rf.name, phone: this.rf.phone, password: this.rf.password };
-        if (this.rf.email)        payload.email              = this.rf.email;
-        if (this.rf.province)     payload.province           = this.rf.province;
-        if (this.rf.district)     payload.district           = this.rf.district;
-        if (this.rf.national_id)  payload.national_id_number = this.rf.national_id;
-        if (this.rf.full_name_kh) payload.full_name_kh       = this.rf.full_name_kh;
-        if (this.rf.full_name_en) payload.full_name_en       = this.rf.full_name_en;
-        if (this.rf.sex)          payload.sex                = this.rf.sex;
-        if (this.rf.notes)        payload.notes              = this.rf.notes;
-        const res = await window.API.post('/v1/admin/farmers', payload);
-        if (res && res.success && res.data) {
-          const keyMsg = (this.lang === 'km' ? 'សោចុះឈ្មោះ: ' : 'Reg key: ') + (res.data.reg_key || '');
-          this.regFormSuccess = (this.lang === 'km' ? 'ចុះឈ្មោះបានជោជោ១! ' : 'Registered! ') + keyMsg;
-          this.rf = { name:'', phone:'', email:'', password:'', showPwd:false, province:'', district:'', national_id:'', full_name_kh:'', full_name_en:'', sex:'', notes:'' };
-          this.showRegForm = false;
-          await this.loadAdminData();
-        } else {
-          this.regFormError = (res && res.message) || 'Registration failed';
-        }
-      } catch(e) { this.regFormError = 'Error: ' + (e.message || e); }
-      finally { this.regSubmitting = false; }
-    },
-
-    async loadFarms() {
-      this.loading = true;
-      try {
-        const data = await window.API.get('/v1/farms');
-        this.farms = (data && data.data && data.data.data) ? data.data.data
-                   : (data && data.data && Array.isArray(data.data)) ? data.data : [];
-        if (this.farms.length > 0) {
-          const saved = window.API.getSelectedFarmId();
-          const match = saved && this.farms.find(f => String(f.id) === saved);
-          this.selectedFarmId = match ? match.id : this.farms[0].id;
-          window.API.setSelectedFarmId(this.selectedFarmId);
-          if (this.farms[0] && this.farms[0].name) localStorage.setItem('farm_name', this.farms[0].name);
-          await this.loadCoops();
-        }
-      } catch(e) { console.error(e); }
-      finally { this.loading = false; }
-    },
-
-    async onFarmChange() {
-      window.API.setSelectedFarmId(this.selectedFarmId);
-      await this.loadCoops();
-    },
-
-    async loadCoops() {
-      const fid = this.selectedFarmId;
-      if (!fid) return;
-      try {
-        const data = await window.API.get('/v1/farms/' + fid + '/coops');
-        this.coops = (data && data.data && data.data.coops) ? data.data.coops : [];
-        if (this.coops.length > 0) {
-          const saved = window.API.getSelectedCoopId();
-          const match = saved && this.coops.find(c => String(c.id) === saved);
-          await this.selectCoop(match || this.coops[0]);
-        }
-        await this.loadDevices();
-      } catch(e) { console.error(e); }
-    },
-
-    async selectCoop(coop) {
-      this.selectedCoopId = coop.id;
-      window.API.setSelectedCoopId(coop.id);
-      await this.loadCoopData(coop.id);
-      this.connectWS();
-    },
-
-    async loadCoopData(coopId) {
-      const fid = this.selectedFarmId;
-      if (!fid || !coopId) return;
-      try {
-        const data = await window.API.get('/v1/farms/' + fid + '/coops/' + coopId);
-        const c = data && data.data ? data.data : {};
-        this.temp         = c.temperature !== undefined ? c.temperature : null;
-        this.humidity     = c.humidity    !== undefined ? c.humidity    : null;
-        this.coopChickens = c.current_count !== undefined ? c.current_count : null;
-        this.coopCapacity = c.capacity     !== undefined ? c.capacity     : null;
-        this.lastUpdated  = c.last_updated ? new Date(c.last_updated).toLocaleTimeString() : '--';
-      } catch(e) { console.error(e); }
-    },
-
-    async loadDevices() {
-      const fid = this.selectedFarmId;
-      if (!fid) return;
-      try {
-        const data = await window.API.get('/v1/farms/' + fid + '/devices');
-        const raw = (data && data.data && data.data.devices) ? data.data.devices : [];
-        this.devices = raw.map(d => ({ ...d, loading: false }));
-      } catch(e) { console.error(e); }
-    },
-
-    async toggleDevice(device) {
-      device.loading = true;
-      const cmd = device.last_state === 'on' ? 'turn_off' : 'turn_on';
-      try {
-        await window.API.post('/v1/devices/' + device.id + '/command', { command_type: cmd });
-        device.last_state = device.last_state === 'on' ? 'off' : 'on';
-      } catch(e) { console.error(e); }
-      finally { device.loading = false; }
-    },
-
-    deviceIcon(type) {
-      const icons = {
-        water_pump: 'water_pump', fan: 'mode_fan', light: 'light_mode',
-        feeder: 'restaurant', heater: 'mode_heat', conveyor: 'conveyor_belt',
-        sensor: 'sensors', default: 'electrical_services'
-      };
-      return icons[type] || icons.default;
-    },
-
-    async createFarm() {
-      this.addFarmError = '';
-      if (!this.newFarm.name.trim()) { this.addFarmError = this.lang === 'km' ? 'សូមបញ្ចូលឈ្មោះចំការ' : 'Farm name is required.'; return; }
-      this.addFarmLoading = true;
-      try {
-        const res = await window.API.post('/v1/farms', { name: this.newFarm.name, province: this.newFarm.province || undefined });
-        if (res && res.success) {
-          this.showAddFarm = false;
-          this.newFarm = { name: '', province: '' };
-          await this.loadFarms();
-        } else {
-          this.addFarmError = (res && res.message) || 'Failed to create farm';
-        }
-      } catch(e) { this.addFarmError = 'Error: ' + (e.message || e); }
-      finally { this.addFarmLoading = false; }
-    },
-
-    connectWS() {
-      if (this.ws) { try { this.ws.close(); } catch(_) {} }
-      const token  = localStorage.getItem('access_token');
-      const fid    = this.selectedFarmId;
-      const coopId = this.selectedCoopId;
-      if (!token || !fid || !coopId) return;
-      try {
-        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-        this.ws = new WebSocket(proto + '://' + location.host + '/v1/ws?token=' + token + '&farm_id=' + fid + '&coop_id=' + coopId);
-        this.ws.onopen  = () => { this.wsConnected = true; };
-        this.ws.onclose = () => { this.wsConnected = false; };
-        this.ws.onerror = () => { this.wsConnected = false; };
-        this.ws.onmessage = (ev) => {
-          try {
-            const msg = JSON.parse(ev.data);
-            if (msg.temperature !== undefined) this.temp     = msg.temperature;
-            if (msg.humidity    !== undefined) this.humidity = msg.humidity;
-            this.lastUpdated = new Date().toLocaleTimeString();
-          } catch(_) {}
-        };
-      } catch(e) { console.warn('[WS]', e); }
-    }
-  },
-
-  beforeUnmount() {
-    if (this.ws) try { this.ws.close(); } catch(_) {}
-  }
-}).mount('#app');
-</script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </body>
 </html>

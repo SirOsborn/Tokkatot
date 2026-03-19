@@ -17,7 +17,7 @@
     km: {
       /* --- Navigation --- */
       nav_home:         'ទំព័រដើម',
-      nav_monitoring:   'ការត្រួតពិនិត្យ',
+      nav_monitoring:   'ត្រួតពិនិត្យ',
       nav_disease:      'ជំងឺវិភាគ',
       nav_schedules:    'កាលវិភាគ',
       nav_settings:     'ការកំណត់',
@@ -52,10 +52,16 @@
       dashboard:        'ទំព័រដើម',
       welcome:          'សូមស្វាគមន៍',
       your_farm:        'កសិដ្ឋានរបស់អ្នក',
+      my_farm:          'កសិដ្ឋានរបស់ខ្ញុំ',
       no_farm:          'មិនទាន់មានកសិដ្ឋាន',
+      no_farm_msg:      'បង្កើតកសិដ្ឋានដំបូងរបស់អ្នកដើម្បីចាប់ផ្តើម',
+      add_farm:         'បង្កើតកសិដ្ឋាន',
       select_coop:      'ជ្រើសរើសទ្រុង',
       coop:             'ទ្រុង',
       coops:            'ទ្រុង',
+      chickens:         'ចំនួនមាន់',
+      capacity:         'ចំណុះ',
+      last_updated:     'កែប្រែចុងក្រោយ',
 
       /* --- Environment Metrics --- */
       temperature:      'សីតុណ្ហភាព',
@@ -125,9 +131,6 @@
       language:         'ភាសា',
       lang_km:          'ភាសាខ្មែរ',
       lang_en:          'ភាសាអង់គ្លេស',
-      select_province:  'ជ្រើសរើសខេត្ត/ក្រុង',
-      phnom_penh:       'ភ្នំពេញ',
-      kandal:           'កណ្ដាល',
       notifications:    'ការជូនដំណឹង',
       account:          'គណនី',
       system:           'ប្រព័ន្ធ',
@@ -137,10 +140,43 @@
       yes:              'បាទ/ចាស',
       no:               'ទេ',
 
+      // Profile & Settings
+      settings_desc:    'គ្រប់គ្រងគណនី និងការកំណត់របស់អ្នក',
+      save_changes:     'រក្សាទុកការផ្លាស់ប្តូរ',
+
+      // Admin Portal
+      admin_toolkit:    'ឧបករណ៍គ្រប់គ្រង',
+      manage_keys_farmers: 'គ្រប់គ្រងកូដចុះឈ្មោះ និងកសិករ',
+      registration_keys: 'កូដចុះឈ្មោះ',
+      farmer_management: 'គ្រប់គ្រងកសិករ',
+      total_farmers:    'កសិករសរុប',
+      active_workers:   'បុគ្គលិកសកម្ម',
+      total_farms:      'កសិដ្ឋានសរុប',
+      available_keys:   'កូដនៅទំនេរ',
+      active_reg_keys:  'កូដចុះឈ្មោះសកម្ម',
+      generate_new_key:  'បង្កើតកូដថ្មី',
+      used:             'ប្រើរួច',
+      available:        'នៅទំនេរ',
+      expires:          'ផុតកំណត់',
+      created:          'បង្កើតនៅ',
+      last_login:       'ចូលចុងក្រោយ',
+      joined:           'ចូលរួមនៅ',
+      deactivate:       'បិទដំណើរការ',
+      activate:         'បើកដំណើរការ',
+      generate_key_title: 'បង្កើតកូដចុះឈ្មោះ',
+      customer_phone:   'លេខទូរស័ព្ទអតិថិជន',
+      national_id:      'អត្តសញ្ញាណប័ណ្ណ',
+      key_generated_success: 'បង្កើតកូដជោគជ័យ!',
+      key_note:         'សូមកត់ត្រាកូដនេះ ឬផ្តល់ឱ្យបុគ្គលិកនៅការដ្ឋាន',
+
       /* --- Common / Errors --- */
       loading:          'កំពុងដំណើរការ...',
       error:            'មានបញ្ហា',
       retry:            'ព្យាយាមម្ដងទៀត',
+      'Invalid credentials': 'អ៊ីមែល ឬ លេខសម្ងាត់ មិនត្រឹមត្រូវ',
+      'Account is inactive': 'គណនីរបស់អ្នកត្រូវបានផ្អាកជាបណ្ដោះអាសន្ន',
+      'User not found':      'រកមិនឃើញអ្នកប្រើប្រាស់នេះទេ',
+      fill_all_fields:      'សូមបំពេញព័ត៌មានឱ្យបានគ្រប់ជ្រុងជ្រោយ',
       success:          'ជោគជ័យ',
       confirm:          'បញ្ជាក់',
       delete:           'លុប',
@@ -226,7 +262,6 @@
       duration_30m:     'រយៈពេល 30 នាទី',
       duration_1h:      'រយៈពេល 1 ម៉ោង',
       duration_custom:  'រយៈពេលផ្ទាល់ខ្លួន',
-      siem_reap:        'សៀមរាប',
     },
 
     en: {
@@ -267,10 +302,16 @@
       dashboard:        'Home',
       welcome:          'Welcome',
       your_farm:        'Your Farm',
-      no_farm:          'No farm yet',
+      my_farm:          'My Farm',
+      no_farm:          'No Farm Yet',
+      no_farm_msg:      'Create your first farm to get started',
+      add_farm:         'Add Farm',
       select_coop:      'Select Coop',
       coop:             'Coop',
       coops:            'Coops',
+      chickens:         'Chickens',
+      capacity:         'Capacity',
+      last_updated:     'Last Updated',
 
       /* --- Environment Metrics --- */
       temperature:      'Temperature',
@@ -340,9 +381,6 @@
       language:         'Language',
       lang_km:          'Khmer',
       lang_en:          'English',
-      select_province:  'Select Province/City',
-      phnom_penh:       'Phnom Penh',
-      kandal:           'Kandal',
       notifications:    'Notifications',
       account:          'Account',
       system:           'System',
@@ -441,7 +479,6 @@
       duration_30m:     '30m',
       duration_1h:      '1h',
       duration_custom:  'Custom',
-      siem_reap:        'Siem Reap',
     }
   };
 
@@ -483,6 +520,48 @@
         const key = el.getAttribute('data-i18n-placeholder');
         el.placeholder = this.t(key);
       });
+    },
+
+    /**
+     * Returns all 25 Cambodian provinces as an array of { km, en } objects.
+     * Use i18n.provinces() to populate dropdowns — do NOT add these to the
+     * flat translation map because they are data, not UI strings.
+     *
+     * Usage:
+     *   i18n.provinces()             // full list
+     *   i18n.provinces()[0].km       // 'ភ្នំពេញ'
+     *   i18n.provinces()[0].en       // 'Phnom Penh'
+     *   // For a <select> in the current language:
+     *   i18n.provinces().map(p => p[i18n.getLang()])
+     */
+    provinces() {
+      return [
+        { km: 'ភ្នំពេញ',        en: 'Phnom Penh' },
+        { km: 'កណ្ដាល',          en: 'Kandal' },
+        { km: 'សៀមរាប',          en: 'Siem Reap' },
+        { km: 'បាត់ដំបង',        en: 'Battambang' },
+        { km: 'កំពង់ចាម',        en: 'Kampong Cham' },
+        { km: 'កំពង់ឆ្នាំង',      en: 'Kampong Chhnang' },
+        { km: 'កំពង់ស្ពឺ',        en: 'Kampong Speu' },
+        { km: 'កំពង់ធំ',          en: 'Kampong Thom' },
+        { km: 'កំពត',             en: 'Kampot' },
+        { km: 'ក្រចេះ',           en: 'Kratie' },
+        { km: 'មណ្ឌលគិរី',        en: 'Mondulkiri' },
+        { km: 'ព្រះវិហារ',        en: 'Preah Vihear' },
+        { km: 'ព្រៃវែង',          en: 'Prey Veng' },
+        { km: 'ពោធិ៍សាត់',        en: 'Pursat' },
+        { km: 'រតនគិរី',          en: 'Ratanakiri' },
+        { km: 'ស្វាយរៀង',         en: 'Svay Rieng' },
+        { km: 'តាកែវ',            en: 'Takeo' },
+        { km: 'ឧត្តរមានជ័យ',      en: 'Oddar Meanchey' },
+        { km: 'កែប',              en: 'Kep' },
+        { km: 'កោះកុង',           en: 'Koh Kong' },
+        { km: 'ប៉ៃលិន',           en: 'Pailin' },
+        { km: 'សំបូរ',            en: 'Sambour' },
+        { km: 'ត្បូងឃ្មុំ',        en: 'Tboung Khmum' },
+        { km: 'ព្រះសីហនុ',        en: 'Sihanoukville' },
+        { km: 'ស្ទឹងត្រែង',        en: 'Stung Treng' },
+      ];
     }
   };
 

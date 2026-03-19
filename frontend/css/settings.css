@@ -1,0 +1,92 @@
+/* 
+ * TOKKATOT SETTINGS & PROFILE STYLES
+ * Avatars, List Groups, and Account management.
+ */
+
+.avatar-section { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    padding: 24px 16px 16px; 
+    gap: 12px; 
+}
+
+.avatar-circle { 
+    width: 96px; 
+    height: 96px; 
+    border-radius: 50%; 
+    background: var(--tok-teal); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 40px; 
+    font-weight: 700; 
+    color: #fff; 
+    flex-shrink: 0; 
+    overflow: hidden; 
+    box-shadow: var(--shadow-md);
+}
+
+.avatar-circle img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    border-radius: 50%; 
+}
+
+.avatar-name { 
+    font-size: 20px; 
+    font-weight: 700; 
+    color: var(--tok-text-primary);
+}
+
+.avatar-role { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 4px; 
+    padding: 6px 14px; 
+    border-radius: 40px; 
+    background: rgba(0, 137, 123, 0.1); 
+    color: var(--tok-teal); 
+    font-size: 14px; 
+    font-weight: 600; 
+    margin-top: 8px;
+}
+
+.section-label { 
+    font-size: 11px; 
+    font-weight: 800; 
+    text-transform: uppercase; 
+    letter-spacing: 0.12em; 
+    color: var(--tok-text-secondary); 
+    padding: 16px 16px 6px; 
+}
+
+.logout-btn { 
+    width: calc(100% - 32px); 
+    margin: 32px 16px; 
+}
+
+.profile-form { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 16px; 
+}
+
+/* Modern card wrap for settings groups */
+.settings-group { 
+    margin: 0 16px 8px; 
+    background: var(--tok-surface);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.03);
+}
+
+.settings-group .list-item {
+    border-bottom: 1px solid var(--tok-surface-light);
+}
+
+.settings-group .list-item:last-child {
+    border-bottom: none;
+}

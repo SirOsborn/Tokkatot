@@ -1,0 +1,238 @@
+/* 
+ * TOKKATOT SCHEDULES STYLES
+ * Drum pickers, Schedule cards, and FABs.
+ */
+
+.schedule-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--tok-surface-light);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.schedule-card-body {
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.schedule-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--border-radius-md);
+    background: rgba(0, 137, 123, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tok-teal);
+    flex-shrink: 0;
+}
+
+.schedule-name { font-size: 16px; font-weight: 700; color: var(--tok-text-primary); }
+.schedule-sub  { font-size: 14px; color: var(--tok-text-secondary); margin-top: 2px; }
+.schedule-time { font-size: 14px; color: var(--tok-teal); margin-top: 4px; font-weight: 600; }
+
+.schedule-card-footer {
+    border-top: 1px solid var(--tok-surface-light);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.exec-btn { 
+    min-height: 36px; 
+    padding: 0 16px; 
+    font-size: 13px; 
+    font-weight: 600; 
+    border-radius: 40px; 
+    border: 2px solid var(--tok-teal); 
+    color: var(--tok-teal); 
+    background: transparent; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    gap: 4px; 
+}
+.exec-btn:active { background: rgba(0, 137, 123, 0.05); }
+
+.del-btn { 
+    min-height: 36px; 
+    padding: 0 8px; 
+    font-size: 13px; 
+    font-weight: 600; 
+    border-radius: 50%; 
+    border: none; 
+    color: var(--tok-error); 
+    background: transparent; 
+    cursor: pointer; 
+    margin-left: auto;
+}
+
+/* Drum time picker */
+.drum-container { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    background: var(--tok-bg); 
+    border-radius: var(--border-radius-lg); 
+    overflow: hidden; 
+}
+.drum-col { position: relative; flex: 1; height: 264px; overflow: hidden; }
+.drum-sep { font-size: 32px; font-weight: 700; color: var(--tok-text-primary); align-self: center; padding: 0 2px; flex-shrink: 0; }
+.drum-list { 
+    height: 264px; 
+    overflow-y: scroll; 
+    scroll-snap-type: y mandatory; 
+    -webkit-overflow-scrolling: touch; 
+    scrollbar-width: none; 
+    padding: 106px 0; 
+    box-sizing: content-box; 
+}
+.drum-list::-webkit-scrollbar { display: none; }
+.drum-item { 
+    height: 52px; 
+    scroll-snap-align: center; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 26px; 
+    font-weight: 400; 
+    color: var(--tok-text-secondary); 
+    cursor: pointer; 
+    user-select: none; 
+}
+.drum-item.selected { font-size: 34px; font-weight: 700; color: var(--tok-text-primary); }
+.drum-highlight { 
+    position: absolute; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    left: 6px; 
+    right: 6px; 
+    height: 52px; 
+    border-top: 1.5px solid var(--tok-surface-light); 
+    border-bottom: 1.5px solid var(--tok-surface-light); 
+    pointer-events: none; 
+    z-index: 1; 
+}
+.drum-fade-top { position: absolute; top: 0; left: 0; right: 0; height: 120px; background: linear-gradient(to bottom, var(--tok-bg) 0%, transparent 100%); pointer-events: none; z-index: 2; }
+.drum-fade-bot { position: absolute; bottom: 0; left: 0; right: 0; height: 120px; background: linear-gradient(to top, var(--tok-bg) 0%, transparent 100%); pointer-events: none; z-index: 2; }
+
+/* Day pills */
+.day-pill {
+    padding: 8px 12px; 
+    border-radius: 40px;
+    border: 2px solid var(--tok-surface-light); 
+    background: white;
+    color: var(--tok-text-primary); 
+    font-size: 14px; 
+    font-weight: 600;
+    cursor: pointer; 
+    transition: all 0.15s; 
+    flex: 1; 
+    text-align: center;
+}
+.day-pill.active { background: var(--tok-teal); border-color: var(--tok-teal); color: #fff; }
+.day-pill-everyday { flex: none; padding: 8px 18px; }
+
+/* Action pills */
+.action-pill {
+    flex: 1; 
+    padding: 14px; 
+    border-radius: var(--border-radius-md);
+    border: 2.5px solid var(--tok-surface-light); 
+    background: var(--tok-surface);
+    color: var(--tok-text-secondary); 
+    font-size: 16px; 
+    font-weight: 700;
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 8px;
+    transition: var(--tok-transition);
+}
+.action-pill .material-symbols-outlined { font-size: 22px; }
+.action-pill.on.active  { background: #ECFDF5; border-color: var(--tok-success); color: var(--tok-success); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15); }
+.action-pill.off.active { background: #FEF2F2; border-color: var(--tok-error); color: var(--tok-error); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); }
+
+/* Duration presets */
+.dur-pill {
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: var(--tok-surface-light);
+    border: 2px solid transparent;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tok-text-secondary);
+    cursor: pointer;
+    transition: var(--tok-transition);
+}
+.dur-pill.active {
+    background: var(--tok-surface);
+    border-color: var(--tok-teal);
+    color: var(--tok-teal);
+}
+
+/* FAB */
+.fab {
+    position: fixed; 
+    bottom: 92px; /* nav-height + margin */
+    right: 20px;
+    width: 60px; 
+    height: 60px; 
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--tok-teal), var(--tok-teal-dark));
+    color: #fff;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    box-shadow: var(--shadow-lg); 
+    z-index: 100;
+    cursor: pointer; 
+    border: none;
+    transition: var(--tok-transition);
+}
+.fab:active { transform: scale(0.9) rotate(90deg); }
+.fab .material-symbols-outlined { font-size: 32px; }
+
+/* Sequence builder */
+.seq-step { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    background: var(--tok-surface-light); 
+    border-radius: var(--border-radius-md); 
+    padding: 12px; 
+    margin-bottom: 8px; 
+    border: 1px solid rgba(0,0,0,0.03);
+}
+.seq-number { 
+    width: 26px; 
+    height: 26px; 
+    border-radius: 8px; 
+    background: var(--tok-teal); 
+    color: #fff; 
+    font-size: 13px; 
+    font-weight: 800; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    flex-shrink: 0; 
+}
+.seq-action-select { flex: 1; }
+.seq-dur-input { width: 90px; flex-shrink: 0; }
+.seq-del { 
+    width: 36px; 
+    height: 36px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    border-radius: 50%; 
+    color: var(--tok-error); 
+    cursor: pointer; 
+    flex-shrink: 0; 
+}

@@ -30,20 +30,26 @@ func (s *AlertService) GetFarmAlerts(userID, farmID uuid.UUID, limit, offset int
 		return nil, 0, 0, 0, err
 	}
 
-	query := `SELECT id, farm_id, coop_id, alert_type, message, severity, is_active, is_acknowledged, triggered_at, resolved_at FROM alerts WHERE farm_id = $1`
+	query := `
+		SELECT a.id, a.farm_id, a.coop_id, COALESCE(c.name, 'N/A') as coop_name, 
+		       a.alert_type, a.message, a.severity, a.is_active, a.is_acknowledged, 
+		       a.triggered_at, a.resolved_at 
+		FROM alerts a
+		LEFT JOIN coops c ON a.coop_id = c.id
+		WHERE a.farm_id = $1`
 	args := []interface{}{farmID}
 	nextArg := 2
 
 	if isActiveOnly {
-		query += " AND is_active = true"
+		query += " AND a.is_active = true"
 	}
 	if severity != "all" && severity != "" {
-		query += " AND severity = $" + strconv.Itoa(nextArg)
+		query += " AND a.severity = $" + strconv.Itoa(nextArg)
 		args = append(args, severity)
 		nextArg++
 	}
 
-	query += " ORDER BY triggered_at DESC LIMIT $" + strconv.Itoa(nextArg) + " OFFSET $" + strconv.Itoa(nextArg+1)
+	query += " ORDER BY a.triggered_at DESC LIMIT $" + strconv.Itoa(nextArg) + " OFFSET $" + strconv.Itoa(nextArg+1)
 	args = append(args, limit, offset)
 
 	rows, err := database.DB.Query(query, args...)
@@ -55,7 +61,7 @@ func (s *AlertService) GetFarmAlerts(userID, farmID uuid.UUID, limit, offset int
 	var alerts []models.Alert
 	for rows.Next() {
 		var a models.Alert
-		if err := rows.Scan(&a.ID, &a.FarmID, &a.CoopID, &a.AlertType, &a.Message, &a.Severity, &a.IsActive, &a.IsAcknowledged, &a.TriggeredAt, &a.ResolvedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.FarmID, &a.CoopID, &a.CoopName, &a.AlertType, &a.Message, &a.Severity, &a.IsActive, &a.IsAcknowledged, &a.TriggeredAt, &a.ResolvedAt); err != nil {
 			continue
 		}
 		alerts = append(alerts, a)

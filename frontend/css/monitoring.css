@@ -1,0 +1,133 @@
+/* 
+ * TOKKATOT MONITORING STYLES
+ * Glassmorphism and Dynamic Temperature Backgrounds.
+ */
+
+body.monitoring-page {
+    min-height: 100vh;
+    color: #fff;
+    transition: background 1s ease;
+    overflow-x: hidden;
+    padding-top: var(--header-height, 60px);
+    padding-bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Background gradients per bg_hint */
+body.bg-scorching { background: linear-gradient(to bottom, #7f0000, #bf2c00, #e85d04); }
+body.bg-hot       { background: linear-gradient(to bottom, #c1121f, #e85d04, #f48c06); }
+body.bg-warm      { background: linear-gradient(to bottom, #e85d04, #f48c06, #faa307); }
+body.bg-neutral   { background: linear-gradient(to bottom, #2d6a4f, #40916c, #74c69d); }
+body.bg-cool      { background: linear-gradient(to bottom, #023e8a, #0077b6, #0096c7); }
+body.bg-cold      { background: linear-gradient(to bottom, #03045e, #023e8a, #0077b6); }
+
+/* Glass card utility */
+.glass {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 20px;
+}
+
+.page-wrap {
+    max-width: 500px; /* Aligned with other pages */
+    margin: 0 auto;
+    padding: 16px;
+}
+
+#coop-picker {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 15px;
+    margin-bottom: 20px;
+    outline: none;
+    cursor: pointer;
+}
+
+#coop-picker option { background: #333; color: #fff; }
+
+.hero {
+    text-align: center;
+    padding: 24px 0 16px;
+}
+
+.hero .coop-label { font-size: 14px; opacity: 0.75; margin-bottom: 4px; }
+.hero .temp-big { font-size: 88px; font-weight: 200; line-height: 1; }
+.hero .temp-big sup { font-size: 36px; font-weight: 300; vertical-align: top; margin-top: 16px; display: inline-block; }
+.hero .hl-row { font-size: 15px; opacity: 0.85; margin-top: 6px; letter-spacing: 0.4px; }
+.hero .hint-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 12px;
+    margin-top: 8px;
+    text-transform: capitalize;
+}
+
+.hourly-strip {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 12px;
+}
+
+.hourly-strip::-webkit-scrollbar { display: none; }
+
+.hour-cell {
+    flex: 0 0 54px;
+    text-align: center;
+}
+
+.hour-cell .h-time { font-size: 11px; opacity: 0.7; }
+.hour-cell .h-temp { font-size: 15px; font-weight: 600; margin-top: 6px; }
+
+#svg-wrap {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 20px;
+    margin-bottom: 16px;
+}
+
+#temp-svg { display: block; }
+
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+
+.day-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+}
+
+.day-card .day-label { font-size: 15px; font-weight: 600; min-width: 90px; }
+.day-card .day-bar-wrap {
+    flex: 1;
+    margin: 0 12px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    position: relative;
+}
+
+.day-card .day-bar {
+    position: absolute;
+    top: 0; bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 4px;
+}
+
+.day-card .day-hl {
+    font-size: 13px;
+    text-align: right;
+    min-width: 80px;
+}
+
+.day-card .day-hl .dh { font-weight: 600; }
+.day-card .day-hl .dl { opacity: 0.65; margin-left: 6px; }

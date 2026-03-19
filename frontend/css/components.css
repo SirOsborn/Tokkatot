@@ -1,0 +1,404 @@
+/* Utility: Hide Vue templates before mounting */
+[v-cloak] { display: none; }
+
+/* 
+ * TOKKATOT COMMON COMPONENTS
+ * Reusable UI elements for a consistent and accessible experience.
+ */
+
+/* Buttons */
+.tok-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-sm) var(--space-lg);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-weight: 700;
+    transition: var(--tok-transition);
+    border: none;
+    min-height: var(--touch-target-min);
+    font-family: var(--font-primary);
+    letter-spacing: 0.01em;
+}
+
+.tok-btn-primary {
+    background: linear-gradient(135deg, var(--tok-teal), var(--tok-teal-dark));
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 137, 123, 0.2);
+}
+
+.tok-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 137, 123, 0.3);
+    filter: brightness(1.1);
+}
+
+.tok-btn-secondary {
+    background: var(--tok-surface);
+    border: 1.5px solid var(--tok-surface-light);
+    color: var(--tok-text-primary);
+}
+
+.tok-btn-secondary:hover {
+    background-color: var(--tok-surface-light);
+    border-color: var(--tok-text-disabled);
+}
+
+/* Toggle Switch (Modern & Accessible) */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 30px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--tok-text-disabled);
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--tok-teal);
+}
+
+input:focus + .toggle-slider {
+    box-shadow: 0 0 1px var(--tok-teal);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(22px);
+}
+
+/* Custom Checkbox */
+.tok-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+}
+
+.tok-checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    height: 24px;
+    width: 24px;
+    background-color: var(--tok-surface-light);
+    border: 2px solid var(--tok-text-disabled);
+    border-radius: 6px;
+    transition: var(--tok-transition);
+    position: relative;
+}
+
+.tok-checkbox-container:hover input ~ .checkmark {
+    border-color: var(--tok-teal);
+}
+
+.tok-checkbox-container input:checked ~ .checkmark {
+    background-color: var(--tok-teal);
+    border-color: var(--tok-teal);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.tok-checkbox-container input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.tok-checkbox-container .checkmark:after {
+    left: 8px;
+    top: 3px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg);
+}
+
+/* Inputs */
+.tok-input-group {
+    margin-bottom: var(--space-md);
+    width: 100%;
+}
+
+.tok-label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--tok-text-secondary);
+}
+
+.tok-input {
+    width: 100%;
+    padding: var(--space-md);
+    background: var(--tok-surface-light);
+    border: 2px solid transparent;
+    border-radius: var(--border-radius-sm);
+    color: var(--tok-text-primary);
+    font-size: var(--font-size-base);
+    transition: var(--tok-transition);
+    min-height: var(--touch-target-min);
+}
+
+.tok-input:focus {
+    outline: none;
+    border-color: var(--tok-teal);
+    background: #FFFFFF;
+    box-shadow: 0 0 0 4px rgba(0, 137, 123, 0.1);
+}
+
+/* Badges */
+.tok-badge {
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: var(--font-size-xs);
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.tok-badge-active { background-color: rgba(16, 185, 129, 0.15); color: #065F46; }
+.tok-badge-inactive { background-color: var(--tok-surface-light); color: var(--tok-text-secondary); }
+.tok-badge-alert { background-color: rgba(239, 68, 68, 0.15); color: #991B1B; }
+
+/* Cards */
+.tok-card {
+    background: var(--tok-surface);
+    padding: var(--space-lg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: var(--tok-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.tok-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Alert Items */
+.alert-item { 
+    display: flex; 
+    gap: 16px; 
+    align-items: flex-start; 
+    padding: 16px; 
+    border-bottom: 1px solid var(--tok-surface-light); 
+    transition: var(--tok-transition); 
+}
+
+.alert-item.unread { 
+    background: rgba(0, 137, 123, 0.04); 
+}
+
+.alert-icon-wrap { 
+    width: 44px; 
+    height: 44px; 
+    border-radius: 14px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    flex-shrink: 0; 
+    background: var(--tok-surface-light);
+}
+
+.alert-icon-wrap.critical { background: #FEE2E2; color: #EF4444; }
+.alert-icon-wrap.warning  { background: #FEF3C7; color: #F59E0B; }
+.alert-icon-wrap.info     { background: #E0F2FE; color: #3B82F6; }
+
+.alert-time { 
+    font-size: 12px; 
+    font-weight: 600;
+    color: var(--tok-text-secondary); 
+    margin-top: 4px; 
+}
+
+/* Toasts */
+.tok-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: var(--tok-surface);
+    color: var(--tok-text-primary);
+    padding: 12px 24px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    opacity: 0;
+    transition: var(--tok-transition);
+    border: 1px solid rgba(0,0,0,0.05);
+    white-space: nowrap;
+}
+
+.tok-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.tok-toast.success { border-left: 4px solid var(--tok-success); }
+.tok-toast.error { border-left: 4px solid var(--tok-error); }
+/* Metric Cards */
+.metric-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: var(--space-lg);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.temp-card { 
+    background: linear-gradient(145deg, hsla(var(--tok-teal-hsl), 0.15), hsla(var(--tok-teal-hsl), 0.05)); 
+    border-color: hsla(var(--tok-teal-hsl), 0.2);
+}
+.hum-card { 
+    background: linear-gradient(145deg, hsla(var(--tok-blue-hsl), 0.15), hsla(var(--tok-blue-hsl), 0.05));
+    border-color: hsla(var(--tok-blue-hsl), 0.2);
+}
+.count-card { 
+    background: linear-gradient(145deg, hsla(var(--tok-amber-hsl), 0.15), hsla(var(--tok-amber-hsl), 0.05));
+    border-color: hsla(var(--tok-amber-hsl), 0.2);
+}
+
+.metric-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--tok-text-secondary);
+}
+
+.metric-value {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--tok-text-primary);
+}
+
+.metric-unit {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tok-text-secondary);
+}
+
+.metric-icon {
+    position: absolute;
+    right: -8px;
+    bottom: -8px;
+    font-size: 64px !important;
+    opacity: 0.06;
+    pointer-events: none;
+}
+
+/* List Groups (Generic but used in settings/profile mostly) */
+.list-group {
+    background: var(--tok-surface);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: var(--space-lg);
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--tok-surface-light);
+    text-decoration: none;
+    color: var(--tok-text-primary);
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.list-item:hover {
+    background: var(--tok-surface-light);
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+.list-item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.list-item-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.list-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.list-item-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--tok-text-primary);
+}
+
+.list-item-subtitle {
+    font-size: 13px;
+    color: var(--tok-text-secondary);
+    margin-top: 2px;
+}
+
+.list-item-chevron {
+    color: var(--tok-text-disabled);
+    font-size: 20px !important;
+}
