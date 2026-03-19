@@ -39,7 +39,8 @@
       }
 
       // Handle 401 — try refresh then retry once
-      if (res.status === 401) {
+      // EXEMPT /v1/auth/ routes from redirecting (they handle their own errors)
+      if (res.status === 401 && !url.includes('/v1/auth/')) {
         const refreshed = await this._refresh();
         if (refreshed) {
           return this.request(url, options); // retry with new token
