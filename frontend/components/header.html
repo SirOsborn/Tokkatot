@@ -1,25 +1,23 @@
 <!-- Tokkatot Top Header Component -->
 <header class="top-header" id="app-header">
   <div class="header-logo">
-    <img src="/assets/images/tokkatot logo-02.png" alt="Tokkatot" />
-    <span class="header-title" id="header-farm-name">Tokkatot</span>
+    <img src="/assets/images/tokkatot logo-02.png" alt="Tokkatot" style="height:28px; width:auto; margin-right: 6px;" />
+    <span class="header-title" id="header-farm-name" style="font-size: 18px; font-weight: 700;">Tokkatot</span>
   </div>
 
   <div class="header-actions">
-    <!-- Language toggle -->
-    <button class="lang-toggle" id="lang-toggle-btn" onclick="headerToggleLang()">
-      KM
-    </button>
-
     <!-- Alert bell -->
-    <a href="#" class="header-icon-btn" id="header-alert-btn">
+    <a href="/alerts" class="header-icon-btn" id="header-alert-btn">
       <span class="material-symbols-outlined">notifications</span>
       <span class="badge" id="header-alert-badge" style="display:none;"></span>
     </a>
 
     <!-- Profile avatar -->
-    <a href="/profile" class="header-icon-btn">
-      <span class="material-symbols-outlined">account_circle</span>
+    <a href="/profile" class="header-icon-btn" style="padding:4px;">
+      <img id="header-avatar-img" src="/assets/images/farmer-avatar.png" alt="profile"
+           style="width:36px;height:36px;border-radius:50%;object-fit:cover;display:block;"
+           onerror="this.style.display='none';document.getElementById('header-avatar-fallback').style.display='flex';" />
+      <span id="header-avatar-fallback" class="material-symbols-outlined" style="display:none;">account_circle</span>
     </a>
   </div>
 </header>

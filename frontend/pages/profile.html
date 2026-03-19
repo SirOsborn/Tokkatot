@@ -3,37 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Tokkatot - ប្រវត្តិ</title>
+  <title>Profile - Tokkatot</title>
   <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#00897B" />
+  
+  <!-- Tokkatot Design System (Modular) -->
+  <link rel="stylesheet" href="/css/theme.css?v=1.5" />
+  <link rel="stylesheet" href="/css/components.css?v=1.5" />
+  <link rel="stylesheet" href="/css/layout.css?v=1.5" />
+  <link rel="stylesheet" href="/css/settings.css?v=1.5" />
+  
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  <style>
-    .avatar-section { display: flex; flex-direction: column; align-items: center; padding: var(--space-xl) var(--space-md) var(--space-lg); gap: var(--space-md); }
-    .avatar-circle { width: 96px; height: 96px; border-radius: 50%; background: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; color: #fff; flex-shrink: 0; }
-    .avatar-name  { font-size: var(--font-size-xl); font-weight: 700; }
-    .avatar-role  { display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary); font-size: var(--font-size-sm); font-weight: 600; }
-    .profile-form { display: flex; flex-direction: column; gap: var(--space-md); }
-  </style>
 </head>
 <body>
 
 <div id="header-placeholder"></div>
 
-<div id="app">
+<div id="app" v-cloak class="page-container">
 
-  <div v-if="loading" class="loading-spinner">
-    <div class="spinner"></div>
+  <div v-if="loading" style="display: flex; justify-content: center; padding: 60px 0;">
+    <div class="spinner" style="width:40px;height:40px;border:4px solid var(--tok-surface-light);border-top-color:var(--tok-teal);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+    <div style="margin-top: 12px; font-size: 14px; color: var(--tok-text-secondary);" data-i18n="loading">Loading...</div>
   </div>
 
   <template v-else>
     <!-- Avatar + name -->
     <div class="avatar-section">
-      <div class="avatar-circle">{{ initials }}</div>
+      <div class="avatar-circle">
+        <img v-if="avatarLoaded !== false" :src="avatarSrc" @load="avatarLoaded=true" @error="avatarLoaded=false" />
+        <span v-if="avatarLoaded === false">{{ initials }}</span>
+      </div>
       <div style="text-align:center;">
         <div class="avatar-name">{{ user.name || '--' }}</div>
-        <div class="avatar-role">
+        <div class="avatar-role" style="display:flex; align-items:center; justify-content:center; gap:4px;">
           <span class="material-symbols-outlined" style="font-size:18px;">verified_user</span>
-          {{ roleLabel }}
+          <span>{{ roleLabel }}</span>
         </div>
       </div>
     </div>
@@ -41,72 +46,128 @@
     <!-- Info / Edit form -->
     <div class="section">
       <div class="section-header">
-        <span class="section-title" data-i18n="my_profile">គណនីខ្ញុំ</span>
-        <button class="btn btn-outline btn-sm" @click="editing = !editing">
-          <span class="material-symbols-outlined" style="font-size:18px;">{{ editing ? 'close' : 'edit' }}</span>
-          {{ editing ? t('cancel') : t('edit_profile') }}
+        <span style="font-size: 20px; font-weight: 700; color: var(--tok-text-primary);" data-i18n="my_profile">My Profile</span>
+        <button class="tok-btn tok-btn-secondary" style="padding: 6px 16px; font-size: 14px;" @click="editing = !editing">
+          <span class="material-symbols-outlined" style="font-size:18px; margin-right: 4px;">{{ editing ? 'close' : 'edit' }}</span>
+          <span v-if="editing" data-i18n="cancel">Cancel</span>
+          <span v-else data-i18n="edit_profile">Edit Profile</span>
         </button>
       </div>
 
       <!-- Error/success -->
-      <div v-if="errorMsg" class="alert alert-danger mb-md">
-        <span class="material-symbols-outlined">error</span>{{ errorMsg }}
+      <div v-if="errorMsg" class="tok-badge tok-badge-alert" style="margin-bottom: 16px; width: 100%;">
+        <span class="material-symbols-outlined" style="margin-right: 8px;">error</span>{{ errorMsg }}
       </div>
-      <div v-if="successMsg" class="alert alert-success mb-md">
-        <span class="material-symbols-outlined">check_circle</span>{{ successMsg }}
+      <div v-if="successMsg" class="tok-badge tok-badge-active" style="margin-bottom: 16px; width: 100%;">
+        <span class="material-symbols-outlined" style="margin-right: 8px;">check_circle</span>{{ successMsg }}
       </div>
 
       <!-- View mode -->
       <div v-if="!editing" class="list-group">
         <div class="list-item">
-          <div class="list-item-icon"><span class="material-symbols-outlined">person</span></div>
+          <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">person</span></div>
           <div class="list-item-content">
-            <div class="list-item-subtitle" data-i18n="full_name">ឈ្មោះពេញ</div>
+            <div class="list-item-subtitle">{{ t('full_name') }}</div>
             <div class="list-item-title">{{ user.name || '--' }}</div>
           </div>
         </div>
         <div class="list-item">
-          <div class="list-item-icon"><span class="material-symbols-outlined">mail</span></div>
+          <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">badge</span></div>
           <div class="list-item-content">
-            <div class="list-item-subtitle" data-i18n="email">អ៊ីមែល</div>
+            <div class="list-item-subtitle">{{ t('national_id') }}</div>
+            <div class="list-item-title">{{ user.national_id_number || '--' }}</div>
+          </div>
+        </div>
+        <div class="list-item">
+          <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">transgender</span></div>
+          <div class="list-item-content">
+            <div class="list-item-subtitle" data-i18n="sex">Sex</div>
+            <div class="list-item-title">{{ t(user.sex) || '--' }}</div>
+          </div>
+        </div>
+        <div class="list-item">
+          <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">mail</span></div>
+          <div class="list-item-content">
+            <div class="list-item-subtitle">{{ t('email') }}</div>
             <div class="list-item-title">{{ user.email || '--' }}</div>
           </div>
         </div>
         <div class="list-item">
-          <div class="list-item-icon"><span class="material-symbols-outlined">phone</span></div>
+          <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">phone</span></div>
           <div class="list-item-content">
-            <div class="list-item-subtitle" data-i18n="phone">ទូរស័ព្ទ</div>
+            <div class="list-item-subtitle">{{ t('phone') }}</div>
             <div class="list-item-title">{{ user.phone || '--' }}</div>
           </div>
         </div>
         <div class="list-item">
-          <div class="list-item-icon"><span class="material-symbols-outlined">badge</span></div>
+          <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">home</span></div>
           <div class="list-item-content">
-            <div class="list-item-subtitle" data-i18n="role">តួនាទី</div>
-            <div class="list-item-title">{{ roleLabel }}</div>
+            <div class="list-item-subtitle">{{ t('your_farm') }}</div>
+            <div class="list-item-title">{{ user.farm_name || '--' }}</div>
+            <div v-if="user.province" class="list-item-subtitle" style="margin-top:2px;">{{ user.province }}</div>
           </div>
+        </div>
+        <!-- Farmer ID -->
+        <div class="list-item">
+          <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">fingerprint</span></div>
+          <div class="list-item-content" style="min-width:0;">
+            <div class="list-item-subtitle">{{ t('farmer_id') }}</div>
+            <div class="list-item-title" style="font-size: 13px; font-family: monospace; word-break: break-all;">{{ user.id || '--' }}</div>
+          </div>
+          <button v-if="user.id" class="tok-btn tok-btn-secondary" style="min-width: 0; padding: 6px 10px; margin-left: 12px;" @click="copyID">
+            <span class="material-symbols-outlined" style="font-size:18px;">{{ copiedID ? 'check' : 'content_copy' }}</span>
+          </button>
         </div>
       </div>
 
       <!-- Edit mode -->
       <div v-else class="profile-form">
-        <div class="form-group">
-          <label class="form-label" data-i18n="full_name">ឈ្មោះពេញ</label>
-          <div class="form-input-icon">
-            <span class="input-icon material-symbols-outlined">person</span>
-            <input class="form-input" type="text" v-model="editName" />
-          </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('full_name') }}</label>
+          <input class="tok-input" type="text" v-model="editName" />
         </div>
-        <div class="form-group">
-          <label class="form-label" data-i18n="phone">ទូរស័ព្ទ</label>
-          <div class="form-input-icon">
-            <span class="input-icon material-symbols-outlined">phone</span>
-            <input class="form-input" type="tel" v-model="editPhone" inputmode="tel" />
-          </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('national_id') }}</label>
+          <input class="tok-input" type="text" v-model="editNationalID" :placeholder="t('national_id') + '...'" />
         </div>
-        <button class="btn btn-primary btn-full" @click="saveProfile" :disabled="saving">
-          <span v-if="saving" class="spinner" style="width:22px;height:22px;border-width:3px;"></span>
-          <span v-else data-i18n="save">រក្សាទុក</span>
+        <div class="tok-input-group">
+          <label class="tok-label" data-i18n="sex">Sex</label>
+          <select class="tok-input" v-model="editSex">
+            <option value="male" data-i18n="male">Male</option>
+            <option value="female" data-i18n="female">Female</option>
+            <option value="other" data-i18n="other">Other</option>
+          </select>
+        </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('email') }}</label>
+          <input class="tok-input" type="email" v-model="editEmail" />
+        </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('phone') }}</label>
+          <input class="tok-input" type="tel" v-model="editPhone" />
+        </div>
+        
+        <template v-if="user.farm_id && (user.role === 'farmer' || user.role === 'admin')">
+          <div style="font-size: 11px; color: var(--tok-text-secondary); display: flex; justify-content: space-between; border-top: 1px solid var(--tok-surface-light); padding-top: 12px; padding-bottom: 4px;">
+            {{ t('farm_details') }}
+          </div>
+          <div class="tok-input-group">
+            <label class="tok-label">{{ t('farm_name') }}</label>
+            <input class="tok-input" type="text" v-model="editFarmName" />
+          </div>
+          <div class="tok-input-group">
+            <label class="tok-label">{{ t('province_city') }}</label>
+            <select class="tok-input" v-model="editProvince">
+                <option value="">{{ t('select_province') }}</option>
+                <option v-for="p in provinces" :key="p.en" :value="p.en">
+                  {{ lang === 'km' ? p.km : p.en }}
+                </option>
+            </select>
+          </div>
+        </template>
+        <button class="tok-btn tok-btn-primary" style="width: 100%; margin-top: 16px;" @click="saveProfile" :disabled="saving">
+          <span v-if="saving" class="spinner" style="width:20px;height:20px;border-width:2.5px;"></span>
+          <span v-else>{{ t('save_changes') }}</span>
         </button>
       </div>
     </div>
@@ -114,32 +175,27 @@
     <!-- About section -->
     <div class="section" style="padding-top:0;">
       <div class="list-group">
-        <a href="https://camtech.edu.kh" target="_blank" class="list-item">
-          <div class="list-item-icon"><span class="material-symbols-outlined">school</span></div>
+        <a href="https://tokkatot.aztrolabe.com" target="_blank" class="list-item">
+          <div class="list-item-icon" style="background: white;">
+            <img src="/assets/images/tokkatot logo-02.png" style="width:28px;height:28px;object-fit:contain;" alt="logo" />
+          </div>
           <div class="list-item-content">
-            <div class="list-item-title">CamTech University</div>
-            <div class="list-item-subtitle">camtech.edu.kh</div>
+            <div class="list-item-title">{{ t('about') }}</div>
+            <div class="list-item-subtitle">Tokkatot v2.0 — Smart Poultry Farm</div>
           </div>
           <span class="list-item-chevron material-symbols-outlined">open_in_new</span>
         </a>
-        <div class="list-item">
-          <div class="list-item-icon"><span class="material-symbols-outlined">info</span></div>
-          <div class="list-item-content">
-            <div class="list-item-title" data-i18n="about">អំពី</div>
-            <div class="list-item-subtitle">Tokkatot v2.0 — Smart Poultry Farm</div>
-          </div>
-        </div>
       </div>
     </div>
   </template>
 
-</div><!-- #app -->
+</div>
 
 <div id="navbar-placeholder"></div>
 
-<script src="/js/utils/i18n.js"></script>
-<script src="/js/utils/api.js"></script>
-<script src="/js/utils/components.js"></script>
+<script src="/js/utils/i18n.js?v=1.5"></script>
+<script src="/js/utils/api.js?v=1.5"></script>
+<script src="/js/utils/components.js?v=1.5"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script>
 const { createApp } = Vue;
@@ -147,8 +203,13 @@ createApp({
   data() {
     return {
       loading: true, saving: false, editing: false,
-      user: {}, editName: '', editPhone: '',
-      errorMsg: '', successMsg: ''
+      user: {}, editName: '', editEmail: '', editPhone: '',
+      editNationalID: '', editSex: '',
+      editFarmName: '', editProvince: '',
+      copiedID: false, avatarLoaded: null,
+      lang: window.i18n ? window.i18n.getLang() : 'km',
+      errorMsg: '', successMsg: '',
+      provinces: window.i18n ? window.i18n.provinces() : []
     };
   },
   computed: {
@@ -156,8 +217,12 @@ createApp({
       const n = this.user.name || '';
       return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || '?';
     },
+    avatarSrc() {
+      const role = this.user.role || 'viewer';
+      return `/assets/images/${role}-avatar.png`;
+    },
     roleLabel() {
-      const roles = { Owner: this.t('owner'), Manager: this.t('manager'), Viewer: this.t('viewer') };
+      const roles = { farmer: this.t('farmer') || 'Farmer', viewer: this.t('viewer') || 'Viewer' };
       return roles[this.user.role] || this.user.role || '--';
     }
   },
@@ -171,23 +236,48 @@ createApp({
     async loadProfile() {
       this.loading = true;
       try {
-        const data = await window.API.get('/v1/auth/me');
+        const data = await window.API.get('/v1/users/me');
         this.user = (data && data.data && data.data.user) ? data.data.user : (data && data.data ? data.data : {});
-        this.editName  = this.user.name  || '';
-        this.editPhone = this.user.phone || '';
+        this.editName       = this.user.name     || '';
+        this.editEmail      = this.user.email    || '';
+        this.editPhone      = this.user.phone    || '';
+        this.editNationalID = this.user.national_id_number || '';
+        this.editSex        = this.user.sex || '';
+        this.editFarmName   = this.user.farm_name || '';
+        this.editProvince   = this.user.province || '';
+        this.avatarLoaded = null;
       } catch(e) { console.error(e); }
       finally { this.loading = false; }
     },
     async saveProfile() {
       this.errorMsg = ''; this.successMsg = ''; this.saving = true;
       try {
-        const data = await window.API.patch('/v1/auth/me', {
+        const data = await window.API.put('/v1/users/me', {
           name: this.editName,
-          phone: this.editPhone
+          email: this.editEmail,
+          phone: this.editPhone,
+          national_id_number: this.editNationalID,
+          sex: this.editSex,
+          province: this.editProvince
         });
         if (data && data.success) {
-          this.user.name  = this.editName;
+          this.user.name = this.editName;
+          this.user.email = this.editEmail;
           this.user.phone = this.editPhone;
+          localStorage.setItem('user_name', this.editName);
+          if (this.user.farm_id && this.user.role === 'farmer' &&
+              (this.editFarmName !== this.user.farm_name || this.editProvince !== (this.user.province || ''))) {
+            try {
+              const farmData = await window.API.put(`/v1/farms/${this.user.farm_id}`, {
+                name: this.editFarmName || undefined,
+                province: this.editProvince || undefined
+              });
+              if (farmData && farmData.success && farmData.data) {
+                this.user.farm_name = farmData.data.name || this.editFarmName;
+                this.user.province  = farmData.data.province || this.editProvince;
+              }
+            } catch(fe) { console.warn('Farm update failed', fe); }
+          }
           this.successMsg = this.t('success');
           this.editing = false;
         } else {
@@ -195,9 +285,19 @@ createApp({
         }
       } catch(e) { this.errorMsg = this.t('error'); }
       finally { this.saving = false; }
+    },
+    copyID() {
+      if (!this.user.id) return;
+      navigator.clipboard.writeText(this.user.id).catch(() => {});
+      this.copiedID = true;
+      setTimeout(() => { this.copiedID = false; }, 2000);
     }
   }
 }).mount('#app');
 </script>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </body>
 </html>

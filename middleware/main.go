@@ -8,9 +8,20 @@ import (
 	"middleware/api"
 	"middleware/config"
 	"middleware/database"
-
 	"github.com/gofiber/fiber/v2"
 )
+
+// @title Tokkatot API
+// @version 2.0
+// @description Backend API for Tokkatot Agri-Tech Platform
+// @contact.name Tokkatot Support
+// @contact.email info@tokkatot.com
+// @license.name MIT
+// @host localhost:3000
+// @BasePath /
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 
 func main() {
 	// Load configuration
@@ -29,6 +40,11 @@ func main() {
 		log.Fatalf("❌ Failed to create database schema: %v", err)
 	}
 
+	// Seed initial admin if needed
+	if err := database.SeedInitialAdmin(); err != nil {
+		log.Printf("⚠️  Admin seeding warning: %v", err)
+	}
+
 	// Create Fiber app with optimized settings
 	app := fiber.New(fiber.Config{
 		Prefork:       false,
@@ -44,10 +60,11 @@ func main() {
 	}
 
 	var frontendPath string
-	if filepath.Base(currentDir) == "middleware" {
-		frontendPath = filepath.Join(filepath.Dir(currentDir), "frontend")
+	absPath, _ := filepath.Abs(currentDir)
+	if filepath.Base(absPath) == "middleware" {
+		frontendPath = filepath.Join(filepath.Dir(absPath), "frontend")
 	} else {
-		frontendPath = filepath.Join(currentDir, "frontend")
+		frontendPath = filepath.Join(absPath, "frontend")
 	}
 
 	if _, err := os.Stat(frontendPath); os.IsNotExist(err) {
@@ -69,7 +86,53 @@ func main() {
 }
 
 func setupRoutes(app *fiber.App, frontendPath string) {
-	// ===== API ROUTES (v1) =====
+	// ===== FRONTEND STATIC ROUTES =====
+	// Serve static files
+	app.Static("/assets", filepath.Join(frontendPath, "assets"))
+	app.Static("/components", filepath.Join(frontendPath, "components"))
+	app.Static("/css", filepath.Join(frontendPath, "css"))
+	app.Static("/js", filepath.Join(frontendPath, "js"))
+	app.Static("/", frontendPath) // Fallback for any other frontend assets (manifest, robots, etc.)
+
+	// Static page routes
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "index.html"))
+	})
+	app.Get("/admin", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "admin.html"))
+	})
+	app.Get("/login", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "login.html"))
+	})
+	app.Get("/register", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "signup.html"))
+	})
+	app.Get("/signup", func(c *fiber.Ctx) error {
+		return c.Redirect("/register")
+	})
+	app.Get("/index.html", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "index.html"))
+	})
+	app.Get("/profile", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "profile.html"))
+	})
+	app.Get("/settings", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "settings.html"))
+	})
+	app.Get("/disease-detection", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "disease-detection.html"))
+	})
+	app.Get("/monitoring", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "monitoring.html"))
+	})
+	app.Get("/schedules", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "schedules.html"))
+	})
+	app.Get("/alerts", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "alerts.html"))
+	})
+
+	// v1 API Group
 	v1 := app.Group("/v1")
 
 	// Authentication routes (no auth required)
@@ -178,45 +241,28 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	// Device heartbeat (for IoT devices - no AuthMiddleware, uses device key)
 	v1.Post("/devices/:hardware_id/heartbeat", api.UpdateDeviceHeartbeatHandler)
 
-	// ===== FRONTEND STATIC ROUTES =====
-	// Serve static files
-	app.Static("/assets", filepath.Join(frontendPath, "assets"))
-	app.Static("/components", filepath.Join(frontendPath, "components"))
-	app.Static("/css", filepath.Join(frontendPath, "css"))
-	app.Static("/js", filepath.Join(frontendPath, "js"))
+	// ===== ADMIN ROUTES (role="admin" required) =====
+	admin := v1.Group("/admin")
+	admin.Use(api.AuthMiddleware, api.AdminMiddleware)
+	admin.Get("/stats", api.GetAdminStatsHandler)
+	admin.Get("/farmers", api.ListFarmersHandler)
+	admin.Post("/farmers", api.RegisterFarmerHandler)
+	admin.Delete("/farmers/:user_id", api.DeactivateFarmerHandler)
+	admin.Get("/farmers/:user_id/profile", api.GetFarmerProfileHandler)
+	admin.Get("/viewers", api.ListViewersHandler)
+	admin.Get("/reg-keys", api.ListRegKeysHandler)
+	admin.Post("/reg-keys", api.RegisterFarmerHandler)
+	admin.Put("/profile", api.UpdateAdminProfileHandler)
 
-	// Static page routes
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendFile(filepath.Join(frontendPath, "pages", "index.html"))
-	})
-	app.Get("/login", func(c *fiber.Ctx) error {
-		return c.SendFile(filepath.Join(frontendPath, "pages", "login.html"))
-	})
-	app.Get("/register", func(c *fiber.Ctx) error {
-		return c.SendFile(filepath.Join(frontendPath, "pages", "signup.html"))
-	})
-	app.Get("/index.html", func(c *fiber.Ctx) error {
-		return c.SendFile(filepath.Join(frontendPath, "pages", "index.html"))
-	})
-	app.Get("/profile", func(c *fiber.Ctx) error {
-		return c.SendFile(filepath.Join(frontendPath, "pages", "profile.html"))
-	})
-	app.Get("/settings", func(c *fiber.Ctx) error {
-		return c.SendFile(filepath.Join(frontendPath, "pages", "settings.html"))
-	})
-	// Disease detection: coming soon overlay is embedded in the page itself
-	app.Get("/disease-detection", func(c *fiber.Ctx) error {
-		return c.SendFile(filepath.Join(frontendPath, "pages", "disease-detection.html"))
-	})
-	app.Get("/monitoring", func(c *fiber.Ctx) error {
-		return c.SendFile(filepath.Join(frontendPath, "pages", "monitoring.html"))
-	})
-	app.Get("/schedules", func(c *fiber.Ctx) error {
-		return c.SendFile(filepath.Join(frontendPath, "pages", "schedules.html"))
-	})
 
 	// 404 Handler
 	app.Use(func(c *fiber.Ctx) error {
+		// If requesting HTML (browser), show 404 page
+		if c.Accepts("text/html") != "" {
+			return c.Status(fiber.StatusNotFound).SendFile(filepath.Join(frontendPath, "pages", "404.html"))
+		}
+
+		// Otherwise return JSON
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"error": fiber.Map{

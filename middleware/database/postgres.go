@@ -8,11 +8,12 @@ import (
 	"middleware/config"
 
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var DB *sql.DB
 
-// InitDB initializes the database connection pool
+// InitDB initializes the database connection pool using config from .env
 func InitDB() (*sql.DB, error) {
 	dbURL := config.GetDatabaseURL()
 
@@ -44,344 +45,120 @@ func CloseDB() error {
 	return nil
 }
 
-// CreateSchema creates all necessary tables
+// CreateSchema creates all necessary tables using the master schema definition in schema.go
 func CreateSchema() error {
 	if DB == nil {
 		return fmt.Errorf("database not initialized")
 	}
 
-	schema := `
-	-- Users table
-	CREATE TABLE IF NOT EXISTS users (
-		id UUID PRIMARY KEY,
-		email TEXT UNIQUE,
-		phone TEXT UNIQUE,
-		phone_country_code VARCHAR(5),
-		password_hash TEXT NOT NULL,
-		name TEXT NOT NULL,
-		language VARCHAR(10) DEFAULT 'km',
-		timezone VARCHAR(40) DEFAULT 'Asia/Phnom_Penh',
-		avatar_url TEXT,
-		is_active BOOLEAN DEFAULT true,
-		contact_verified BOOLEAN DEFAULT false,
-		verification_type VARCHAR(10),
-		last_login TIMESTAMP,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- Farms table
-	CREATE TABLE IF NOT EXISTS farms (
-		id UUID PRIMARY KEY,
-		owner_id UUID NOT NULL REFERENCES users(id),
-		name TEXT NOT NULL,
-		location TEXT,
-		timezone VARCHAR(40) DEFAULT 'Asia/Phnom_Penh',
-		latitude DECIMAL(10,8),
-		longitude DECIMAL(11,8),
-		description TEXT,
-		image_url TEXT,
-		is_active BOOLEAN DEFAULT true,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- Coops table (chicken houses within a farm)
-	CREATE TABLE IF NOT EXISTS coops (
-		id UUID PRIMARY KEY,
-		farm_id UUID NOT NULL REFERENCES farms(id),
-		number INTEGER NOT NULL,
-		name TEXT NOT NULL,
-		capacity INTEGER,
-		current_count INTEGER,
-		chicken_type VARCHAR(20),
-		main_device_id UUID,
-		description TEXT,
-		is_active BOOLEAN DEFAULT true,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		UNIQUE(farm_id, number)
-	);
-
-	-- Farm users (membership table)
-	CREATE TABLE IF NOT EXISTS farm_users (
-		id UUID PRIMARY KEY,
-		farm_id UUID NOT NULL REFERENCES farms(id),
-		user_id UUID NOT NULL REFERENCES users(id),
-		role VARCHAR(20) NOT NULL CHECK (role IN ('farmer', 'viewer')),
-		invited_by UUID NOT NULL REFERENCES users(id),
-		is_active BOOLEAN DEFAULT true,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		UNIQUE(farm_id, user_id)
-	);
-
-	-- Devices table
-	CREATE TABLE IF NOT EXISTS devices (
-		id UUID PRIMARY KEY,
-		farm_id UUID NOT NULL REFERENCES farms(id),
-		coop_id UUID REFERENCES coops(id),
-		device_id VARCHAR(50) NOT NULL UNIQUE,
-		name TEXT NOT NULL,
-		type VARCHAR(50) NOT NULL CHECK (type IN ('gpio', 'relay', 'pwm', 'adc', 'servo', 'sensor')),
-		model TEXT,
-		is_main_controller BOOLEAN DEFAULT false,
-		firmware_version VARCHAR(20) NOT NULL,
-		hardware_id TEXT NOT NULL UNIQUE,
-		location TEXT,
-		is_active BOOLEAN DEFAULT true,
-		is_online BOOLEAN DEFAULT false,
-		last_heartbeat TIMESTAMP,
-		last_command_status VARCHAR(50),
-		last_command_at TIMESTAMP,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- Device commands
-	CREATE TABLE IF NOT EXISTS device_commands (
-		id UUID PRIMARY KEY,
-		device_id UUID NOT NULL REFERENCES devices(id),
-		farm_id UUID NOT NULL REFERENCES farms(id),
-		coop_id UUID REFERENCES coops(id),
-		issued_by UUID NOT NULL REFERENCES users(id),
-		command_type VARCHAR(50) NOT NULL,
-		command_value TEXT,
-		status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'success', 'failed', 'timeout')),
-		response TEXT,
-		issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		executed_at TIMESTAMP,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- Schedules
-	CREATE TABLE IF NOT EXISTS schedules (
-		id UUID PRIMARY KEY,
-		farm_id UUID NOT NULL REFERENCES farms(id),
-		coop_id UUID REFERENCES coops(id),
-		device_id UUID NOT NULL REFERENCES devices(id),
-		name TEXT NOT NULL,
-		schedule_type VARCHAR(20) NOT NULL CHECK (schedule_type IN ('time_based', 'duration_based', 'condition_based')),
-		cron_expression TEXT,
-		on_duration INTEGER,
-		off_duration INTEGER,
-		condition_json JSONB,
-		action VARCHAR(20) NOT NULL CHECK (action IN ('on', 'off', 'set_value')),
-		action_value TEXT,
-		action_duration INTEGER,
-		action_sequence JSONB,
-		priority INTEGER DEFAULT 0,
-		is_active BOOLEAN DEFAULT true,
-		next_execution TIMESTAMP,
-		last_execution TIMESTAMP,
-		execution_count INTEGER DEFAULT 0,
-		created_by UUID NOT NULL REFERENCES users(id),
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- Schedule executions (execution history)
-	CREATE TABLE IF NOT EXISTS schedule_executions (
-		id UUID PRIMARY KEY,
-		schedule_id UUID NOT NULL REFERENCES schedules(id),
-		device_id UUID NOT NULL REFERENCES devices(id),
-		scheduled_time TIMESTAMP NOT NULL,
-		actual_execution_time TIMESTAMP,
-		status VARCHAR(20) NOT NULL CHECK (status IN ('executed', 'failed', 'skipped')),
-		execution_duration_ms INTEGER,
-		device_response JSONB,
-		error_message TEXT,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- Event logs (audit trail)
-	CREATE TABLE IF NOT EXISTS event_logs (
-		id UUID PRIMARY KEY,
-		farm_id UUID NOT NULL REFERENCES farms(id),
-		user_id UUID NOT NULL REFERENCES users(id),
-		event_type VARCHAR(50) NOT NULL,
-		resource_id UUID,
-		old_value JSONB,
-		new_value JSONB,
-		ip_address VARCHAR(45),
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- Registration keys (for on-site account creation by staff)
-	CREATE TABLE IF NOT EXISTS registration_keys (
-		id UUID PRIMARY KEY,
-		key_code VARCHAR(50) UNIQUE NOT NULL,
-		farm_name VARCHAR(255),
-		farm_location TEXT,
-		customer_name VARCHAR(255),
-		customer_phone VARCHAR(20),
-		is_used BOOLEAN DEFAULT false,
-		used_by_user_id UUID REFERENCES users(id),
-		used_at TIMESTAMP,
-		expires_at TIMESTAMP,
-		created_by VARCHAR(100),
-		notes TEXT,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- User sessions (for session management endpoints)
-	CREATE TABLE IF NOT EXISTS user_sessions (
-		id UUID PRIMARY KEY,
-		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		device_name VARCHAR(255),
-		ip_address VARCHAR(45),
-		user_agent TEXT,
-		refresh_token TEXT NOT NULL UNIQUE,
-		last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		expires_at TIMESTAMP NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- Alerts (monitoring alerts from device thresholds)
-	CREATE TABLE IF NOT EXISTS alerts (
-		id UUID PRIMARY KEY,
-		farm_id UUID NOT NULL REFERENCES farms(id),
-		device_id UUID REFERENCES devices(id),
-		alert_type VARCHAR(50) NOT NULL,
-		severity VARCHAR(20) NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
-		message TEXT NOT NULL,
-		threshold_value DECIMAL(10,4),
-		actual_value DECIMAL(10,4),
-		is_active BOOLEAN DEFAULT true,
-		triggered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		acknowledged_by UUID REFERENCES users(id),
-		acknowledged_at TIMESTAMP,
-		resolved_at TIMESTAMP,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- Alert subscriptions (user notification preferences)
-	CREATE TABLE IF NOT EXISTS alert_subscriptions (
-		id UUID PRIMARY KEY,
-		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		alert_type VARCHAR(50) NOT NULL,
-		channel VARCHAR(20) NOT NULL DEFAULT 'push',
-		is_enabled BOOLEAN DEFAULT true,
-		quiet_hours_start VARCHAR(5),
-		quiet_hours_end VARCHAR(5),
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		UNIQUE(user_id, alert_type, channel)
-	);
-
-	-- Device configurations (parameter settings and calibration values)
-	CREATE TABLE IF NOT EXISTS device_configurations (
-		id UUID PRIMARY KEY,
-		device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
-		parameter_name VARCHAR(100) NOT NULL,
-		parameter_value TEXT NOT NULL,
-		unit VARCHAR(20),
-		min_value DECIMAL(10,4),
-		max_value DECIMAL(10,4),
-		is_calibrated BOOLEAN DEFAULT false,
-		calibrated_at TIMESTAMP,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		UNIQUE(device_id, parameter_name)
-	);
-
-	-- Device readings (simplified time-series, replaces InfluxDB for MVP)
-	CREATE TABLE IF NOT EXISTS device_readings (
-		id UUID PRIMARY KEY,
-		device_id UUID NOT NULL REFERENCES devices(id),
-		sensor_type VARCHAR(50) NOT NULL,
-		value DECIMAL(10,4) NOT NULL,
-		unit VARCHAR(20) NOT NULL DEFAULT '',
-		quality VARCHAR(20) NOT NULL DEFAULT 'good',
-		timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	-- ===== PERFORMANCE INDEXES =====
-
-	-- Users indexes
-	CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-	CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
-	CREATE INDEX IF NOT EXISTS idx_users_is_active_created ON users(is_active, created_at);
-
-	-- Farms indexes
-	CREATE INDEX IF NOT EXISTS idx_farms_owner_id ON farms(owner_id);
-	CREATE INDEX IF NOT EXISTS idx_farms_is_active ON farms(is_active);
-	CREATE INDEX IF NOT EXISTS idx_farms_created_at ON farms(created_at DESC);
-
-	-- Coops indexes
-	CREATE INDEX IF NOT EXISTS idx_coops_farm_id ON coops(farm_id);
-	CREATE INDEX IF NOT EXISTS idx_coops_farm_number ON coops(farm_id, number);
-	CREATE INDEX IF NOT EXISTS idx_coops_is_active ON coops(is_active);
-	CREATE INDEX IF NOT EXISTS idx_coops_main_device ON coops(main_device_id);
-
-	-- Farm users indexes
-	CREATE INDEX IF NOT EXISTS idx_farm_users_farm_id ON farm_users(farm_id);
-	CREATE INDEX IF NOT EXISTS idx_farm_users_user_id ON farm_users(user_id);
-	CREATE INDEX IF NOT EXISTS idx_farm_users_active ON farm_users(is_active);
-
-	-- Devices indexes
-	CREATE INDEX IF NOT EXISTS idx_devices_farm_id_active ON devices(farm_id, is_active);
-	CREATE INDEX IF NOT EXISTS idx_devices_coop_id ON devices(coop_id);
-	CREATE INDEX IF NOT EXISTS idx_devices_device_id ON devices(device_id);
-	CREATE INDEX IF NOT EXISTS idx_devices_is_online ON devices(is_online);
-	CREATE INDEX IF NOT EXISTS idx_devices_main_controller ON devices(coop_id, is_main_controller);
-
-	-- Device commands indexes
-	CREATE INDEX IF NOT EXISTS idx_device_commands_device_id ON device_commands(device_id);
-	CREATE INDEX IF NOT EXISTS idx_device_commands_farm_id ON device_commands(farm_id);
-	CREATE INDEX IF NOT EXISTS idx_device_commands_coop_id ON device_commands(coop_id);
-	CREATE INDEX IF NOT EXISTS idx_device_commands_status ON device_commands(status);
-	CREATE INDEX IF NOT EXISTS idx_device_commands_created ON device_commands(created_at DESC);
-
-	-- Schedules indexes
-	CREATE INDEX IF NOT EXISTS idx_schedules_farm_device ON schedules(farm_id, device_id);
-	CREATE INDEX IF NOT EXISTS idx_schedules_coop_id ON schedules(coop_id);
-	CREATE INDEX IF NOT EXISTS idx_schedules_is_active ON schedules(is_active);
-	CREATE INDEX IF NOT EXISTS idx_schedules_next_execution ON schedules(next_execution);
-
-	-- Schedule executions indexes
-	CREATE INDEX IF NOT EXISTS idx_schedule_executions_schedule_id ON schedule_executions(schedule_id);
-	CREATE INDEX IF NOT EXISTS idx_schedule_executions_time ON schedule_executions(scheduled_time DESC);
-	CREATE INDEX IF NOT EXISTS idx_schedule_executions_status ON schedule_executions(status);
-
-	-- Event logs indexes
-	CREATE INDEX IF NOT EXISTS idx_event_logs_farm_user ON event_logs(farm_id, user_id);
-	CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs(created_at DESC);
-
-	-- Registration keys indexes
-	CREATE INDEX IF NOT EXISTS idx_registration_keys_code ON registration_keys(key_code);
-	CREATE INDEX IF NOT EXISTS idx_registration_keys_is_used ON registration_keys(is_used);
-	CREATE INDEX IF NOT EXISTS idx_registration_keys_expires ON registration_keys(expires_at);
-
-	-- User sessions indexes
-	CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
-	CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at);
-	CREATE INDEX IF NOT EXISTS idx_user_sessions_refresh ON user_sessions(refresh_token);
-
-	-- Alerts indexes
-	CREATE INDEX IF NOT EXISTS idx_alerts_farm_id ON alerts(farm_id);
-	CREATE INDEX IF NOT EXISTS idx_alerts_device_id ON alerts(device_id);
-	CREATE INDEX IF NOT EXISTS idx_alerts_is_active ON alerts(is_active);
-	CREATE INDEX IF NOT EXISTS idx_alerts_severity ON alerts(severity);
-	CREATE INDEX IF NOT EXISTS idx_alerts_triggered_at ON alerts(triggered_at DESC);
-
-	-- Alert subscriptions indexes
-	CREATE INDEX IF NOT EXISTS idx_alert_subscriptions_user_id ON alert_subscriptions(user_id);
-
-	-- Device configurations indexes
-	CREATE INDEX IF NOT EXISTS idx_device_configs_device_id ON device_configurations(device_id);
-
-	-- Device readings indexes
-	CREATE INDEX IF NOT EXISTS idx_device_readings_device_id ON device_readings(device_id);
-	CREATE INDEX IF NOT EXISTS idx_device_readings_timestamp ON device_readings(timestamp DESC);
-	CREATE INDEX IF NOT EXISTS idx_device_readings_sensor_type ON device_readings(device_id, sensor_type);
-	`
-
-	_, err := DB.Exec(schema)
+	_, err := DB.Exec(FullSchema)
 	if err != nil {
 		return fmt.Errorf("failed to create schema: %w", err)
 	}
 
 	log.Println("✅ Database schema created/updated")
+
+	// Run idempotent migrations for dynamic constraints or data fixes if necessary
+	migrations := []string{
+		// Ensure admins table has role column (added in schema v2)
+		`ALTER TABLE admins ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'admin'`,
+		// Migrate farm_users role constraint from legacy (owner/manager/viewer) to current (farmer/viewer)
+		`ALTER TABLE farm_users DROP CONSTRAINT IF EXISTS farm_users_role_check`,
+		`ALTER TABLE farm_users ADD CONSTRAINT farm_users_role_check CHECK (role IN ('farmer', 'viewer'))`,
+		`UPDATE farm_users SET role = 'farmer' WHERE role IN ('owner', 'manager')`,
+	}
+	for _, m := range migrations {
+		if _, merr := DB.Exec(m); merr != nil {
+			log.Printf("⚠️  Migration warning: %v", merr)
+		}
+	}
+
+	return nil
+}
+
+// DropAllTables drops all tables in the correct order to respect foreign keys.
+// USE WITH CAUTION. This is intended for fresh setup/migration scripts.
+func DropAllTables() error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	dropSQL := `
+		DROP TABLE IF EXISTS device_readings         CASCADE;
+		DROP TABLE IF EXISTS device_configurations   CASCADE;
+		DROP TABLE IF EXISTS alert_subscriptions     CASCADE;
+		DROP TABLE IF EXISTS alerts                  CASCADE;
+		DROP TABLE IF EXISTS user_sessions           CASCADE;
+		DROP TABLE IF EXISTS registration_keys       CASCADE;
+		DROP TABLE IF EXISTS event_logs              CASCADE;
+		DROP TABLE IF EXISTS schedule_executions     CASCADE;
+		DROP TABLE IF EXISTS schedules               CASCADE;
+		DROP TABLE IF EXISTS device_commands         CASCADE;
+		DROP TABLE IF EXISTS devices                 CASCADE;
+		DROP TABLE IF EXISTS farm_users              CASCADE;
+		DROP TABLE IF EXISTS coops                   CASCADE;
+		DROP TABLE IF EXISTS farms                   CASCADE;
+		DROP TABLE IF EXISTS admins                  CASCADE;
+		DROP TABLE IF EXISTS users                   CASCADE;
+	`
+	_, err := DB.Exec(dropSQL)
+	if err != nil {
+		return fmt.Errorf("failed to drop tables: %w", err)
+	}
+
+	log.Println("✅ All tables dropped successfully")
+	return nil
+}
+
+// SeedInitialAdmin seeds the initial super admin from .env config if no admin exists
+func SeedInitialAdmin() error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	cfg := config.AppConfig
+	if cfg.InitialAdminEmail == "" || cfg.InitialAdminPassword == "" {
+		log.Println("ℹ️  Skipping admin seeding (INITIAL_ADMIN_EMAIL or PASSWORD not set in .env)")
+		return nil
+	}
+
+	// Check if admin already exists
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM admins").Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to check existing admins: %w", err)
+	}
+
+	if count > 0 {
+		return nil // Admin already exists
+	}
+
+	log.Println("🌱 Seeding initial super admin...")
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(cfg.InitialAdminPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash admin password: %w", err)
+	}
+
+	adminID := "00000000-0000-0000-0000-000000000001"
+	_, err = DB.Exec(`
+		INSERT INTO users (id, name, email, phone, password_hash, is_active, full_name)
+		VALUES ($1, 'Admin', $2, 'N/A', $3, true, 'Tokkatot Admin')
+		ON CONFLICT DO NOTHING
+	`, adminID, cfg.InitialAdminEmail, string(hash))
+	if err != nil {
+		return fmt.Errorf("failed to seed user row for admin: %w", err)
+	}
+
+	_, err = DB.Exec(`
+		INSERT INTO admins (id, name, email, phone, password_hash, is_active)
+		VALUES ($1, 'Admin', $2, 'N/A', $3, true)
+		ON CONFLICT DO NOTHING
+	`, adminID, cfg.InitialAdminEmail, string(hash))
+	if err != nil {
+		return fmt.Errorf("failed to seed admin row: %w", err)
+	}
+
+	log.Printf("✅ Initial admin created: %s", cfg.InitialAdminEmail)
 	return nil
 }

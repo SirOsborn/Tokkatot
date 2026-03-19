@@ -3,357 +3,250 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Tokkatot - ផ្ទះ</title>
+  <title>Tokkatot - Smart Farming</title>
   <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#00897B" />
+  
+  <!-- Tokkatot Design System (Modular) -->
+  <link rel="stylesheet" href="/css/theme.css?v=1.5" />
+  <link rel="stylesheet" href="/css/components.css?v=1.5" />
+  <link rel="stylesheet" href="/css/layout.css?v=1.5" />
+  <link rel="stylesheet" href="/css/dashboard.css?v=1.5" />
+  
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
-    /* Coop selector pill row */
-    .coop-pills { display: flex; gap: var(--space-sm); overflow-x: auto; padding: var(--space-sm) var(--space-md); scrollbar-width: none; }
+    /* Page Specific Overrides */
+    .coop-pills { display: flex; gap: var(--space-sm); overflow-x: auto; padding: 12px 16px; scrollbar-width: none; }
     .coop-pills::-webkit-scrollbar { display: none; }
-    .coop-pill { flex-shrink: 0; padding: 10px var(--space-md); border-radius: var(--radius-full); border: 2px solid var(--color-border); font-size: var(--font-size-base); font-weight: 600; background: var(--color-surface); color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; min-height: var(--touch-min); display: flex; align-items: center; }
-    .coop-pill.active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
-    /* Metric cards */
-    .metric-card.temp-card { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); color: #fff; }
-    .metric-card.temp-card .metric-label,
-    .metric-card.temp-card .metric-unit { color: rgba(255,255,255,0.8); }
-    .metric-card.temp-card .metric-value { color: #fff; }
-    .metric-card.temp-card .metric-icon { color: rgba(255,255,255,0.9); }
-    .metric-card.hum-card { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; }
-    .metric-card.hum-card .metric-label,
-    .metric-card.hum-card .metric-unit { color: rgba(255,255,255,0.8); }
-    .metric-card.hum-card .metric-value { color: #fff; }
-    .metric-card.hum-card .metric-icon { color: rgba(255,255,255,0.9); }
-    /* Chicken count card */
-    .count-card { background: var(--color-secondary-light); border-color: var(--color-secondary); }
-    .count-card .metric-icon { color: var(--color-secondary-dark); }
-    /* Device grid */
-    .devices-grid { display: flex; flex-direction: column; gap: var(--space-sm); padding: 0 var(--space-md) var(--space-md); }
-    /* Control button */
-    .ctrl-btn { min-width: 80px; min-height: 40px; font-size: var(--font-size-sm); border-radius: var(--radius-full); font-weight: 600; }
-    .ctrl-btn.on  { background: var(--color-primary); color: #fff; }
-    .ctrl-btn.off { background: var(--color-bg); color: var(--color-text-secondary); border: 2px solid var(--color-border); }
-    /* Quick action row */
-    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); padding: 0 var(--space-md) var(--space-md); }
-    .quick-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-md); min-height: 88px; font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-secondary); box-shadow: var(--shadow-sm); border: 1px solid var(--color-border); cursor: pointer; transition: background 0.15s; }
-    .quick-btn .material-symbols-outlined { font-size: 32px; color: var(--color-primary); }
-    .quick-btn:active { background: var(--color-primary-light); }
-    /* No farm state */
-    .setup-card { margin: var(--space-md); padding: var(--space-xl); background: var(--color-surface); border-radius: var(--radius-xl); box-shadow: var(--shadow-md); text-align: center; }
+    .coop-pill { 
+      flex-shrink: 0; padding: 10px 20px; border-radius: 40px; 
+      border: 2px solid var(--tok-surface-light); font-size: 15px; 
+      font-weight: 600; background: white; color: var(--tok-text-secondary); 
+      cursor: pointer; white-space: nowrap; min-height: 48px; 
+      display: flex; align-items: center; transition: all 0.2s;
+    }
+    .coop-pill.active { border-color: var(--tok-teal); background: var(--tok-teal); color: #fff; }
   </style>
 </head>
 <body>
 
 <div id="header-placeholder"></div>
 
-<div id="app">
+<div id="app" v-cloak class="page-container">
 
   <!-- Loading state -->
-  <div v-if="loading" class="loading-spinner">
-    <div class="spinner"></div>
-    <span data-i18n="loading">កំពុងផ្ទុក...</span>
+  <div v-if="loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; color: var(--tok-text-secondary);">
+    <div style="width: 44px; height: 44px; border: 4px solid var(--tok-surface-light); border-top-color: var(--tok-teal); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+    <span style="margin-top: 16px;" data-i18n="loading">Loading...</span>
   </div>
 
-  <!-- No farm setup -->
-  <div v-else-if="farms.length === 0" class="setup-card">
-    <span class="material-symbols-outlined" style="font-size:64px;color:var(--color-border);">agriculture</span>
-    <h2 style="margin-top:var(--space-md);margin-bottom:var(--space-sm);" data-i18n="no_farm">មិនទាន់មានចំការ</h2>
-    <p class="color-muted text-sm">Contact your farm owner to get access.</p>
-  </div>
+  <!-- Regular User Dashboard -->
+  <div v-else-if="!isAdmin" class="dashboard-content">
 
-  <!-- Dashboard content -->
-  <template v-else>
-
-    <!-- Farm selector (if multiple) -->
-    <div v-if="farms.length > 1" style="padding: var(--space-sm) var(--space-md) 0;">
-      <select class="form-select" v-model="selectedFarmId" @change="onFarmChange">
-        <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
-      </select>
-    </div>
-
-    <!-- Farm banner -->
-    <div class="farm-banner" style="margin: var(--space-sm) var(--space-md); border-radius: var(--radius-lg);">
-      <span class="material-symbols-outlined" style="font-size:32px;">agriculture</span>
-      <div class="farm-banner-text">
-        <div class="farm-banner-name">{{ currentFarm ? currentFarm.name : '...' }}</div>
-        <div class="farm-banner-sub">{{ coops.length }} {{ t('coops') }}</div>
+    <!-- Case 1: No Farms Yet -->
+    <div v-if="farms.length === 0" class="tok-card" style="text-align: center; padding: 48px 24px; margin-bottom: 32px;">
+      <div class="tok-flex-center" style="width: 80px; height: 80px; background: rgba(0, 137, 123, 0.1); border-radius: 50%; margin: 0 auto 24px;">
+        <span class="material-symbols-outlined" style="font-size: 40px; color: var(--tok-teal);">agriculture</span>
       </div>
+      <h2 style="margin-top: 0; font-weight: 800; color: var(--tok-text-primary);" data-i18n="no_farm">No Farm Yet</h2>
+      <p style="color: var(--tok-text-secondary); margin-bottom: 32px; font-size: 15px;" data-i18n="no_farm_msg">Create your first farm to get started</p>
+      <button class="tok-btn tok-btn-primary" style="width: 100%;" @click="showAddFarm = true">
+         <span class="material-symbols-outlined" style="margin-right:8px;">add</span> <span data-i18n="add_farm">Add Farm</span>
+      </button>
     </div>
 
-    <!-- Coop selector pills -->
-    <div v-if="coops.length > 0" class="coop-pills">
-      <button
-        v-for="c in coops"
-        :key="c.id"
-        class="coop-pill"
-        :class="{ active: c.id === selectedCoopId }"
-        @click="selectCoop(c)"
-      >{{ c.name }}</button>
-    </div>
+    <!-- Case 2: Has Farms -->
+    <div v-else>
+      <!-- Farm selector (if multiple) -->
+      <div v-if="farms.length > 1" style="margin-bottom: 16px;">
+        <select class="tok-input" v-model="selectedFarmId" @change="onFarmChange">
+          <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
+        </select>
+      </div>
 
-    <!-- Environment metrics -->
-    <div class="metrics-grid">
-      <!-- Temperature -->
-      <div class="metric-card temp-card">
-        <div class="metric-label" data-i18n="temperature">សីតុណ្ហភាព</div>
-        <div style="display:flex;align-items:flex-end;gap:4px;">
-          <div class="metric-value">{{ temp !== null ? temp : '--' }}</div>
-          <div class="metric-unit" style="margin-bottom:8px;">°C</div>
+      <!-- Farm Banner -->
+      <div v-if="currentFarm" class="farm-banner">
+        <div class="farm-banner-text">
+          <div class="farm-banner-name">{{ formatFarmName(currentFarm.name) }}</div>
+          <div class="farm-banner-sub">{{ coops.length }} {{ t('coops') }} • {{ currentFarm.province }}</div>
         </div>
-        <span class="metric-icon material-symbols-outlined">thermometer</span>
-      </div>
-
-      <!-- Humidity -->
-      <div class="metric-card hum-card">
-        <div class="metric-label" data-i18n="humidity">សំណើម</div>
-        <div style="display:flex;align-items:flex-end;gap:4px;">
-          <div class="metric-value">{{ humidity !== null ? humidity : '--' }}</div>
-          <div class="metric-unit" style="margin-bottom:8px;">%</div>
+        <div class="farm-banner-icon">
+           <span class="material-symbols-outlined" style="font-size: 40px;">potted_plant</span>
         </div>
-        <span class="metric-icon material-symbols-outlined">water_drop</span>
       </div>
-    </div>
 
-    <!-- Chicken count + last updated -->
-    <div class="section" style="padding-top:0;">
-      <div style="display:flex;gap:var(--space-md);">
-        <div class="metric-card count-card" style="flex:1;">
-          <div class="metric-label" data-i18n="chickens">មាន់</div>
-          <div style="display:flex;align-items:baseline;gap:6px;">
-            <div style="font-size:var(--font-size-2xl);font-weight:700;">{{ coopChickens !== null ? coopChickens : '--' }}</div>
-            <div class="metric-unit" v-if="coopCapacity">/ {{ coopCapacity }}</div>
+      <!-- Handle Access Denied (If worker but no coops assigned etc) -->
+      <div v-if="farms.length > 0 && !currentFarm" class="tok-card" style="text-align: center; padding: 32px;">
+         <h3 style="color: var(--tok-error);">{{ t('no_farm_access') }}</h3>
+         <p style="color: var(--tok-text-secondary); margin-top: 8px;">{{ t('contact_owner') }}</p>
+      </div>
+
+      <!-- Coop selector pills -->
+      <div v-if="coops.length > 0" class="coop-pills">
+        <button
+          v-for="c in coops"
+          :key="c.id"
+          class="coop-pill"
+          :class="{ active: c.id === selectedCoopId }"
+          @click="selectCoop(c)"
+        >{{ c.name }}</button>
+      </div>
+
+      <!-- Environment metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card temp-card">
+          <div class="metric-label">{{ t('temperature') }}</div>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <div class="metric-value">{{ temp !== null ? temp : '--' }}</div>
+            <div class="metric-unit">°C</div>
           </div>
+          <span class="material-symbols-outlined metric-icon">device_thermostat</span>
         </div>
-        <div class="card" style="flex:1;display:flex;flex-direction:column;gap:4px;">
-          <div class="text-sm color-muted">{{ t('now') }}</div>
-          <div style="font-size:var(--font-size-sm);font-weight:600;">{{ lastUpdated }}</div>
-          <div class="badge" :class="wsConnected ? 'badge-success' : 'badge-neutral'" style="align-self:flex-start;margin-top:4px;">
-            {{ wsConnected ? t('online') : t('offline') }}
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Quick actions -->
-    <div class="section" style="padding-top:0;">
-      <div class="section-header">
-        <span class="section-title" data-i18n="devices">ឧបករណ៍</span>
-        <a href="/schedules" class="section-action" data-i18n="schedules">កាលវិភាគ</a>
-      </div>
-      <div class="devices-grid" v-if="devices.length > 0">
-        <div
-          class="device-row"
-          v-for="d in devices.slice(0, 6)"
-          :key="d.id"
-        >
-          <div class="list-item-icon">
-            <span class="material-symbols-outlined">{{ deviceIcon(d.type) }}</span>
+        <div class="metric-card hum-card">
+          <div class="metric-label">{{ t('humidity') }}</div>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <div class="metric-value">{{ humidity !== null ? humidity : '--' }}</div>
+            <div class="metric-unit">%</div>
           </div>
-          <div class="device-info">
-            <div class="device-name">{{ d.name }}</div>
-            <div class="device-status" :class="d.status === 'online' ? 'online' : 'offline'">
-              {{ d.status === 'online' ? t('online') : t('offline') }}
+          <span class="material-symbols-outlined metric-icon">humidity_percentage</span>
+        </div>
+      </div>
+
+      <!-- Chicken count + last updated -->
+      <div class="section">
+        <div style="display:flex;gap: 16px;">
+          <div class="metric-card count-card" style="flex:1;">
+            <div class="metric-label">{{ t('chickens') }}</div>
+            <div style="display:flex;align-items:baseline;gap:6px;">
+              <div style="font-size: 32px; font-weight:700;">{{ coopChickens !== null ? coopChickens : '--' }}</div>
+              <div class="metric-unit" v-if="coopCapacity" style="color: #d97706;">/ {{ coopCapacity }}</div>
             </div>
           </div>
-          <button
-            class="btn ctrl-btn"
-            :class="d.last_state === 'on' ? 'on' : 'off'"
-            @click="toggleDevice(d)"
-            :disabled="d.loading"
-          >
-            <span v-if="d.loading" class="spinner" style="width:18px;height:18px;border-width:2px;"></span>
-            <span v-else>{{ d.last_state === 'on' ? t('turn_off') : t('turn_on') }}</span>
+          <div class="tok-card" style="flex:1;display:flex;flex-direction:column;gap:4px; justify-content: center;">
+            <div style="font-size: 11px; color: var(--tok-text-secondary);">{{ t('now') }}</div>
+            <div style="font-size: 14px; font-weight: 600;">{{ lastUpdated }}</div>
+            <div class="tok-badge" :class="wsConnected ? 'tok-badge-active' : ''" style="align-self: flex-start; margin-top: 4px;">
+              {{ wsConnected ? t('online') : t('offline') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Devices section -->
+      <div class="section">
+        <div class="section-header" style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span class="section-title" style="font-weight: 800; font-size: 18px;">{{ t('devices') }}</span>
+          <a href="/schedules" style="font-size: 14px; color: var(--tok-teal); font-weight: 600; text-decoration: none;">{{ t('nav_schedules') }}</a>
+        </div>
+        
+        <div v-if="devices.length > 0">
+          <div class="device-row" v-for="d in devices.slice(0, 6)" :key="d.id">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0, 137, 123, 0.1); display: flex; align-items: center; justify-content: center; color: var(--tok-teal);">
+              <span class="material-symbols-outlined">{{ deviceIcon(d.type) }}</span>
+            </div>
+            <div class="device-info" style="margin-left: 12px;">
+              <div class="device-name">{{ d.name }}</div>
+              <div class="device-status" :class="d.status === 'online' ? 'online' : 'offline'">
+                {{ d.status === 'online' ? t('online') : t('offline') }}
+              </div>
+            </div>
+            <button
+              class="tok-btn"
+              style="padding: 8px 16px; font-size: 13px; min-width: 90px;"
+              :class="d.last_state === 'on' ? 'tok-btn-primary' : 'tok-btn-secondary'"
+              @click="toggleDevice(d)"
+              :disabled="d.loading"
+            >
+              <span v-if="d.loading" class="spinner" style="width:16px;height:16px;border-width:2px;"></span>
+              <span v-else>{{ d.last_state === 'on' ? t('turn_off') : t('turn_on') }}</span>
+            </button>
+          </div>
+        </div>
+        <div v-else class="tok-card" style="text-align: center; padding: 32px;">
+          <span class="material-symbols-outlined" style="font-size:48px; color: var(--tok-surface-light);">devices</span>
+          <p style="font-size: 14px; color: var(--tok-text-secondary); margin-top: 8px;">{{ t('no_devices') }}</p>
+        </div>
+      </div>
+
+      <!-- Quick shortcuts grid -->
+      <div class="section">
+         <div class="metrics-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
+            <a href="/monitoring" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">analytics</span>
+              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_monitoring') }}</div>
+            </a>
+            <a href="/disease-detection" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">biotech</span>
+              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_disease') }}</div>
+            </a>
+            <a href="/schedules" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">calendar_month</span>
+              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_schedules') }}</div>
+            </a>
+            <a href="/profile" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">account_circle</span>
+              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('my_profile') }}</div>
+            </a>
+         </div>
+      </div>
+    </div> <!-- End has farms else -->
+
+    <!-- Add farm modal (Shared) -->
+    <div v-if="showAddFarm" class="modal-overlay" @click.self="showAddFarm=false">
+      <div class="modal-content" style="border-radius: 24px 24px 0 0; position: fixed; bottom: 0; max-width: 480px;">
+        <h3 style="margin-bottom: 24px; font-weight: 800;">{{ t('add_farm') }}</h3>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('farm_name') }}</label>
+          <input class="tok-input" v-model="newFarm.name" :placeholder="t('farm_name') + '...'" />
+        </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('province_city') }}</label>
+          <select class="tok-input" v-model="newFarm.province">
+              <option value="">{{ t('select_province') }}</option>
+              <option v-for="p in provinces" :key="p.en" :value="p.en">
+                {{ lang === 'km' ? p.km : p.en }}
+              </option>
+          </select>
+        </div>
+        <div v-if="addFarmError" class="tok-badge tok-badge-alert" style="margin-bottom: 24px; width: 100%; text-align: center; padding: 8px;">{{ addFarmError }}</div>
+        <div style="display:flex;gap: 16px;">
+          <button class="tok-btn tok-btn-secondary" style="flex: 1;" @click="showAddFarm=false">{{ t('cancel') }}</button>
+          <button class="tok-btn tok-btn-primary" style="flex: 1;" @click="createFarm" :disabled="addFarmLoading">
+            <span v-if="addFarmLoading" class="spinner" style="width:18px;height:18px;border-width:2px;"></span>
+            <span v-else>{{ t('create') }}</span>
           </button>
         </div>
       </div>
-      <div v-else class="empty-state" style="padding:var(--space-lg);">
-        <span class="material-symbols-outlined" style="font-size:48px;">devices</span>
-        <span class="text-sm color-muted" data-i18n="no_devices">មិនទាន់មានឧបករណ៍</span>
-      </div>
     </div>
+  </div>
 
-    <!-- Quick nav shortcuts -->
-    <div class="section" style="padding-top:0;">
-      <div class="quick-actions">
-        <a href="/monitoring" class="quick-btn">
-          <span class="material-symbols-outlined">thermostat</span>
-          <span data-i18n="monitoring">ការត្រួតពិនិត្យ</span>
-        </a>
-        <a href="/disease-detection" class="quick-btn">
-          <span class="material-symbols-outlined">biotech</span>
-          <span data-i18n="disease_detection">ការរកឃើញជំងឺ</span>
-        </a>
-        <a href="/schedules" class="quick-btn">
-          <span class="material-symbols-outlined">schedule</span>
-          <span data-i18n="schedules">កាលវិភាគ</span>
-        </a>
-        <a href="/profile" class="quick-btn">
-          <span class="material-symbols-outlined">account_circle</span>
-          <span data-i18n="my_profile">គណនីខ្ញុំ</span>
-        </a>
-      </div>
-    </div>
+  <!-- Admin View -->
+  <div v-else-if="isAdmin" class="dashboard-content">
+     <!-- Admin Toolkit (Handled separately) -->
+     <div id="admin-toolkit-placeholder"></div>
+     <div class="tok-card" style="text-align: center; padding: 48px 24px;">
+        <span class="material-symbols-outlined" style="font-size: 48px; color: var(--tok-teal);">shield_person</span>
+        <h2 style="margin-top: 16px;">Admin Access</h2>
+        <p style="color: var(--tok-text-secondary); margin-top: 8px;">You are currently logged in with administrative privileges.</p>
+        <a href="/admin" class="tok-btn tok-btn-primary" style="margin-top: 24px; width: 100%; text-decoration: none;">Go to Admin Portal</a>
+     </div>
+  </div>
 
-  </template>
-
-</div><!-- #app -->
+</div>
 
 <div id="navbar-placeholder"></div>
 
 <!-- Scripts -->
-<script src="/js/utils/i18n.js"></script>
-<script src="/js/utils/api.js"></script>
-<script src="/js/utils/components.js"></script>
+<script src="/js/utils/i18n.js?v=1.5"></script>
+<script src="/js/utils/api.js?v=1.5"></script>
+<script src="/js/utils/components.js?v=1.5"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script>
-const { createApp } = Vue;
+<script src="/js/index.js?v=1.5"></script>
 
-createApp({
-  data() {
-    return {
-      loading:      true,
-      farms:        [],
-      selectedFarmId: null,
-      coops:        [],
-      selectedCoopId: null,
-      temp:         null,
-      humidity:     null,
-      coopChickens: null,
-      coopCapacity: null,
-      devices:      [],
-      lastUpdated:  '--',
-      wsConnected:  false,
-      ws:           null,
-    };
-  },
-  computed: {
-    currentFarm() {
-      return this.farms.find(f => f.id === this.selectedFarmId) || null;
-    }
-  },
-  async mounted() {
-    if (!window.API.requireAuth()) return;
-    await loadComponents();
-    await this.loadFarms();
-  },
-  methods: {
-    t(k) { return window.i18n ? window.i18n.t(k) : k; },
-
-    async loadFarms() {
-      this.loading = true;
-      try {
-        const data = await window.API.get('/v1/farms');
-        this.farms = (data && data.data && data.data.farms) ? data.data.farms : [];
-        if (this.farms.length > 0) {
-          const saved = window.API.getSelectedFarmId();
-          const match = saved && this.farms.find(f => String(f.id) === saved);
-          this.selectedFarmId = match ? match.id : this.farms[0].id;
-          window.API.setSelectedFarmId(this.selectedFarmId);
-          if (this.farms[0] && this.farms[0].name) localStorage.setItem('farm_name', this.farms[0].name);
-          await this.loadCoops();
-        }
-      } catch(e) { console.error(e); }
-      finally { this.loading = false; }
-    },
-
-    async onFarmChange() {
-      window.API.setSelectedFarmId(this.selectedFarmId);
-      await this.loadCoops();
-    },
-
-    async loadCoops() {
-      const fid = this.selectedFarmId;
-      if (!fid) return;
-      try {
-        const data = await window.API.get('/v1/farms/' + fid + '/coops');
-        this.coops = (data && data.data && data.data.coops) ? data.data.coops : [];
-        if (this.coops.length > 0) {
-          const saved = window.API.getSelectedCoopId();
-          const match = saved && this.coops.find(c => String(c.id) === saved);
-          await this.selectCoop(match || this.coops[0]);
-        }
-        await this.loadDevices();
-      } catch(e) { console.error(e); }
-    },
-
-    async selectCoop(coop) {
-      this.selectedCoopId = coop.id;
-      window.API.setSelectedCoopId(coop.id);
-      await this.loadCoopData(coop.id);
-      this.connectWS();
-    },
-
-    async loadCoopData(coopId) {
-      const fid = this.selectedFarmId;
-      if (!fid || !coopId) return;
-      try {
-        const data = await window.API.get('/v1/farms/' + fid + '/coops/' + coopId);
-        const c = data && data.data ? data.data : {};
-        this.temp         = c.temperature !== undefined ? c.temperature : null;
-        this.humidity     = c.humidity    !== undefined ? c.humidity    : null;
-        this.coopChickens = c.current_count !== undefined ? c.current_count : null;
-        this.coopCapacity = c.capacity     !== undefined ? c.capacity     : null;
-        this.lastUpdated  = c.last_updated ? new Date(c.last_updated).toLocaleTimeString() : '--';
-      } catch(e) { console.error(e); }
-    },
-
-    async loadDevices() {
-      const fid = this.selectedFarmId;
-      if (!fid) return;
-      try {
-        const data = await window.API.get('/v1/farms/' + fid + '/devices');
-        const raw = (data && data.data && data.data.devices) ? data.data.devices : [];
-        this.devices = raw.map(d => ({ ...d, loading: false }));
-      } catch(e) { console.error(e); }
-    },
-
-    async toggleDevice(device) {
-      device.loading = true;
-      const cmd = device.last_state === 'on' ? 'turn_off' : 'turn_on';
-      try {
-        await window.API.post('/v1/devices/' + device.id + '/command', { command_type: cmd });
-        device.last_state = device.last_state === 'on' ? 'off' : 'on';
-      } catch(e) { console.error(e); }
-      finally { device.loading = false; }
-    },
-
-    deviceIcon(type) {
-      const icons = {
-        water_pump: 'water_pump', fan: 'mode_fan', light: 'light_mode',
-        feeder: 'restaurant', heater: 'mode_heat', conveyor: 'conveyor_belt',
-        sensor: 'sensors', default: 'electrical_services'
-      };
-      return icons[type] || icons.default;
-    },
-
-    connectWS() {
-      if (this.ws) { try { this.ws.close(); } catch(_) {} }
-      const token  = localStorage.getItem('access_token');
-      const fid    = this.selectedFarmId;
-      const coopId = this.selectedCoopId;
-      if (!token || !fid || !coopId) return;
-      try {
-        const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-        this.ws = new WebSocket(proto + '://' + location.host + '/v1/ws?token=' + token + '&farm_id=' + fid + '&coop_id=' + coopId);
-        this.ws.onopen  = () => { this.wsConnected = true; };
-        this.ws.onclose = () => { this.wsConnected = false; };
-        this.ws.onerror = () => { this.wsConnected = false; };
-        this.ws.onmessage = (ev) => {
-          try {
-            const msg = JSON.parse(ev.data);
-            if (msg.temperature !== undefined) this.temp     = msg.temperature;
-            if (msg.humidity    !== undefined) this.humidity = msg.humidity;
-            this.lastUpdated = new Date().toLocaleTimeString();
-          } catch(_) {}
-        };
-      } catch(e) { console.warn('[WS]', e); }
-    }
-  },
-
-  beforeUnmount() {
-    if (this.ws) try { this.ws.close(); } catch(_) {}
-  }
-}).mount('#app');
-</script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </body>
 </html>

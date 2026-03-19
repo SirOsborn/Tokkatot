@@ -3,188 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>ការបន្ទាប់បន្សំ – Tokkatot</title>
+  <title>Monitoring - Tokkatot</title>
   <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#20a39e" />
+  
+  <!-- Tokkatot Design System (Modular) -->
+  <link rel="stylesheet" href="/css/theme.css?v=1.5" />
+  <link rel="stylesheet" href="/css/layout.css?v=1.5" />
+  <link rel="stylesheet" href="/css/monitoring.css?v=1.5" />
+  
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  <style>
-    /* ── Reset & base ─────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; font-family: inherit; }
-
-    body {
-      min-height: 100vh;
-      color: #fff;
-      transition: background 1s ease;
-      overflow-x: hidden;
-      /* Account for shared header + bottom nav */
-      padding-top: var(--header-height, 60px);
-      padding-bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom, 0px));
-    }
-
-    /* ── Background gradients per bg_hint ────────────────────── */
-    body.bg-scorching { background: linear-gradient(to bottom, #7f0000, #bf2c00, #e85d04); }
-    body.bg-hot       { background: linear-gradient(to bottom, #c1121f, #e85d04, #f48c06); }
-    body.bg-warm      { background: linear-gradient(to bottom, #e85d04, #f48c06, #faa307); }
-    body.bg-neutral   { background: linear-gradient(to bottom, #2d6a4f, #40916c, #74c69d); }
-    body.bg-cool      { background: linear-gradient(to bottom, #023e8a, #0077b6, #0096c7); }
-    body.bg-cold      { background: linear-gradient(to bottom, #03045e, #023e8a, #0077b6); }
-
-    /* ── Glass card utility ───────────────────────────────────── */
-    .glass {
-      background: rgba(255,255,255,0.15);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 20px;
-    }
-
-    /* ── Layout wrapper ───────────────────────────────────────── */
-    .page-wrap {
-      max-width: 560px;
-      margin: 0 auto;
-      padding: 16px 16px 32px;
-    }
-
-    /* ── Back nav ─────────────────────────────────────────────── */
-    .top-nav {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 20px 0 12px;
-    }
-    .back-btn {
-      background: rgba(255,255,255,0.2);
-      border: none;
-      border-radius: 50%;
-      width: 38px; height: 38px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      color: #fff;
-      font-size: 18px;
-    }
-    .top-nav h1 { font-size: 16px; font-weight: 600; opacity: .9; }
-
-    /* ── Coop picker ──────────────────────────────────────────── */
-    #coop-picker {
-      width: 100%;
-      background: rgba(255,255,255,0.18);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 15px;
-      margin-bottom: 20px;
-      outline: none;
-      cursor: pointer;
-    }
-    #coop-picker option { background: #333; color: #fff; }
-
-    /* ── Hero – current temp ──────────────────────────────────── */
-    .hero {
-      text-align: center;
-      padding: 24px 0 16px;
-    }
-    .hero .coop-label { font-size: 14px; opacity: .75; margin-bottom: 4px; }
-    .hero .temp-big   { font-size: 88px; font-weight: 200; line-height: 1; }
-    .hero .temp-big sup { font-size: 36px; font-weight: 300; vertical-align: top; margin-top: 16px; display: inline-block; }
-    .hero .hl-row     { font-size: 15px; opacity: .85; margin-top: 6px; letter-spacing: .4px; }
-    .hero .hint-badge {
-      display: inline-block;
-      background: rgba(255,255,255,0.2);
-      border-radius: 20px;
-      padding: 3px 12px;
-      font-size: 12px;
-      margin-top: 8px;
-      text-transform: capitalize;
-    }
-
-    /* ── No sensor notice ─────────────────────────────────────── */
-    .no-sensor {
-      text-align: center;
-      padding: 48px 16px;
-      opacity: .8;
-    }
-    .no-sensor h2 { font-size: 20px; margin-bottom: 8px; }
-    .no-sensor p  { font-size: 14px; }
-
-    /* ── Hourly scroll strip ──────────────────────────────────── */
-    .section-title { font-size: 12px; font-weight: 600; letter-spacing: 1px; opacity: .7; text-transform: uppercase; margin-bottom: 8px; }
-
-    .hourly-strip {
-      display: flex;
-      gap: 0;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-      padding: 16px 12px;
-    }
-    .hourly-strip::-webkit-scrollbar { display: none; }
-    .hour-cell {
-      flex: 0 0 54px;
-      text-align: center;
-    }
-    .hour-cell .h-time { font-size: 11px; opacity: .7; }
-    .hour-cell .h-temp { font-size: 15px; font-weight: 600; margin-top: 6px; }
-
-    /* ── SVG graph ────────────────────────────────────────────── */
-    #svg-wrap {
-      width: 100%;
-      overflow: hidden;
-      border-radius: 20px;
-      margin-bottom: 16px;
-    }
-    #temp-svg { display: block; }
-
-    /* ── Daily history list ───────────────────────────────────── */
-    .history-list { display: flex; flex-direction: column; gap: 8px; }
-    .day-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px;
-    }
-    .day-card .day-label { font-size: 15px; font-weight: 600; min-width: 90px; }
-    .day-card .day-bar-wrap {
-      flex: 1;
-      margin: 0 12px;
-      height: 4px;
-      background: rgba(255,255,255,0.25);
-      border-radius: 4px;
-      position: relative;
-    }
-    .day-card .day-bar {
-      position: absolute;
-      top: 0; bottom: 0;
-      background: rgba(255,255,255,0.7);
-      border-radius: 4px;
-    }
-    .day-card .day-hl {
-      font-size: 13px;
-      text-align: right;
-      min-width: 80px;
-    }
-    .day-card .day-hl .dh { font-weight: 600; }
-    .day-card .day-hl .dl { opacity: .65; margin-left: 6px; }
-
-    /* ── Spinner ──────────────────────────────────────────────── */
-    .spinner-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 60px 0;
-    }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
 </head>
-<body class="bg-warm">
+<body class="bg-warm monitoring-page">
 
 <div id="header-placeholder"></div>
 
@@ -205,7 +36,7 @@
     <!-- Hourly strip -->
     <div class="glass" style="margin-bottom:16px">
       <div style="padding:14px 16px 0">
-        <div class="section-title">Today — Hourly</div>
+        <div class="section-title" data-i18n="hourly_today">Today — Hourly</div>
       </div>
       <div class="hourly-strip" id="hourly-strip"></div>
     </div>
@@ -235,7 +66,7 @@
 
     <!-- Daily history -->
     <div class="glass" style="padding:16px 18px">
-      <div class="section-title" style="margin-bottom:12px">Daily History</div>
+      <div class="section-title" style="margin-bottom:12px" data-i18n="temperature_history">Daily History</div>
       <div class="history-list" id="history-list"></div>
     </div>
 
@@ -243,50 +74,52 @@
 
   <!-- No sensor -->
   <div id="no-sensor" class="no-sensor" style="display:none">
-    <h2>No Sensor Found</h2>
-    <p>This coop does not have an active temperature sensor attached.</p>
+    <h2 data-i18n="no_sensor_found">No Sensor Found</h2>
+    <p data-i18n="no_sensor_msg">This coop does not have an active temperature sensor attached.</p>
   </div>
 
 </div><!-- /page-wrap -->
 
 <div id="navbar-placeholder"></div>
 
-<script src="/js/utils/i18n.js"></script>
-<script src="/js/utils/api.js"></script>
-<script src="/js/utils/components.js"></script>
+<script src="/js/utils/i18n.js?v=1.5"></script>
+<script src="/js/utils/api.js?v=1.5"></script>
+<script src="/js/utils/components.js?v=1.5"></script>
 <script>
-  // ── State ──────────────────────────────────────────────────────────────────
+  // -- State --
   let farmId = null;
   let coops  = [];
 
-  // ── Auth fetch wrapper (uses window.API) ──────────────────────────────────
   async function apiFetch(path) {
     return window.API.get(path);
   }
 
-  // ── Init ───────────────────────────────────────────────────────────────────
   async function init() {
     if (!window.API.requireAuth()) return;
     await loadComponents();
 
-    // Fetch farms — prefer locally stored farm id
     const storedFarm = window.API.getSelectedFarmId();
     const farmsRes = await apiFetch('/v1/farms');
-    if (!farmsRes || !farmsRes.success || !farmsRes.data || farmsRes.data.length === 0) {
+    if (!farmsRes || !farmsRes.success || !farmsRes.data?.farms || farmsRes.data.farms.length === 0) {
       return showError('No farms found');
     }
-    farmId = storedFarm || farmsRes.data[0].id;
+    farmId = storedFarm || farmsRes.data.farms[0].id;
 
-    // Fetch coops
     const coopsRes = await apiFetch(`/v1/farms/${farmId}/coops`);
-    if (!coopsRes || !coopsRes.success || !coopsRes.data || coopsRes.data.length === 0) {
+    if (!coopsRes || !coopsRes.success) {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('no-sensor').style.display = 'block';
       return;
     }
-    coops = coopsRes.data;
+    const coopsRaw = (coopsRes.data && coopsRes.data.coops) ? coopsRes.data.coops
+                   : Array.isArray(coopsRes.data) ? coopsRes.data : [];
+    if (coopsRaw.length === 0) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('no-sensor').style.display = 'block';
+      return;
+    }
+    coops = coopsRaw;
 
-    // Build picker
     const picker = document.getElementById('coop-picker');
     coops.forEach(c => {
       const opt = document.createElement('option');
@@ -299,7 +132,6 @@
     await loadCoop(coops[0].id);
   }
 
-  // ── Load one coop ─────────────────────────────────────────────────────────
   async function loadCoop(coopId) {
     document.getElementById('loading').style.display  = 'flex';
     document.getElementById('content').style.display  = 'none';
@@ -308,7 +140,7 @@
     const data = await apiFetch(`/v1/farms/${farmId}/coops/${coopId}/temperature-timeline?days=7`);
     document.getElementById('loading').style.display = 'none';
 
-    if (!data.success) return showError('Failed to load temperature data');
+    if (!data.success) return showError(this.t('error'));
 
     const d = data.data;
 
@@ -317,32 +149,21 @@
       return;
     }
 
-    // Apply background
     applyBg(d.bg_hint);
-
-    // Hero
     renderHero(d);
-
-    // Hourly strip
     renderHourly(d.today && d.today.hourly ? d.today.hourly : []);
-
-    // SVG graph
     renderGraph(d.today);
-
-    // History
     renderHistory(d.history || []);
 
     document.getElementById('content').style.display = 'block';
   }
 
-  // ── Background ───────────────────────────────────────────────────────────
   const bgClasses = ['bg-scorching','bg-hot','bg-warm','bg-neutral','bg-cool','bg-cold'];
   function applyBg(hint) {
     document.body.classList.remove(...bgClasses);
     document.body.classList.add('bg-' + hint);
   }
 
-  // ── Hero ─────────────────────────────────────────────────────────────────
   function renderHero(d) {
     const temp  = d.current_temp != null ? d.current_temp.toFixed(1) : '--';
     const high  = d.today && d.today.high ? `${d.today.high.temp}°` : '--';
@@ -357,11 +178,10 @@
     `;
   }
 
-  // ── Hourly strip ─────────────────────────────────────────────────────────
   function renderHourly(hourly) {
     const strip = document.getElementById('hourly-strip');
     if (!hourly.length) {
-      strip.innerHTML = '<div style="padding:8px 16px;opacity:.6;font-size:13px">No readings yet today</div>';
+      strip.innerHTML = `<div style="padding:8px 16px;opacity:.6;font-size:13px" data-i18n="no_readings">No readings found</div>`;
       return;
     }
     strip.innerHTML = hourly.map(h => `
@@ -372,7 +192,6 @@
     `).join('');
   }
 
-  // ── SVG graph ─────────────────────────────────────────────────────────────
   function renderGraph(today) {
     const linePath = document.getElementById('line-path');
     const fillPath = document.getElementById('fill-path');
@@ -389,7 +208,6 @@
     const svgW = 480, svgH = 130, pad = 10;
     const plotH = svgH - pad * 2;
 
-    // Build points: x = hour/23 * svgW, y = mapped temp
     function hourToX(hStr) {
       const [h, m] = hStr.split(':').map(Number);
       return ((h + m / 60) / 24) * svgW;
@@ -404,7 +222,6 @@
     function tempToY(t) { return pad + plotH - ((t - minT) / range) * plotH; }
     const mapped = pts.map(p => ({ x: p.x, y: tempToY(p.temp) }));
 
-    // Smooth bezier path
     let d = `M ${mapped[0].x} ${mapped[0].y}`;
     for (let i = 1; i < mapped.length; i++) {
       const prev = mapped[i - 1], cur = mapped[i];
@@ -413,12 +230,10 @@
     }
     linePath.setAttribute('d', d);
 
-    // Fill path (close bottom)
     const last = mapped[mapped.length - 1];
     const fillD = d + ` L ${last.x} ${svgH} L ${mapped[0].x} ${svgH} Z`;
     fillPath.setAttribute('d', fillD);
 
-    // H/L markers
     if (today.high && today.high.time) {
       const hx = hourToX(today.high.time);
       const hy = tempToY(today.high.temp);
@@ -437,14 +252,12 @@
     }
   }
 
-  // ── Daily history ─────────────────────────────────────────────────────────
   function renderHistory(history) {
     const list = document.getElementById('history-list');
     if (!history.length) {
       list.innerHTML = '<p style="opacity:.6;font-size:13px">No historical data available</p>';
       return;
     }
-    // overall range for bar scaling
     const allHighs = history.map(d => d.high.temp);
     const allLows  = history.map(d => d.low.temp);
     const rangeMin = Math.min(...allLows);
@@ -470,7 +283,6 @@
     }).join('');
   }
 
-  // ── Utilities ─────────────────────────────────────────────────────────────
   function escHtml(str) {
     return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -480,7 +292,6 @@
     document.getElementById('no-sensor').querySelector('p').textContent = msg;
   }
 
-  // ── Start ─────────────────────────────────────────────────────────────────
   init().catch(err => { console.error(err); showError('Unexpected error — ' + err.message); });
 </script>
 </body>

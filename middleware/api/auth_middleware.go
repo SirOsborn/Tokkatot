@@ -35,6 +35,15 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	c.Locals("farm_id", claims.FarmID)
 	c.Locals("role", claims.Role)
 
+	// Hardened Deactivation Check: Verify user is still active in real-time
+	isActive, err := adminService.IsUserActive(claims.UserID)
+	if err != nil {
+		return utils.Unauthorized(c, "Authentication failed: could not verify account status")
+	}
+	if !isActive {
+		return utils.Unauthorized(c, "This account has been deactivated. Access denied.")
+	}
+
 	return c.Next()
 }
 
@@ -131,4 +140,25 @@ func GetRoleFromContext(c *fiber.Ctx) string {
 	}
 
 	return role
+}
+
+// AdminMiddleware ensures the user has administrator privileges
+func AdminMiddleware(c *fiber.Ctx) error {
+	role := GetRoleFromContext(c)
+	if role != "admin" {
+		return utils.Forbidden(c, "Administrator privileges required")
+	}
+
+	// Verify admin is still active
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Authentication failed")
+	}
+
+	isActive, err := adminService.IsUserActive(userID)
+	if err != nil || !isActive {
+		return utils.Unauthorized(c, "Administrator account deactivated or inaccessible")
+	}
+
+	return c.Next()
 }

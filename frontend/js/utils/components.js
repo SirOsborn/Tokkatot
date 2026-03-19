@@ -43,9 +43,11 @@
     });
   }
 
-  function updateLangButton() {
-    var btn = document.getElementById('lang-toggle-btn');
-    if (btn) btn.textContent = (window.i18n ? window.i18n.getLang() : 'km').toUpperCase();
+  function updateAvatarImg() {
+    var img = document.getElementById('header-avatar-img');
+    if (!img) return;
+    var role = localStorage.getItem('user_role') || 'farmer';
+    img.src = '/assets/images/' + role + '-avatar.png';
   }
 
   function loadFarmName() {
@@ -91,20 +93,22 @@
 
     /* Post-inject setup */
     highlightActiveNav();
-    updateLangButton();
+    updateAvatarImg();
     loadFarmName();
+
+    /* Hide farmer-specific nav tabs for admin */
+    var role = localStorage.getItem('user_role');
+    if (role === 'admin') {
+      var hiddenNavKeys = ['monitoring', 'disease', 'schedules'];
+      document.querySelectorAll('#app-navbar .nav-item').forEach(function (item) {
+        if (hiddenNavKeys.indexOf(item.getAttribute('data-nav')) !== -1) {
+          item.style.display = 'none';
+        }
+      });
+    }
 
     if (window.i18n && window.i18n.applyAll) {
       window.i18n.applyAll();
-    }
-  };
-
-  /* Expose toggle so header button can call it */
-  window.headerToggleLang = function () {
-    if (window.i18n) {
-      window.i18n.toggleLang();
-      updateLangButton();
-      if (window.i18n.applyAll) window.i18n.applyAll();
     }
   };
 

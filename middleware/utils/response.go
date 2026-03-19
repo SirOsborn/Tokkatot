@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"middleware/models"
+	"middleware/schemas"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -19,7 +19,7 @@ func SuccessResponse(c *fiber.Ctx, statusCode int, data interface{}, message str
 func SuccessListResponse(c *fiber.Ctx, data interface{}, total int64, page, limit int) error {
 	totalPages := CalculateTotalPages(total, limit)
 
-	response := models.PaginatedResponse{
+	response := schemas.PaginatedResponse{
 		Data:       data,
 		Total:      total,
 		Page:       page,
@@ -36,7 +36,7 @@ func SuccessListResponse(c *fiber.Ctx, data interface{}, total int64, page, limi
 
 // ErrorResponse sends a standard error response
 func ErrorResponse(c *fiber.Ctx, statusCode int, code string, message string) error {
-	response := models.ErrorResponse{
+	response := schemas.ErrorResponse{
 		Code:    code,
 		Message: message,
 	}
