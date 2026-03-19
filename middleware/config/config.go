@@ -24,6 +24,10 @@ type Config struct {
 	// JWT
 	JWTSecret string
 
+	// Initial Admin
+	InitialAdminEmail    string
+	InitialAdminPassword string
+
 	// Environment
 	Environment string
 }
@@ -38,27 +42,35 @@ func LoadConfig() *Config {
 
 	config := &Config{
 		// Database configuration
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "postgres"),
-		DBName:     getEnv("DB_NAME", "tokkatot"),
-		DBSSLMode:  getEnv("DB_SSLMODE", "disable"), // "disable" for local, "require" for production
+		DBHost:     getEnv("DB_HOST", ""),
+		DBPort:     getEnv("DB_PORT", ""),
+		DBUser:     getEnv("DB_USER", ""),
+		DBPassword: getEnv("DB_PASSWORD", ""),
+		DBName:     getEnv("DB_NAME", ""),
+		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
 		// Server configuration
 		ServerPort: getEnv("SERVER_PORT", "3000"),
 		ServerHost: getEnv("SERVER_HOST", "0.0.0.0"),
 
 		// JWT configuration
-		JWTSecret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		JWTSecret: getEnv("JWT_SECRET", ""),
+
+		// Initial Admin (Must be set in .env)
+		InitialAdminEmail:    getEnv("INITIAL_ADMIN_EMAIL", ""),
+		InitialAdminPassword: getEnv("INITIAL_ADMIN_PASSWORD", ""),
 
 		// Environment
 		Environment: getEnv("ENVIRONMENT", "development"),
 	}
 
 	// Validate required fields
-	if config.JWTSecret == "your-secret-key-change-in-production" && config.Environment == "production" {
-		log.Fatal("JWT_SECRET must be set in production environment")
+	if config.JWTSecret == "" || config.InitialAdminEmail == "" || config.InitialAdminPassword == "" || config.DBHost == "" || config.DBName == "" {
+		if config.Environment == "production" {
+			log.Fatal("CRITICAL: All database, JWT, and admin variables MUST be set in .env for production.")
+		} else {
+			log.Println("⚠️  Warning: Some environment variables (DB_HOST, JWT_SECRET, etc.) are missing. The app may fail to connect.")
+		}
 	}
 
 	AppConfig = config
