@@ -5,19 +5,42 @@ This file is the primary context and instruction set for AI agents (Claude, GPT,
 ---
 
 ## 🧐 What is Tokkatot?
-Tokkatot is an **AI-powered Smart Poultry Farm Management System** specifically designed for Cambodian farmers. It integrates IoT sensor hardware with deep learning disease detection to improve farm productivity.
+Tokkatot is a **smart poultry farm management system** designed for Cambodian farmers. It integrates IoT sensor hardware, automated coop controls, and (later) AI disease detection to improve farm productivity.
 
 ## 🎯 Why Tokkatot? (The "Why")
 - **Accessibility**: UI must be high-contrast, large-font, and support Khmer natively.
 - **Maintainability**: One-page, one-stylesheet philosophy. Avoid long, monolithic files.
-- **Disease Prevention**: Early detection from manure photos prevents farm-wide outbreaks.
+- **Disease Prevention**: AI detection is planned for a later patch.
 - **Zero Cost**: Registration Key system ensures no SMS/Email verification costs for users.
 
 ## 🏗️ How it Works (The "How")
 - **Frontend**: Vue.js 3 (CDN-based PWA) with a **Modular CSS Architecture**.
 - **Middleware**: Go 1.23 + Fiber v2. REST API + WebSocket + PostgreSQL.
-- **AI Service**: Python FastAPI + PyTorch Ensemble.
-- **Embedded**: ESP32 (C/ESP-IDF) + MQTT local hub.
+- **AI Service**: Python FastAPI + PyTorch Ensemble (not integrated yet).
+- **Embedded**: ESP32 (ESP-IDF) controlled by a Raspberry Pi 4B gateway.
+
+## 📊 Data Hierarchy
+1.  **User**: Farmer or worker (role-based access).
+2.  **Farm**: Physical location owned by a User.
+3.  **Coop**: Primary control unit. All automation is **coop-level**.
+4.  **Device**: Sensors and actuators assigned to a coop. Missing devices are allowed and marked inactive.
+
+## 🌐 API & Communication (Cloud)
+- **Auth**: `/v1/auth/signup`, `/v1/auth/login`, `/v1/auth/refresh`, `/v1/auth/logout` (no email/SMS verification).
+- **Farms**: `/v1/farms`, `/v1/farms/:id/members`.
+- **Coops**: `/v1/farms/:farm_id/coops`, `/v1/farms/:farm_id/coops/:coop_id`.
+- **Devices**: `/v1/farms/:id/devices`, `/v1/farms/:id/devices/:id/commands`.
+- **Schedules**: `/v1/farms/:id/schedules` (coop-level).
+- **Telemetry**: `/v1/farms/:farm_id/coops/:coop_id/telemetry` (gateway → cloud).
+- **Device Report**: `/v1/farms/:farm_id/coops/:coop_id/devices/report` (gateway → cloud).
+- **Monitoring Timeline**: `/v1/farms/:farm_id/coops/:coop_id/temperature-timeline`.
+
+## 📡 Embedded & IoT
+- **Platform**: ESP32 (ESP-IDF) + Raspberry Pi 4B gateway.
+- **Protocol**: ESP32 exposes local HTTPS endpoints; Pi polls sensors and executes commands.
+- **Logic**: ON/OFF relays + schedule sequences executed by gateway.
+- **Telemetry**: Pi posts temperature/humidity/water level to cloud.
+- **Water Alert Rule**: Water below half threshold for 1 minute triggers alert.
 
 ---
 
