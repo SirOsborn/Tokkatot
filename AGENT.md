@@ -40,6 +40,8 @@ Tokkatot is a **smart poultry farm management system** designed for Cambodian fa
 - **Protocol**: ESP32 exposes local HTTPS endpoints; Pi polls sensors and executes commands.
 - **Logic**: ON/OFF relays + schedule sequences executed by gateway.
 - **Telemetry**: Pi posts temperature/humidity/water level to cloud.
+- **Water System**: floating valve only (no pump). Water sensor is monitor-only.
+- **Feeding System**: high-torque feeder motor (relay on/off).
 - **Water Alert Rule**: Water below half threshold for 1 minute triggers alert.
 
 ---

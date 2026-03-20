@@ -17,7 +17,7 @@ This guide is a practical overview for farmers and installers. It covers the coo
 A coop can have some or all of these:
 
 **Actuators (scheduled)**
-- `feeder_motor` (relay ON/OFF)
+- `feeder_motor` (high-torque motor, relay ON/OFF)
 - `conveyor_belt` (relay ON/OFF)
 - `fan` (relay ON/OFF)
 - `heater` (relay ON/OFF)
@@ -79,7 +79,7 @@ ESP32 controls relays and reads sensors locally.
 - Conveyor belt relay → `GPIO25` (`CONVEYER_PIN`)
 - Fan relay → `GPIO26` (`FAN_PIN`)
 - Heater relay → `GPIO14` (`LIGHTBULB_PIN`)  *(heater now replaces bulb)*
-- Feeder motor relay → `GPIO27` (`WATERPUMP_PIN`) *(repurposed for feeder motor)*
+- Feeder motor relay → `GPIO27` (`WATERPUMP_PIN`) *(repurposed for high-torque feeder motor)*
 
 **Sensors**
 - Temp/Humidity (DHT22) → `GPIO32` (`DHT22_PIN`)

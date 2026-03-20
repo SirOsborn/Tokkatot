@@ -8,3 +8,7 @@ If you change any table/column/index:
 - Consider migration scripts (if needed)
 - Update this file with brief rationale
 
+Recent schema additions:
+- `coops.temp_min` / `coops.temp_max` for threshold control
+- `coops.water_level_half_threshold` for water alert calibration
+- `alerts.is_acknowledged` for alert state
