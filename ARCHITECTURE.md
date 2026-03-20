@@ -10,17 +10,17 @@ Tokkatot is designed as a multi-tier IoT system centered around local farm coops
 
 ```mermaid
 graph TD
-    A[Farmer App - Vue.js 3] <-->|HTTPS/WSS| B[Go Middleware - cloud]
-    B <-->|REST| C[AI Service - FastAPI/PyTorch]
-    B <-->|WebSocket| D[Raspberry Pi - Local Farm Hub]
-    D <-->|MQTT/WiFi| E[ESP32 - Coop Sensors & Actuators]
+    A["Farmer App - Vue.js 3"] <-->|"HTTPS/WSS"| B["Go Middleware - Cloud"]
+    B <-->|"REST"| C["AI Service - FastAPI/PyTorch (future)"]
+    B <-->|"WebSocket"| D["Raspberry Pi 4B - Coop Gateway"]
+    D <-->|"HTTPS (Local)"| E["ESP32 - Coop Sensors & Actuators"]
 ```
 
 ### 📊 Data Hierarchy
-1.  **User**: A farmer or worker with a phone number and password.
-2.  **Farm**: A physical location owned by a User.
-3.  **Coop**: A bird-housing unit within a farm. Devices are assigned to Coops.
-4.  **Device**: Sensors (DHT22, Water Level) or Actuators (Pumps, Fans, Feeders).
+1.  **User**: Farmer or worker (role-based access).
+2.  **Farm**: Container for coops and ownership.
+3.  **Coop**: Primary control unit. All automation is coop-level.
+4.  **Device**: Sensors/actuators assigned to coops. Missing devices are allowed and marked inactive.
 
 ---
 
@@ -48,7 +48,10 @@ The system uses a **Unified Schema** where user identity and farm ownership are 
 - **User**: `/v1/users/me`, `/v1/users/sessions`.
 - **Farms**: `/v1/farms`, `/v1/farms/:id/members`.
 - **Devices**: `/v1/farms/:id/devices`, `/v1/farms/:id/devices/:id/commands`.
-- **Schedules**: `/v1/farms/:id/schedules`.
+- **Schedules**: `/v1/farms/:id/schedules` (coop-level execution).
+- **Telemetry**: `/v1/farms/:farm_id/coops/:coop_id/telemetry` (gateway → cloud).
+- **Device Report**: `/v1/farms/:farm_id/coops/:coop_id/devices/report` (gateway → cloud).
+- **Monitoring Timeline**: `/v1/farms/:farm_id/coops/:coop_id/temperature-timeline`.
 
 ### WebSocket (Real-time)
 - **Endpoint**: `/v1/ws`
@@ -59,19 +62,17 @@ The system uses a **Unified Schema** where user identity and farm ownership are 
 
 ## 🤖 AI Disease Detection
 
-The AI Service is a **Python FastAPI** application running a **PyTorch Ensemble** model.
-- **Backbone**: EfficientNetB0 + DenseNet121.
-- **Input**: 224x224 RGB image of manure.
-- **Output**: Classification of 5 diseases (Healthy, Newcastle, Coccidiosis, etc.) with confidence scores.
+The AI Service is planned for a later patch and is **not integrated yet**.
 
 ---
 
 ## 📡 Embedded & IoT
 
-- **Platform**: ESP32 (ESP-IDF).
-- **Protocol**: MQTT over local WiFi.
-- **Logic**: Idempotent command execution (ON/OFF/PWM/Sequence).
-- **Heartbeat**: 30s heartbeat to maintain "online" status in the dashboard.
+- **Platform**: ESP32 (ESP-IDF) + Raspberry Pi 4B gateway.
+- **Protocol**: ESP32 exposes local HTTPS endpoints; Pi polls sensors and executes commands.
+- **Logic**: ON/OFF relays + sequence schedules executed by gateway.
+- **Telemetry**: Pi posts temperature/humidity/water level to cloud.
+- **Water Alert Rule**: Water below half threshold for 1 minute triggers alert.
 
 ---
 
