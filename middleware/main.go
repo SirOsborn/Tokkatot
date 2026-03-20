@@ -188,6 +188,8 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Put("/farms/:farm_id/coops/:coop_id", api.UpdateCoopHandler)
 	protected.Delete("/farms/:farm_id/coops/:coop_id", api.DeleteCoopHandler)
 	protected.Get("/farms/:farm_id/coops/:coop_id/temperature-timeline", api.TemperatureTimelineHandler)
+	protected.Post("/farms/:farm_id/coops/:coop_id/telemetry", api.PostCoopTelemetryHandler)
+	protected.Post("/farms/:farm_id/coops/:coop_id/devices/report", api.ReportCoopDevicesHandler)
 
 	// Device management endpoints
 	protected.Get("/farms/:farm_id/devices", api.ListDevicesHandler)

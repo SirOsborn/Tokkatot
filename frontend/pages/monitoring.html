@@ -98,6 +98,10 @@
     return window.API.get(path);
   }
 
+  function t(k) {
+    return window.i18n ? window.i18n.t(k) : k;
+  }
+
   async function init() {
     if (!window.API.requireAuth()) return;
     await loadComponents();
@@ -202,6 +206,7 @@
 
   function renderHero(d) {
     const temp  = d.current_temp != null ? d.current_temp.toFixed(1) : '--';
+    const hum   = d.current_humidity != null ? `${Math.round(d.current_humidity)}%` : '--';
     const high  = d.today && d.today.high ? `${d.today.high.temp}°` : '--';
     const highT = d.today && d.today.high ? d.today.high.time : '';
     const low   = d.today && d.today.low  ? `${d.today.low.temp}°` : '--';
@@ -210,6 +215,7 @@
       <p class="coop-label">${escHtml(d.coop_name || 'Coop')}</p>
       <div class="temp-big">${temp}<sup>°C</sup></div>
       <div class="hl-row">H: ${high} at ${highT} &nbsp;·&nbsp; L: ${low} at ${lowT}</div>
+      <div class="hl-row">${t('humidity')}: ${hum}</div>
       <span class="hint-badge">${d.bg_hint}</span>
     `;
   }

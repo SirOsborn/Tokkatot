@@ -34,7 +34,7 @@ func (s *DeviceService) ListDevices(userID, farmID uuid.UUID, coopID *uuid.UUID,
 		return nil, 0, err
 	}
 
-	query := `SELECT id, farm_id, coop_id, device_id, name, type, firmware_version, hardware_id, location, is_active, is_online, last_heartbeat, created_at FROM devices WHERE farm_id = $1`
+	query := `SELECT id, farm_id, coop_id, device_id, name, type, firmware_version, hardware_id, location, is_active, is_online, last_heartbeat, created_at FROM devices WHERE farm_id = $1 AND is_active = true`
 	args := []interface{}{farmID}
 	nextArg := 2
 
@@ -69,7 +69,7 @@ func (s *DeviceService) ListDevices(userID, farmID uuid.UUID, coopID *uuid.UUID,
 	}
 
 	var total int64
-	database.DB.QueryRow("SELECT COUNT(*) FROM devices WHERE farm_id = $1", farmID).Scan(&total)
+	database.DB.QueryRow("SELECT COUNT(*) FROM devices WHERE farm_id = $1 AND is_active = true", farmID).Scan(&total)
 
 	return devices, total, nil
 }

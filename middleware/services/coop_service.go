@@ -34,7 +34,7 @@ func (s *CoopService) ListCoops(userID, farmID uuid.UUID) ([]schemas.CoopWithDev
 
 	rows, err := database.DB.Query(`
 		SELECT c.id, c.farm_id, c.number, c.name, c.capacity, c.current_count, c.chicken_type, 
-		       c.main_device_id, c.description, c.is_active, c.created_at,
+		       c.main_device_id, c.temp_min, c.temp_max, c.water_level_half_threshold, c.description, c.is_active, c.created_at,
 		       (SELECT COUNT(*) FROM devices WHERE coop_id = c.id AND is_active = true) as device_count
 		FROM coops c
 		WHERE c.farm_id = $1 AND c.is_active = true
@@ -49,7 +49,7 @@ func (s *CoopService) ListCoops(userID, farmID uuid.UUID) ([]schemas.CoopWithDev
 	for rows.Next() {
 		var c schemas.CoopWithDevices
 		if err := rows.Scan(&c.ID, &c.FarmID, &c.Number, &c.Name, &c.Capacity, &c.CurrentCount, &c.ChickenType, 
-			&c.MainDeviceID, &c.Description, &c.IsActive, &c.CreatedAt, &c.DeviceCount); err != nil {
+			&c.MainDeviceID, &c.TempMin, &c.TempMax, &c.WaterLevelHalfThreshold, &c.Description, &c.IsActive, &c.CreatedAt, &c.DeviceCount); err != nil {
 			continue
 		}
 		coops = append(coops, c)
@@ -66,12 +66,12 @@ func (s *CoopService) GetCoop(userID, farmID, coopID uuid.UUID) (schemas.CoopWit
 
 	err := database.DB.QueryRow(`
 		SELECT c.id, c.farm_id, c.number, c.name, c.capacity, c.current_count, c.chicken_type, 
-		       c.main_device_id, c.description, c.is_active, c.created_at,
+		       c.main_device_id, c.temp_min, c.temp_max, c.water_level_half_threshold, c.description, c.is_active, c.created_at,
 		       (SELECT COUNT(*) FROM devices WHERE coop_id = c.id AND is_active = true) as device_count
 		FROM coops c
 		WHERE c.id = $1 AND c.farm_id = $2 AND c.is_active = true
 	`, coopID, farmID).Scan(&c.ID, &c.FarmID, &c.Number, &c.Name, &c.Capacity, &c.CurrentCount, &c.ChickenType, 
-		&c.MainDeviceID, &c.Description, &c.IsActive, &c.CreatedAt, &c.DeviceCount)
+		&c.MainDeviceID, &c.TempMin, &c.TempMax, &c.WaterLevelHalfThreshold, &c.Description, &c.IsActive, &c.CreatedAt, &c.DeviceCount)
 
 	if err == sql.ErrNoRows {
 		return c, ErrCoopNotFound
@@ -88,9 +88,9 @@ func (s *CoopService) CreateCoop(userID, farmID uuid.UUID, req models.Coop) (*mo
 	coopID := uuid.New()
 	now := time.Now()
 	_, err := database.DB.Exec(`
-		INSERT INTO coops (id, farm_id, number, name, capacity, current_count, chicken_type, description, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	`, coopID, farmID, req.Number, req.Name, req.Capacity, req.CurrentCount, req.ChickenType, req.Description, now, now)
+		INSERT INTO coops (id, farm_id, number, name, capacity, current_count, chicken_type, temp_min, temp_max, water_level_half_threshold, description, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	`, coopID, farmID, req.Number, req.Name, req.Capacity, req.CurrentCount, req.ChickenType, req.TempMin, req.TempMax, req.WaterLevelHalfThreshold, req.Description, now, now)
 
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (s *CoopService) CreateCoop(userID, farmID uuid.UUID, req models.Coop) (*mo
 }
 
 // UpdateCoop updates an existing coop
-func (s *CoopService) UpdateCoop(userID, farmID, coopID uuid.UUID, number *int, name *string, capacity *int, currentCount *int, chickenType *string, description *string) (*models.Coop, error) {
+func (s *CoopService) UpdateCoop(userID, farmID, coopID uuid.UUID, number *int, name *string, capacity *int, currentCount *int, chickenType *string, tempMin *float64, tempMax *float64, waterHalf *float64, description *string) (*models.Coop, error) {
 	if err := s.farmService.CheckAccess(userID, farmID, "farmer"); err != nil {
 		return nil, err
 	}
@@ -117,12 +117,15 @@ func (s *CoopService) UpdateCoop(userID, farmID, coopID uuid.UUID, number *int, 
 			capacity = COALESCE($3, capacity),
 			current_count = COALESCE($4, current_count),
 			chicken_type = COALESCE($5, chicken_type),
-			description = COALESCE($6, description),
+			temp_min = COALESCE($6, temp_min),
+			temp_max = COALESCE($7, temp_max),
+			water_level_half_threshold = COALESCE($8, water_level_half_threshold),
+			description = COALESCE($9, description),
 			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $7 AND farm_id = $8 AND is_active = true
-		RETURNING id, farm_id, number, name, capacity, current_count, chicken_type, main_device_id, description, is_active, created_at, updated_at
-	`, number, name, capacity, currentCount, chickenType, description, coopID, farmID).Scan(
-		&c.ID, &c.FarmID, &c.Number, &c.Name, &c.Capacity, &c.CurrentCount, &c.ChickenType, &c.MainDeviceID, &c.Description, &c.IsActive, &c.CreatedAt, &c.UpdatedAt,
+		WHERE id = $10 AND farm_id = $11 AND is_active = true
+		RETURNING id, farm_id, number, name, capacity, current_count, chicken_type, main_device_id, temp_min, temp_max, water_level_half_threshold, description, is_active, created_at, updated_at
+	`, number, name, capacity, currentCount, chickenType, tempMin, tempMax, waterHalf, description, coopID, farmID).Scan(
+		&c.ID, &c.FarmID, &c.Number, &c.Name, &c.Capacity, &c.CurrentCount, &c.ChickenType, &c.MainDeviceID, &c.TempMin, &c.TempMax, &c.WaterLevelHalfThreshold, &c.Description, &c.IsActive, &c.CreatedAt, &c.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, ErrCoopNotFound

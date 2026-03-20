@@ -401,8 +401,9 @@ createApp({
       if (!fid) return;
       try {
         const coopQuery = this.selectedCoopId ? ('?coop_id=' + this.selectedCoopId) : '';
-        const data = await window.API.get('/v1/farms/' + fid + '/devices' + coopQuery);
-        this.devices = (data && data.data && data.data.devices) ? data.data.devices : [];
+          const data = await window.API.get('/v1/farms/' + fid + '/devices' + coopQuery);
+          const list = (data && data.data && data.data.devices) ? data.data.devices : [];
+          this.devices = list.filter(d => d.type !== 'sensor');
       } catch(e) { console.error(e); }
     },
     async onFarmChange() {

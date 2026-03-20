@@ -108,6 +108,9 @@ func CreateCoopHandler(c *fiber.Ctx) error {
 		Capacity     *int    `json:"capacity,omitempty"`
 		CurrentCount *int    `json:"current_count,omitempty"`
 		ChickenType  *string `json:"chicken_type,omitempty"`
+		TempMin      *float64 `json:"temp_min,omitempty"`
+		TempMax      *float64 `json:"temp_max,omitempty"`
+		WaterLevelHalfThreshold *float64 `json:"water_level_half_threshold,omitempty"`
 		Description  *string `json:"description,omitempty"`
 	}
 	if err := c.BodyParser(&req); err != nil {
@@ -123,6 +126,9 @@ func CreateCoopHandler(c *fiber.Ctx) error {
 		Capacity:     req.Capacity,
 		CurrentCount: req.CurrentCount,
 		ChickenType:  req.ChickenType,
+		TempMin:      req.TempMin,
+		TempMax:      req.TempMax,
+		WaterLevelHalfThreshold: req.WaterLevelHalfThreshold,
 		Description:  req.Description,
 	})
 	if err == services.ErrFarmAccessDenied {
@@ -167,13 +173,16 @@ func UpdateCoopHandler(c *fiber.Ctx) error {
 		Capacity     *int    `json:"capacity,omitempty"`
 		CurrentCount *int    `json:"current_count,omitempty"`
 		ChickenType  *string `json:"chicken_type,omitempty"`
+		TempMin      *float64 `json:"temp_min,omitempty"`
+		TempMax      *float64 `json:"temp_max,omitempty"`
+		WaterLevelHalfThreshold *float64 `json:"water_level_half_threshold,omitempty"`
 		Description  *string `json:"description,omitempty"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return utils.BadRequest(c, "invalid_request", "Invalid request body")
 	}
 
-	coop, err := coopService.UpdateCoop(userID, farmID, coopID, req.Number, req.Name, req.Capacity, req.CurrentCount, req.ChickenType, req.Description)
+	coop, err := coopService.UpdateCoop(userID, farmID, coopID, req.Number, req.Name, req.Capacity, req.CurrentCount, req.ChickenType, req.TempMin, req.TempMax, req.WaterLevelHalfThreshold, req.Description)
 	if err == services.ErrFarmAccessDenied {
 		return utils.Forbidden(c, "Access denied")
 	}
@@ -233,5 +242,32 @@ func DeleteCoopHandler(c *fiber.Ctx) error {
 // @Success 200 {object} []interface{}
 // @Router /v1/farms/{farm_id}/coops/{coop_id}/temperature-timeline [get]
 func TemperatureTimelineHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, []interface{}{}, "Temperature timeline retrieved (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	coopID, err := uuid.Parse(c.Params("coop_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid coop ID")
+	}
+
+	days := 7
+	if d := c.QueryInt("days"); d > 0 {
+		days = d
+	}
+
+	resp, err := telemetryService.GetTemperatureTimeline(userID, farmID, coopID, days)
+	if err != nil && err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err != nil {
+		log.Printf("Temperature timeline error: %v", err)
+		return utils.InternalError(c, "Failed to fetch temperature timeline")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, resp, "Temperature timeline retrieved")
 }
