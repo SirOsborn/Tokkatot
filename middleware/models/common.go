@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"database/sql/driver"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -35,6 +36,13 @@ func (n NullRawMessage) MarshalJSON() ([]byte, error) {
 		return []byte("null"), nil
 	}
 	return json.RawMessage(n).MarshalJSON()
+}
+
+func (n NullRawMessage) Value() (driver.Value, error) {
+	if len(n) == 0 {
+		return nil, nil
+	}
+	return []byte(n), nil
 }
 
 // JWTClaims for JWT token claims

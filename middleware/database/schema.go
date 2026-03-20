@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS devices (
     model TEXT,
     is_main_controller BOOLEAN DEFAULT false,
     firmware_version VARCHAR(20) NOT NULL,
-    hardware_id TEXT NOT NULL UNIQUE,
+    hardware_id TEXT NOT NULL,
     location TEXT,
     is_active BOOLEAN DEFAULT true,
     is_online BOOLEAN DEFAULT false,
@@ -289,6 +289,7 @@ CREATE INDEX IF NOT EXISTS idx_farm_users_active ON farm_users(is_active);
 CREATE INDEX IF NOT EXISTS idx_devices_farm_id_active ON devices(farm_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_devices_coop_id ON devices(coop_id);
 CREATE INDEX IF NOT EXISTS idx_devices_device_id ON devices(device_id);
+CREATE INDEX IF NOT EXISTS idx_devices_hardware_id ON devices(hardware_id);
 CREATE INDEX IF NOT EXISTS idx_devices_is_online ON devices(is_online);
 CREATE INDEX IF NOT EXISTS idx_devices_main_controller ON devices(coop_id, is_main_controller);
 CREATE INDEX IF NOT EXISTS idx_device_commands_device_id ON device_commands(device_id);

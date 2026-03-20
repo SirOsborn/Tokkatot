@@ -80,7 +80,7 @@ func (s *ScheduleService) CreateSchedule(userID, farmID uuid.UUID, req schemas.C
 		isActive = *req.IsActive
 	}
 
-	var actionSequence models.NullRawMessage
+	var actionSequence interface{} = nil
 	if len(req.ActionSequence) > 0 {
 		actionSequence = models.NullRawMessage(req.ActionSequence)
 	}
@@ -99,12 +99,15 @@ func (s *ScheduleService) CreateSchedule(userID, farmID uuid.UUID, req schemas.C
 		Action:         req.Action,
 		ActionValue:    req.ActionValue,
 		ActionDuration: req.ActionDuration,
-		ActionSequence: actionSequence,
+		ActionSequence: models.NullRawMessage(nil),
 		Priority:       priority,
 		IsActive:       isActive,
 		CreatedBy:      userID,
 		CreatedAt:      now,
 		UpdatedAt:      now,
+	}
+	if len(req.ActionSequence) > 0 {
+		schedule.ActionSequence = models.NullRawMessage(req.ActionSequence)
 	}
 
 	_, err := database.DB.Exec(`
@@ -112,7 +115,7 @@ func (s *ScheduleService) CreateSchedule(userID, farmID uuid.UUID, req schemas.C
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 	`, schedule.ID, schedule.FarmID, schedule.CoopID, schedule.DeviceID, schedule.Name, schedule.ScheduleType,
 		schedule.CronExpression, schedule.OnDuration, schedule.OffDuration, schedule.ConditionJSON, schedule.Action,
-		schedule.ActionValue, schedule.ActionDuration, schedule.ActionSequence, schedule.Priority, schedule.IsActive,
+		schedule.ActionValue, schedule.ActionDuration, actionSequence, schedule.Priority, schedule.IsActive,
 		schedule.CreatedBy, schedule.CreatedAt, schedule.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -127,7 +130,7 @@ func (s *ScheduleService) UpdateSchedule(userID, farmID, scheduleID uuid.UUID, r
 		return nil, err
 	}
 
-	var actionSequence models.NullRawMessage
+	var actionSequence interface{} = nil
 	if len(req.ActionSequence) > 0 {
 		actionSequence = models.NullRawMessage(req.ActionSequence)
 	}

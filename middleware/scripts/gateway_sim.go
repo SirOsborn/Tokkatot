@@ -183,20 +183,27 @@ func pickCoop(baseURL, token, farmID, coopID, coopName string, coopNumber int, c
 }
 
 func reportDevices(baseURL, token, farmID, coopID, hardwareID string, devices []DeviceReportItem, inactiveSet map[string]bool) error {
-	report := make([]DeviceReportItem, 0, len(devices))
+	// Modify the payload to include all required fields based on server-side expectations
+	report := make([]map[string]interface{}, 0, len(devices))
 	for _, d := range devices {
-		item := d
-		if inactiveSet[item.Model] {
-			val := false
-			item.Active = &val
+		item := map[string]interface{}{
+			"type":   d.Type,
+			"model":  d.Model,
+			"name":   d.Name,
+			"active": true, // Default to active unless specified in inactiveSet
+		}
+		if inactiveSet[d.Model] {
+			item["active"] = false
 		}
 		report = append(report, item)
 	}
+
 	payload := map[string]interface{}{
 		"hardware_id": hardwareID,
 		"devices":     report,
 	}
 	url := fmt.Sprintf("%s/v1/farms/%s/coops/%s/devices/report", baseURL, farmID, coopID)
+
 	resp, err := httpJSON("POST", url, token, payload)
 	if err != nil {
 		return err
@@ -212,8 +219,8 @@ func sendTelemetry(baseURL, token, farmID, coopID, hardwareID string, temp, humi
 		"hardware_id": hardwareID,
 		"timestamp":   time.Now().UTC().Format(time.RFC3339),
 		"sensors": map[string]interface{}{
-			"temperature_c":  temp,
-			"humidity_pct":   humidity,
+			"temperature_c":   temp,
+			"humidity_pct":    humidity,
 			"water_level_raw": water,
 		},
 	}
@@ -250,7 +257,13 @@ func pickActuatorDevice(devicesPayload map[string]interface{}) (map[string]inter
 		}
 		model, _ := dev["model"].(string)
 		model = strings.ToLower(model)
-		if model == "feeder_motor" || model == "conveyor_belt" || model == "fan" || model == "heater" {
+		name, _ := dev["name"].(string)
+		name = strings.ToLower(name)
+		devType, _ := dev["type"].(string)
+		devType = strings.ToLower(devType)
+		if model == "feeder_motor" || model == "conveyor_belt" || model == "fan" || model == "heater" ||
+			strings.Contains(name, "feeder") || strings.Contains(name, "conveyor") || strings.Contains(name, "fan") || strings.Contains(name, "heater") ||
+			devType == "relay" {
 			return dev, nil
 		}
 	}
@@ -351,9 +364,9 @@ func logf(format string, args ...interface{}) {
 
 func main() {
 	baseURL := flag.String("base-url", "http://127.0.0.1:3000", "")
-	email := flag.String("email", "", "")
+	email := flag.String("email", "test1@tokkatot.com", "")
 	phone := flag.String("phone", "", "")
-	password := flag.String("password", "", "")
+	password := flag.String("password", "TokkatotTest2026!", "")
 	farmID := flag.String("farm-id", "", "")
 	farmName := flag.String("farm-name", "Demo Farm", "")
 	coopID := flag.String("coop-id", "", "")
@@ -373,6 +386,7 @@ func main() {
 	waterBase := flag.Float64("water-base", 1500.0, "")
 	waterVar := flag.Float64("water-var", 30.0, "")
 	pollSchedules := flag.Bool("poll-schedules", false, "")
+	live := flag.Bool("live", false, "")
 	e2e := flag.Bool("e2e", false, "")
 	flag.Parse()
 
@@ -496,6 +510,14 @@ func main() {
 				os.Exit(1)
 			}
 			logf("🗓️  Schedules fetched")
+		}
+
+		if *live {
+			if err := getTemperatureTimeline(*baseURL, token, fID, cID); err != nil {
+				logf("❌ %v", err)
+				os.Exit(1)
+			}
+			logf("📊 Monitoring updated")
 		}
 
 		if *once {
