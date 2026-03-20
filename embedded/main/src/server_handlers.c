@@ -43,9 +43,8 @@ esp_err_t get_initial_state_handler(httpd_req_t *req)
     cJSON *root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "auto_mode", device_state.auto_mode);
     cJSON_AddNumberToObject(root, "fan", device_state.fan);
-    cJSON_AddNumberToObject(root, "bulb", device_state.bulb);
-    cJSON_AddNumberToObject(root, "feeder", device_state.feeder);
-    cJSON_AddNumberToObject(root, "pump", device_state.pump);
+    cJSON_AddNumberToObject(root, "heater", device_state.heater);
+    cJSON_AddNumberToObject(root, "feeder_motor", device_state.feeder_motor);
     cJSON_AddNumberToObject(root, "conveyer", device_state.conveyer);
 
     return send_json_response(req, root);
@@ -60,6 +59,7 @@ esp_err_t get_current_data_handler(httpd_req_t *req)
     cJSON_AddNumberToObject(root, "timestamp", current_data.timestamp);
     cJSON_AddNumberToObject(root, "temperature", current_data.temperature);
     cJSON_AddNumberToObject(root, "humidity", current_data.humidity);
+    cJSON_AddNumberToObject(root, "water_level", current_data.water_level);
 
     return send_json_response(req, root);
 }
@@ -77,6 +77,7 @@ esp_err_t get_historical_data_handler(httpd_req_t *req)
         cJSON_AddNumberToObject(entry, "timestamp", history.data[idx].timestamp);
         cJSON_AddNumberToObject(entry, "temperature", history.data[idx].temperature);
         cJSON_AddNumberToObject(entry, "humidity", history.data[idx].humidity);
+        cJSON_AddNumberToObject(entry, "water_level", history.data[idx].water_level);
         cJSON_AddItemToArray(root, entry);
     }
 
@@ -90,9 +91,9 @@ esp_err_t get_historical_data_handler(httpd_req_t *req)
 static esp_err_t toggle_auto_handler(httpd_req_t *req)
 {
     device_state.auto_mode = !device_state.auto_mode;
-    device_state.bulb = false;
+    device_state.heater = false;
     device_state.fan = false;
-    device_state.pump = false;
+    device_state.feeder_motor = false;
     device_state.conveyer = false;
     update_device_state(&device_state);
 
@@ -114,26 +115,96 @@ static esp_err_t toggle_fan_handler(httpd_req_t *req)
     return send_text_response(req, device_state.fan ? "true" : "false");
 }
 
-static esp_err_t toggle_bulb_handler(httpd_req_t *req)
+static esp_err_t toggle_heater_handler(httpd_req_t *req)
 {
-    toggle_device(LIGHTBULB_PIN, &device_state.bulb);
+    toggle_device(HEATER_PIN, &device_state.heater);
     update_device_state(&device_state);
-    return send_text_response(req, device_state.bulb ? "true" : "false");
+    return send_text_response(req, device_state.heater ? "true" : "false");
 }
 
-static esp_err_t toggle_pump_handler(httpd_req_t *req)
+static esp_err_t toggle_feeder_motor_handler(httpd_req_t *req)
 {
-    toggle_device(WATERPUMP_PIN, &device_state.pump);
+    toggle_device(FEEDER_MOTOR_PIN, &device_state.feeder_motor);
     update_device_state(&device_state);
-    return send_text_response(req, device_state.pump ? "true" : "false");
+    return send_text_response(req, device_state.feeder_motor ? "true" : "false");
 }
 
-static esp_err_t toggle_feeder_handler(httpd_req_t *req)
+static esp_err_t parse_state_body(httpd_req_t *req, bool *state_out)
 {
-    device_state.feeder = !device_state.feeder;
-    device_state.feeder ? open_feeder() : close_feeder();
+    int len = req->content_len;
+    if (len <= 0 || len > 256) {
+        return ESP_FAIL;
+    }
+
+    char buf[257];
+    int ret = httpd_req_recv(req, buf, len);
+    if (ret <= 0) {
+        return ESP_FAIL;
+    }
+    buf[ret] = '\0';
+
+    cJSON *root = cJSON_Parse(buf);
+    if (!root) {
+        return ESP_FAIL;
+    }
+
+    cJSON *state = cJSON_GetObjectItem(root, "state");
+    if (!cJSON_IsBool(state)) {
+        cJSON_Delete(root);
+        return ESP_FAIL;
+    }
+
+    *state_out = cJSON_IsTrue(state);
+    cJSON_Delete(root);
+    return ESP_OK;
+}
+
+static esp_err_t set_fan_handler(httpd_req_t *req)
+{
+    bool on = false;
+    if (parse_state_body(req, &on) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid body");
+        return ESP_FAIL;
+    }
+    set_device(FAN_PIN, &device_state.fan, on);
     update_device_state(&device_state);
-    return send_text_response(req, device_state.feeder ? "true" : "false");
+    return send_text_response(req, device_state.fan ? "true" : "false");
+}
+
+static esp_err_t set_heater_handler(httpd_req_t *req)
+{
+    bool on = false;
+    if (parse_state_body(req, &on) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid body");
+        return ESP_FAIL;
+    }
+    set_device(HEATER_PIN, &device_state.heater, on);
+    update_device_state(&device_state);
+    return send_text_response(req, device_state.heater ? "true" : "false");
+}
+
+static esp_err_t set_feeder_motor_handler(httpd_req_t *req)
+{
+    bool on = false;
+    if (parse_state_body(req, &on) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid body");
+        return ESP_FAIL;
+    }
+    set_device(FEEDER_MOTOR_PIN, &device_state.feeder_motor, on);
+    update_device_state(&device_state);
+    return send_text_response(req, device_state.feeder_motor ? "true" : "false");
+}
+
+static esp_err_t set_conveyer_handler(httpd_req_t *req)
+{
+    bool on = false;
+    if (parse_state_body(req, &on) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid body");
+        return ESP_FAIL;
+    }
+    set_device(CONVEYER_PIN, &device_state.conveyer, on);
+    update_device_state(&device_state);
+    return send_text_response(req, device_state.conveyer ? "true" : "false");
 }
 
 /* Server initialization: start HTTPS server, register data and toggle endpoints */
@@ -202,26 +273,48 @@ esp_err_t server_init(void)
     };
     httpd_register_uri_handler(server, &uri_toggle_fan);
 
-    httpd_uri_t uri_toggle_bulb = {
-        .uri = "/toggle-bulb",
+    httpd_uri_t uri_toggle_heater = {
+        .uri = "/toggle-heater",
         .method = HTTP_GET,
-        .handler = toggle_bulb_handler
+        .handler = toggle_heater_handler
     };
-    httpd_register_uri_handler(server, &uri_toggle_bulb);
-
-    httpd_uri_t uri_toggle_pump = {
-        .uri = "/toggle-pump",
-        .method = HTTP_GET,
-        .handler = toggle_pump_handler
-    };
-    httpd_register_uri_handler(server, &uri_toggle_pump);
+    httpd_register_uri_handler(server, &uri_toggle_heater);
 
     httpd_uri_t uri_toggle_feeder = {
         .uri = "/toggle-feeder",
         .method = HTTP_GET,
-        .handler = toggle_feeder_handler
+        .handler = toggle_feeder_motor_handler
     };
     httpd_register_uri_handler(server, &uri_toggle_feeder);
+
+    /* Register explicit actuator set endpoints (POST with {"state":true/false}) */
+    httpd_uri_t uri_set_fan = {
+        .uri = "/actuators/fan",
+        .method = HTTP_POST,
+        .handler = set_fan_handler
+    };
+    httpd_register_uri_handler(server, &uri_set_fan);
+
+    httpd_uri_t uri_set_heater = {
+        .uri = "/actuators/heater",
+        .method = HTTP_POST,
+        .handler = set_heater_handler
+    };
+    httpd_register_uri_handler(server, &uri_set_heater);
+
+    httpd_uri_t uri_set_feeder = {
+        .uri = "/actuators/feeder_motor",
+        .method = HTTP_POST,
+        .handler = set_feeder_motor_handler
+    };
+    httpd_register_uri_handler(server, &uri_set_feeder);
+
+    httpd_uri_t uri_set_conveyer = {
+        .uri = "/actuators/conveyor_belt",
+        .method = HTTP_POST,
+        .handler = set_conveyer_handler
+    };
+    httpd_register_uri_handler(server, &uri_set_conveyer);
 
     ESP_LOGI(TAG, "Server started and URIs registered");
     return ESP_OK;

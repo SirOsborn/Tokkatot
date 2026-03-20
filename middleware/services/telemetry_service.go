@@ -25,6 +25,24 @@ func NewTelemetryService() *TelemetryService {
 	}
 }
 
+type tempReading struct {
+	Temp float64
+	Time time.Time
+}
+
+func (s *TelemetryService) CleanupOldReadings(retentionDays int) (int64, error) {
+	if retentionDays <= 0 {
+		return 0, nil
+	}
+	cutoff := time.Now().AddDate(0, 0, -retentionDays)
+	res, err := database.DB.Exec(`DELETE FROM device_readings WHERE timestamp < $1`, cutoff)
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected, nil
+}
+
 var allowedDeviceTypes = map[string]bool{
 	"gpio":  true,
 	"relay": true,
@@ -324,13 +342,9 @@ func (s *TelemetryService) GetTemperatureTimeline(userID, farmID, coopID uuid.UU
 	}
 	defer rows.Close()
 
-	type reading struct {
-		Temp float64
-		Time time.Time
-	}
-	readings := make([]reading, 0)
+	readings := make([]tempReading, 0)
 	for rows.Next() {
-		var r reading
+		var r tempReading
 		if err := rows.Scan(&r.Temp, &r.Time); err == nil {
 			readings = append(readings, r)
 		}
@@ -344,11 +358,11 @@ func (s *TelemetryService) GetTemperatureTimeline(userID, farmID, coopID uuid.UU
 	}
 
 	// Bucket by day
-	dayBuckets := map[string][]reading{}
+	dayBuckets := map[string][]tempReading{}
 	for _, r := range readings {
 		t := r.Time.In(loc)
 		dayKey := t.Format("2006-01-02")
-		dayBuckets[dayKey] = append(dayBuckets[dayKey], reading{Temp: r.Temp, Time: t})
+		dayBuckets[dayKey] = append(dayBuckets[dayKey], tempReading{Temp: r.Temp, Time: t})
 	}
 
 	// Today hourly
@@ -405,14 +419,14 @@ func (s *TelemetryService) GetTemperatureTimeline(userID, farmID, coopID uuid.UU
 		CurrentTemp:     currentTemp,
 		CurrentHumidity: currentHumidity,
 		BgHint:          bgHint,
-		Today:           todaySummary,
+		Today:           &todaySummary,
 		History:         history,
 	}, nil
 }
 
-func summarizeDay(items []reading, hourly []schemas.HourlyPoint, label string) *schemas.DaySummary {
+func summarizeDay(items []tempReading, hourly []schemas.HourlyPoint, label string) schemas.DaySummary {
 	if len(items) == 0 {
-		return &schemas.DaySummary{Label: label, Hourly: hourly}
+		return schemas.DaySummary{Label: label, Hourly: hourly}
 	}
 	min := items[0]
 	max := items[0]
@@ -422,7 +436,7 @@ func summarizeDay(items []reading, hourly []schemas.HourlyPoint, label string) *
 	}
 	high := &schemas.TempPoint{Temp: round1(max.Temp), Time: max.Time.Format("15:04")}
 	low := &schemas.TempPoint{Temp: round1(min.Temp), Time: min.Time.Format("15:04")}
-	return &schemas.DaySummary{
+	return schemas.DaySummary{
 		Label:  label,
 		High:   high,
 		Low:    low,

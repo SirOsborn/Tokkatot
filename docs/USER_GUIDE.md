@@ -43,6 +43,10 @@ The Pi is the **local gateway** that connects ESP32 to the cloud.
 - `POST /v1/farms/:farm_id/coops/:coop_id/devices/report`
 - `POST /v1/farms/:farm_id/coops/:coop_id/telemetry`
 
+**Auth**
+- Gateway uses the **farmer/worker JWT** for now (same login token as the app).
+ - **Planned security hardening**: gateway-specific key + HMAC signature + nonce/replay protection.
+
 **Telemetry payload (example):**
 ```json
 {
@@ -68,6 +72,24 @@ ESP32 controls relays and reads sensors locally.
 - Report sensor readings to Pi (via polling)
 - Execute ON/OFF commands from Pi
 
+**Local HTTPS endpoints (ESP32)**
+- `GET /get-initial-state`
+- `GET /get-current-data`
+- `GET /get-historical-data`
+- `GET /toggle-fan`
+- `GET /toggle-heater`
+- `GET /toggle-feeder`
+- `GET /toggle-belt`
+- `POST /actuators/fan` with `{"state": true|false}`
+- `POST /actuators/heater` with `{"state": true|false}`
+- `POST /actuators/feeder_motor` with `{"state": true|false}`
+- `POST /actuators/conveyor_belt` with `{"state": true|false}`
+
+**Gateway connection tip**
+- Put ESP32 and Raspberry Pi on the **same Wi‑Fi/LAN**.
+- Use a **static IP** for ESP32, or use mDNS if enabled.
+ - Update Wi‑Fi credentials in `embedded/main/include/wifi_manager.h`.
+
 **Water system:**
 - No pump. Floating valve only.
 - Water sensor is **monitor‑only** and used to alert if stuck valve.
@@ -78,8 +100,8 @@ ESP32 controls relays and reads sensors locally.
 **Relays / Actuators**
 - Conveyor belt relay → `GPIO25` (`CONVEYER_PIN`)
 - Fan relay → `GPIO26` (`FAN_PIN`)
-- Heater relay → `GPIO14` (`LIGHTBULB_PIN`)  *(heater now replaces bulb)*
-- Feeder motor relay → `GPIO27` (`WATERPUMP_PIN`) *(repurposed for high-torque feeder motor)*
+- Heater relay → `GPIO14` (`HEATER_PIN`)
+- Feeder motor relay → `GPIO27` (`FEEDER_MOTOR_PIN`)
 
 **Sensors**
 - Temp/Humidity (DHT22) → `GPIO32` (`DHT22_PIN`)
@@ -118,6 +140,20 @@ You can configure:
 - Repeat (sequence)
 
 The gateway executes sequence steps locally so it still works offline.
+
+---
+
+## 9) Data Retention (Cloud)
+- Raw telemetry is kept **7 days** in the cloud, then auto-deleted.
+
+## 10) Gateway Security (Planned)
+For production hardening, the gateway will use:
+- Per-gateway secret key (not a user JWT)
+- HMAC signature on each payload
+- Nonce + timestamp to prevent replay
+- Optional IP allowlist or rate limits
+
+These are **not enabled yet** (current gateway uses user JWT).
 
 ---
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -30,6 +31,9 @@ type Config struct {
 
 	// Environment
 	Environment string
+
+	// Telemetry retention
+	TelemetryRetentionDays int
 
 }
 
@@ -63,6 +67,9 @@ func LoadConfig() *Config {
 
 		// Environment
 		Environment: getEnv("ENVIRONMENT", "development"),
+
+		// Telemetry retention (days)
+		TelemetryRetentionDays: getEnvInt("TELEMETRY_RETENTION_DAYS", 7),
 
 	}
 
@@ -100,6 +107,15 @@ func GetDatabaseURL() string {
 func getEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	if value, exists := os.LookupEnv(key); exists {
+		if parsed, err := strconv.Atoi(value); err == nil {
+			return parsed
+		}
 	}
 	return defaultValue
 }
