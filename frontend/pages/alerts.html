@@ -29,13 +29,26 @@
 
   <template v-else>
 
-    <div style="font-size: 24px; font-weight: 700; color: var(--tok-text-primary); margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
-      <span>{{ t('alerts') }}</span>
-      <span class="tok-badge" v-if="alerts.length">{{ alerts.length }}</span>
+    <div style="display:flex; flex-direction:column; gap: 12px; margin-bottom: 16px;">
+      <div style="font-size: 24px; font-weight: 700; color: var(--tok-text-primary); display: flex; align-items: center; justify-content: space-between;">
+        <span>{{ t('alerts') }}</span>
+        <span class="tok-badge" v-if="filteredAlerts.length">{{ filteredAlerts.length }}</span>
+      </div>
+      <div v-if="farms.length > 1">
+        <select class="tok-input" v-model="selectedFarmId" @change="onFarmChange">
+          <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
+        </select>
+      </div>
+      <div v-if="coops.length > 0">
+        <select class="tok-input" v-model="selectedCoopId" @change="onCoopChange">
+          <option value="">-- {{ t('select_coop') }} --</option>
+          <option v-for="c in coops" :key="c.id" :value="c.id">{{ c.name }}</option>
+        </select>
+      </div>
     </div>
 
     <!-- Empty state -->
-    <div v-if="alerts.length === 0" style="text-align: center; padding: 60px 24px; color: var(--tok-text-secondary);">
+    <div v-if="filteredAlerts.length === 0" style="text-align: center; padding: 60px 24px; color: var(--tok-text-secondary);">
       <span class="material-symbols-outlined" style="font-size: 64px; opacity: 0.3;">notifications_none</span>
       <p style="margin-top: 16px;">
         {{ t('no_alerts') }}
@@ -43,7 +56,7 @@
     </div>
 
     <div v-else class="tok-card" style="padding: 0; overflow: hidden;">
-      <div v-for="alert in alerts" :key="alert.id" class="alert-item" :class="{ unread: !alert.acknowledged_at }">
+      <div v-for="alert in filteredAlerts" :key="alert.id" class="alert-item" :class="{ unread: !alert.acknowledged_at }">
         <div class="alert-icon-wrap" :class="alertSeverityClass(alert.alert_type)">
           <span class="material-symbols-outlined" style="font-size:20px;">{{ alertIcon(alert.alert_type) }}</span>
         </div>
@@ -61,12 +74,7 @@
       </div>
     </div>
 
-    <!-- Farm selector if multiple -->
-    <div v-if="farms.length > 1" style="margin-top: 24px;">
-      <select class="tok-input" v-model="selectedFarmId" @change="loadAlerts">
-        <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
-      </select>
-    </div>
+    
 
   </template>
 
@@ -87,10 +95,18 @@ createApp({
     return {
       loading: true,
       farms: [],
+      coops: [],
       selectedFarmId: null,
+      selectedCoopId: '',
       alerts: [],
       lang: window.i18n ? window.i18n.getLang() : 'km',
     };
+  },
+  computed: {
+    filteredAlerts() {
+      if (!this.selectedCoopId) return this.alerts;
+      return this.alerts.filter(a => String(a.coop_id || '') === String(this.selectedCoopId));
+    }
   },
   async mounted() {
     if (!window.API.requireAuth()) return;
@@ -103,11 +119,32 @@ createApp({
       const saved = window.API.getSelectedFarmId();
       const match = saved && this.farms.find(f => String(f.id) === saved);
       this.selectedFarmId = match ? match.id : this.farms[0].id;
-      await this.loadAlerts();
+      window.API.setSelectedFarmId(this.selectedFarmId);
+      await this.loadCoops();
     }
     this.loading = false;
   },
   methods: {
+    t(k) { return window.i18n ? window.i18n.t(k) : k; },
+    async loadCoops() {
+      if (!this.selectedFarmId) return;
+      const data = await window.API.get(`/v1/farms/${this.selectedFarmId}/coops`);
+      this.coops = (data && data.data && data.data.coops) ? data.data.coops
+                 : (data && data.data && Array.isArray(data.data)) ? data.data : [];
+      const saved = window.API.getSelectedCoopId();
+      const match = saved && this.coops.find(c => String(c.id) === saved);
+      this.selectedCoopId = match ? match.id : '';
+      if (this.selectedCoopId) window.API.setSelectedCoopId(this.selectedCoopId);
+      await this.loadAlerts();
+    },
+    async onFarmChange() {
+      window.API.setSelectedFarmId(this.selectedFarmId);
+      this.selectedCoopId = '';
+      await this.loadCoops();
+    },
+    async onCoopChange() {
+      if (this.selectedCoopId) window.API.setSelectedCoopId(this.selectedCoopId);
+    },
     async loadAlerts() {
       if (!this.selectedFarmId) return;
       try {

@@ -15,7 +15,7 @@ import (
 // @Tags User
 // @Produce json
 // @Success 200 {object} models.User
-// @Router /v1/user/profile [get]
+// @Router /v1/users/me [get]
 func GetCurrentUserHandler(c *fiber.Ctx) error {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {
@@ -40,7 +40,7 @@ func GetCurrentUserHandler(c *fiber.Ctx) error {
 // @Produce json
 // @Param request body schemas.UpdateProfileRequest true "Update Profile Request"
 // @Success 200 {object} models.User
-// @Router /v1/user/profile [put]
+// @Router /v1/users/me [put]
 func UpdateProfileHandler(c *fiber.Ctx) error {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {
@@ -73,7 +73,7 @@ func ChangePasswordHandler(c *fiber.Ctx) error {
 // @Tags User, Sessions
 // @Produce json
 // @Success 200 {object} []models.UserSession
-// @Router /v1/user/sessions [get]
+// @Router /v1/users/sessions [get]
 func GetUserSessionsHandler(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, fiber.StatusOK, []interface{}{}, "Sessions retrieved (mock)")
 }

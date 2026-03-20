@@ -9,6 +9,7 @@ import (
 	"middleware/config"
 	"middleware/database"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 )
 
 // @title Tokkatot API
@@ -99,6 +100,8 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 		return c.SendFile(filepath.Join(frontendPath, "pages", "index.html"))
 	})
 	app.Get("/admin", func(c *fiber.Ctx) error {
+		c.Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		c.Set("Pragma", "no-cache")
 		return c.SendFile(filepath.Join(frontendPath, "pages", "admin.html"))
 	})
 	app.Get("/login", func(c *fiber.Ctx) error {
@@ -131,6 +134,9 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	app.Get("/alerts", func(c *fiber.Ctx) error {
 		return c.SendFile(filepath.Join(frontendPath, "pages", "alerts.html"))
 	})
+	app.Get("/workers", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "workers.html"))
+	})
 
 	// v1 API Group
 	v1 := app.Group("/v1")
@@ -139,11 +145,8 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	auth := v1.Group("/auth")
 	auth.Post("/signup", api.SignupHandler)
 	auth.Post("/login", api.LoginHandler)
-	auth.Post("/verify", api.VerifyContactHandler) // Email/Phone verification
 	auth.Post("/refresh", api.RefreshTokenHandler)
 	auth.Post("/logout", api.LogoutHandler)
-	auth.Post("/forgot-password", api.ForgotPasswordHandler)
-	auth.Post("/reset-password", api.ResetPasswordHandler)
 
 	// Protected routes (require authentication)
 	protected := v1.Group("")
@@ -185,6 +188,8 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Put("/farms/:farm_id/coops/:coop_id", api.UpdateCoopHandler)
 	protected.Delete("/farms/:farm_id/coops/:coop_id", api.DeleteCoopHandler)
 	protected.Get("/farms/:farm_id/coops/:coop_id/temperature-timeline", api.TemperatureTimelineHandler)
+	protected.Post("/farms/:farm_id/coops/:coop_id/telemetry", api.PostCoopTelemetryHandler)
+	protected.Post("/farms/:farm_id/coops/:coop_id/devices/report", api.ReportCoopDevicesHandler)
 
 	// Device management endpoints
 	protected.Get("/farms/:farm_id/devices", api.ListDevicesHandler)
@@ -234,8 +239,10 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Get("/farms/:farm_id/reports/export", api.ExportReportHandler)
 	protected.Get("/farms/:farm_id/events", api.GetFarmEventLogHandler)
 
+
 	// WebSocket for real-time updates (requires authentication)
-	protected.Get("/ws", api.WebSocketUpgradeHandler)
+	protected.Use("/ws", api.WebSocketUpgradeMiddleware)
+	protected.Get("/ws", websocket.New(api.WebSocketHandler))
 	protected.Get("/ws/stats", api.GetWebSocketStatsHandler)
 
 	// Device heartbeat (for IoT devices - no AuthMiddleware, uses device key)

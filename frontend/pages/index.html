@@ -64,6 +64,12 @@
           <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
         </select>
       </div>
+      <div v-if="farms.length > 0" style="margin-bottom: 12px;">
+        <button class="tok-btn tok-btn-secondary" style="width: 100%;" @click="showAddFarm = true">
+          <span class="material-symbols-outlined" style="margin-right:6px;">add</span>
+          {{ t('add_farm') }}
+        </button>
+      </div>
 
       <!-- Farm Banner -->
       <div v-if="currentFarm" class="farm-banner">
@@ -74,6 +80,12 @@
         <div class="farm-banner-icon">
            <span class="material-symbols-outlined" style="font-size: 40px;">potted_plant</span>
         </div>
+      </div>
+      <div v-if="currentFarm" style="display:flex; gap: 12px; margin: 12px 0 4px;">
+        <button class="tok-btn tok-btn-secondary" style="flex:1;" @click="showAddCoop = true">
+          <span class="material-symbols-outlined" style="margin-right:6px;">add</span>
+          {{ t('add_coop') }}
+        </button>
       </div>
 
       <!-- Handle Access Denied (If worker but no coops assigned etc) -->
@@ -170,26 +182,22 @@
         </div>
       </div>
 
-      <!-- Quick shortcuts grid -->
+      <!-- Workers management card -->
       <div class="section">
-         <div class="metrics-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
-            <a href="/monitoring" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">analytics</span>
-              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_monitoring') }}</div>
-            </a>
-            <a href="/disease-detection" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">biotech</span>
-              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_disease') }}</div>
-            </a>
-            <a href="/schedules" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">calendar_month</span>
-              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_schedules') }}</div>
-            </a>
-            <a href="/profile" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">account_circle</span>
-              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('my_profile') }}</div>
-            </a>
-         </div>
+        <div class="tok-card" style="display:flex; align-items:center; justify-content: space-between; gap: 12px; padding: 18px;">
+          <div style="display:flex; align-items:center; gap: 12px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0, 137, 123, 0.1); display:flex; align-items:center; justify-content:center; color: var(--tok-teal);">
+              <span class="material-symbols-outlined">groups</span>
+            </div>
+            <div>
+              <div style="font-weight: 800; font-size: 16px;">{{ t('manage_workers') }}</div>
+              <div style="font-size: 12px; color: var(--tok-text-secondary);">{{ workersCount }} {{ t('workers') }}</div>
+            </div>
+          </div>
+          <a href="/workers" class="tok-btn tok-btn-secondary" style="min-height: 40px; padding: 8px 14px; text-decoration: none;">
+            {{ t('manage_workers') }}
+          </a>
+        </div>
       </div>
     </div> <!-- End has farms else -->
 
@@ -215,6 +223,45 @@
           <button class="tok-btn tok-btn-secondary" style="flex: 1;" @click="showAddFarm=false">{{ t('cancel') }}</button>
           <button class="tok-btn tok-btn-primary" style="flex: 1;" @click="createFarm" :disabled="addFarmLoading">
             <span v-if="addFarmLoading" class="spinner" style="width:18px;height:18px;border-width:2px;"></span>
+            <span v-else>{{ t('create') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add coop modal -->
+    <div v-if="showAddCoop" class="modal-overlay" @click.self="showAddCoop=false">
+      <div class="modal-content" style="border-radius: 24px 24px 0 0; position: fixed; bottom: 0; max-width: 480px;">
+        <h3 style="margin-bottom: 24px; font-weight: 800;">{{ t('add_coop') }}</h3>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('coop_number') }}</label>
+          <input class="tok-input" type="number" min="1" v-model.number="newCoop.number" :placeholder="t('coop_number')" />
+        </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('coop_name') }}</label>
+          <input class="tok-input" v-model="newCoop.name" :placeholder="t('coop_name')" />
+        </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('capacity') }}</label>
+          <input class="tok-input" type="number" min="0" v-model.number="newCoop.capacity" :placeholder="t('capacity')" />
+        </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('current_count') }}</label>
+          <input class="tok-input" type="number" min="0" v-model.number="newCoop.current_count" :placeholder="t('current_count')" />
+        </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('chicken_type') }}</label>
+          <input class="tok-input" v-model="newCoop.chicken_type" :placeholder="t('chicken_type')" />
+        </div>
+        <div class="tok-input-group">
+          <label class="tok-label">{{ t('description') }}</label>
+          <input class="tok-input" v-model="newCoop.description" :placeholder="t('description')" />
+        </div>
+        <div v-if="addCoopError" class="tok-badge tok-badge-alert" style="margin-bottom: 24px; width: 100%; text-align: center; padding: 8px;">{{ addCoopError }}</div>
+        <div style="display:flex;gap: 16px;">
+          <button class="tok-btn tok-btn-secondary" style="flex: 1;" @click="showAddCoop=false">{{ t('cancel') }}</button>
+          <button class="tok-btn tok-btn-primary" style="flex: 1;" @click="createCoop" :disabled="addCoopLoading">
+            <span v-if="addCoopLoading" class="spinner" style="width:18px;height:18px;border-width:2px;"></span>
             <span v-else>{{ t('create') }}</span>
           </button>
         </div>

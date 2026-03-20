@@ -2,9 +2,11 @@ package api
 
 import (
 	"log"
+	"middleware/schemas"
 	"middleware/services"
 	"middleware/utils"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -55,7 +57,12 @@ func ListDevicesHandler(c *fiber.Ctx) error {
 		return utils.InternalError(c, "Failed to fetch devices")
 	}
 
-	return utils.SuccessListResponse(c, devices, total, offset/limit+1, limit)
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+		"devices": devices,
+		"total":   total,
+		"page":    offset/limit + 1,
+		"limit":   limit,
+	}, "Devices retrieved")
 }
 
 // AddDeviceHandler adds a new device
@@ -69,7 +76,35 @@ func ListDevicesHandler(c *fiber.Ctx) error {
 // @Success 201 {object} models.Device
 // @Router /v1/farms/{farm_id}/devices [post]
 func AddDeviceHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusCreated, nil, "Device added (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+
+	var req schemas.AddDeviceRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_body", "Invalid request body")
+	}
+	if req.CoopID == nil {
+		return utils.BadRequest(c, "invalid_coop", "coop_id is required")
+	}
+
+	device, err := deviceService.AddDevice(userID, farmID, req)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err == services.ErrCoopNotFound {
+		return utils.BadRequest(c, "invalid_coop", "Coop not found for this farm")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to add device")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusCreated, device, "Device added")
 }
 
 // GetDeviceHandler returns device details
@@ -96,6 +131,9 @@ func GetDeviceHandler(c *fiber.Ctx) error {
 	}
 
 	device, err := deviceService.GetDevice(userID, farmID, deviceID)
+	if err == services.ErrDeviceNotFound {
+		return utils.NotFound(c, "Device not found")
+	}
 	if err != nil {
 		return utils.InternalError(c, "Failed to fetch device")
 	}
@@ -104,31 +142,234 @@ func GetDeviceHandler(c *fiber.Ctx) error {
 }
 
 func UpdateDeviceHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Device updated (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	deviceID, err := uuid.Parse(c.Params("device_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
+	}
+
+	var req schemas.UpdateDeviceRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_body", "Invalid request body")
+	}
+
+	device, err := deviceService.UpdateDevice(userID, farmID, deviceID, req)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err == services.ErrDeviceNotFound {
+		return utils.NotFound(c, "Device not found")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to update device")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, device, "Device updated")
 }
 
 func DeleteDeviceHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Device deleted (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	deviceID, err := uuid.Parse(c.Params("device_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
+	}
+
+	if err := deviceService.DeleteDevice(userID, farmID, deviceID); err != nil {
+		if err == services.ErrFarmAccessDenied {
+			return utils.Forbidden(c, "Access denied")
+		}
+		if err == services.ErrDeviceNotFound {
+			return utils.NotFound(c, "Device not found")
+		}
+		return utils.InternalError(c, "Failed to delete device")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Device deleted")
 }
 
 func GetDeviceHistoryHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, []interface{}{}, "Device history retrieved (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	deviceID, err := uuid.Parse(c.Params("device_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
+	}
+
+	limit := c.QueryInt("limit", 50)
+	offset := c.QueryInt("offset", 0)
+	sensorType := c.Query("sensor_type", "")
+
+	history, total, err := deviceService.GetDeviceHistory(userID, farmID, deviceID, sensorType, limit, offset)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err == services.ErrDeviceNotFound {
+		return utils.NotFound(c, "Device not found")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to fetch device history")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+		"readings": history,
+		"total":    total,
+	}, "Device history retrieved")
 }
 
 func GetDeviceStatusHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Device status retrieved (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	deviceID, err := uuid.Parse(c.Params("device_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
+	}
+
+	status, err := deviceService.GetDeviceStatus(userID, farmID, deviceID)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err == services.ErrDeviceNotFound {
+		return utils.NotFound(c, "Device not found")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to fetch device status")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, status, "Device status retrieved")
 }
 
 func GetDeviceConfigHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Device config retrieved (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	deviceID, err := uuid.Parse(c.Params("device_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
+	}
+
+	cfgs, err := deviceService.GetDeviceConfig(userID, farmID, deviceID)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err == services.ErrDeviceNotFound {
+		return utils.NotFound(c, "Device not found")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to fetch device config")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, cfgs, "Device config retrieved")
 }
 
 func UpdateDeviceConfigHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Device config updated (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	deviceID, err := uuid.Parse(c.Params("device_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
+	}
+
+	var req struct {
+		ParameterName  string   `json:"parameter_name"`
+		ParameterValue string   `json:"parameter_value"`
+		Unit           *string  `json:"unit,omitempty"`
+		MinValue       *float64 `json:"min_value,omitempty"`
+		MaxValue       *float64 `json:"max_value,omitempty"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_body", "Invalid request body")
+	}
+	if strings.TrimSpace(req.ParameterName) == "" {
+		return utils.BadRequest(c, "invalid_param", "parameter_name is required")
+	}
+
+	cfg, err := deviceService.UpdateDeviceConfig(userID, farmID, deviceID, req.ParameterName, req.ParameterValue, req.Unit, req.MinValue, req.MaxValue)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err == services.ErrDeviceNotFound {
+		return utils.NotFound(c, "Device not found")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to update device config")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, cfg, "Device config updated")
 }
 
 func CalibrateDeviceHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Device calibrated (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	deviceID, err := uuid.Parse(c.Params("device_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid device ID")
+	}
+
+	var req struct {
+		ParameterName string `json:"parameter_name"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_body", "Invalid request body")
+	}
+	if strings.TrimSpace(req.ParameterName) == "" {
+		return utils.BadRequest(c, "invalid_param", "parameter_name is required")
+	}
+
+	cfg, err := deviceService.CalibrateDevice(userID, farmID, deviceID, req.ParameterName)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err == services.ErrDeviceNotFound {
+		return utils.NotFound(c, "Device not found")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to calibrate device")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, cfg, "Device calibrated")
 }
 
 // SendDeviceCommandHandler issues a control command
@@ -141,7 +382,7 @@ func CalibrateDeviceHandler(c *fiber.Ctx) error {
 // @Param device_id path string true "Device ID (UUID)"
 // @Param request body object true "Command Request"
 // @Success 200 {object} models.DeviceCommand
-// @Router /v1/farms/{farm_id}/devices/{device_id}/command [post]
+// @Router /v1/farms/{farm_id}/devices/{device_id}/commands [post]
 func SendDeviceCommandHandler(c *fiber.Ctx) error {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {
@@ -157,14 +398,20 @@ func SendDeviceCommandHandler(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		CommandType string `json:"command_type"`
-		Parameters  string `json:"parameters"`
+		CommandType  string  `json:"command_type"`
+		CommandValue *string `json:"command_value,omitempty"`
+		Parameters   *string `json:"parameters,omitempty"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return utils.BadRequest(c, "invalid_body", "Invalid request body")
 	}
 
-	cmd, err := deviceService.IssueCommand(userID, farmID, deviceID, req.CommandType, &req.Parameters)
+	value := req.CommandValue
+	if value == nil && req.Parameters != nil {
+		value = req.Parameters
+	}
+
+	cmd, err := deviceService.IssueCommand(userID, farmID, deviceID, req.CommandType, value)
 	if err != nil {
 		return utils.InternalError(c, "Failed to issue command")
 	}
@@ -173,7 +420,31 @@ func SendDeviceCommandHandler(c *fiber.Ctx) error {
 }
 
 func GetDeviceCommandStatusHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Command status retrieved (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	commandID, err := uuid.Parse(c.Params("command_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid command ID")
+	}
+
+	cmd, err := deviceService.GetCommandStatus(userID, farmID, commandID)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err == services.ErrCommandNotFound {
+		return utils.NotFound(c, "Command not found")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to fetch command")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, cmd, "Command status retrieved")
 }
 
 // ListDeviceCommandsHandler returns command history for a device
@@ -208,15 +479,72 @@ func ListDeviceCommandsHandler(c *fiber.Ctx) error {
 }
 
 func CancelCommandHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Command cancelled (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+	commandID, err := uuid.Parse(c.Params("command_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid command ID")
+	}
+
+	if err := deviceService.CancelCommand(userID, farmID, commandID); err != nil {
+		if err == services.ErrFarmAccessDenied {
+			return utils.Forbidden(c, "Access denied")
+		}
+		if err == services.ErrCommandNotFound {
+			return utils.NotFound(c, "Command not found or already processed")
+		}
+		return utils.InternalError(c, "Failed to cancel command")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Command cancelled")
 }
 
 func GetFarmCommandHistoryHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, []interface{}{}, "Farm command history retrieved (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+
+	history, err := deviceService.GetFarmCommandHistory(userID, farmID, 50)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to fetch farm command history")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, history, "Farm command history retrieved")
 }
 
 func EmergencyStopHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Emergency stop triggered (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+
+	count, err := deviceService.EmergencyStop(userID, farmID)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to trigger emergency stop")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{"commands_issued": count}, "Emergency stop triggered")
 }
 
 // BatchDeviceCommandHandler issues commands to multiple devices
@@ -228,11 +556,60 @@ func EmergencyStopHandler(c *fiber.Ctx) error {
 // @Param farm_id path string true "Farm ID (UUID)"
 // @Param request body schemas.BatchCommandRequest true "Batch Command Request"
 // @Success 200 {object} schemas.BatchResult
-// @Router /v1/farms/{farm_id}/batch/command [post]
+// @Router /v1/farms/{farm_id}/devices/batch-command [post]
 func BatchDeviceCommandHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Batch command processed (mock)")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return utils.Unauthorized(c, "Invalid user session")
+	}
+	farmID, err := uuid.Parse(c.Params("farm_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid farm ID")
+	}
+
+	var req schemas.BatchCommandRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_body", "Invalid request body")
+	}
+	if len(req.DeviceIDs) == 0 || strings.TrimSpace(req.CommandType) == "" {
+		return utils.BadRequest(c, "invalid_body", "device_ids and command_type are required")
+	}
+
+	results, err := deviceService.BatchCommands(userID, farmID, req)
+	if err == services.ErrFarmAccessDenied {
+		return utils.Forbidden(c, "Access denied")
+	}
+	if err != nil {
+		return utils.InternalError(c, "Failed to process batch command")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, results, "Batch command processed")
 }
 
 func UpdateDeviceHeartbeatHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Heartbeat recorded (mock)")
+	hardwareID := c.Params("hardware_id")
+	if strings.TrimSpace(hardwareID) == "" {
+		return utils.BadRequest(c, "invalid_id", "Invalid hardware ID")
+	}
+
+	var req struct {
+		Status   *string `json:"status,omitempty"`
+		Response *string `json:"response,omitempty"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_body", "Invalid request body")
+	}
+
+	status := ""
+	if req.Status != nil {
+		status = *req.Status
+	}
+	if err := deviceService.UpdateHeartbeat(hardwareID, status, req.Response); err != nil {
+		if err == services.ErrDeviceNotFound {
+			return utils.NotFound(c, "Device not found")
+		}
+		return utils.InternalError(c, "Failed to record heartbeat")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Heartbeat recorded")
 }

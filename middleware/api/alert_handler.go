@@ -25,7 +25,7 @@ import (
 // @Param is_active query bool false "Filter by active status"
 // @Param severity query string false "Filter by severity (info, warning, critical)"
 // @Success 200 {object} schemas.ErrorResponse
-// @Router /api/farms/{farm_id}/alerts [get]
+// @Router /v1/farms/{farm_id}/alerts [get]
 func GetFarmAlertsHandler(c *fiber.Ctx) error {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {
@@ -74,7 +74,7 @@ func GetFarmAlertsHandler(c *fiber.Ctx) error {
 // @Param limit query int false "Limit"
 // @Param offset query int false "Offset"
 // @Success 200 {object} schemas.PaginatedResponse{data=[]models.Alert}
-// @Router /api/farms/{farm_id}/alerts/history [get]
+// @Router /v1/farms/{farm_id}/alerts/history [get]
 func GetAlertHistoryHandler(c *fiber.Ctx) error {
 	// Reusing GetFarmAlerts with active_only=false for history
 	userID, err := GetUserIDFromContext(c)
@@ -108,7 +108,7 @@ func GetAlertHistoryHandler(c *fiber.Ctx) error {
 // @Param farm_id path string true "Farm ID"
 // @Param alert_id path string true "Alert ID"
 // @Success 200 {object} map[string]interface{}
-// @Router /api/farms/{farm_id}/alerts/{alert_id}/acknowledge [post]
+// @Router /v1/farms/{farm_id}/alerts/{alert_id}/acknowledge [put]
 func AcknowledgeAlertHandler(c *fiber.Ctx) error {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {

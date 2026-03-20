@@ -31,6 +31,7 @@
       '/disease-detection': 'disease',
       '/schedules':         'schedules',
       '/settings':          'settings',
+      '/workers':           'settings',
       '/profile':           'settings'   /* profile lives under settings tab */
     };
     var active = map[path] || 'home';

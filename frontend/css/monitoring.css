@@ -12,6 +12,23 @@ body.monitoring-page {
     padding-bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom, 0px));
 }
 
+body.monitoring-page .top-header {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.monitoring-page .header-title {
+    -webkit-text-fill-color: #ffffff;
+    background: none;
+}
+
+body.monitoring-page .header-icon-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
 /* Background gradients per bg_hint */
 body.bg-scorching { background: linear-gradient(to bottom, #7f0000, #bf2c00, #e85d04); }
 body.bg-hot       { background: linear-gradient(to bottom, #c1121f, #e85d04, #f48c06); }
@@ -35,20 +52,13 @@ body.bg-cold      { background: linear-gradient(to bottom, #03045e, #023e8a, #00
     padding: 16px;
 }
 
-#coop-picker {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.18);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 15px;
-    margin-bottom: 20px;
-    outline: none;
-    cursor: pointer;
+body.monitoring-page .tok-input {
+    background: rgba(255, 255, 255, 0.92);
+    color: #111;
+    border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
-#coop-picker option { background: #333; color: #fff; }
+body.monitoring-page .tok-input option { background: #fff; color: #111; }
 
 .hero {
     text-align: center;

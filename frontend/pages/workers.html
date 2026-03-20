@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Workers - Tokkatot</title>
+  <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#00897B" />
+  
+  <!-- Tokkatot Design System (Modular) -->
+  <link rel="stylesheet" href="/css/theme.css?v=1.5" />
+  <link rel="stylesheet" href="/css/components.css?v=1.5" />
+  <link rel="stylesheet" href="/css/layout.css?v=1.5" />
+  <link rel="stylesheet" href="/css/workers.css?v=1.0" />
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+</head>
+<body>
+
+<div id="header-placeholder"></div>
+
+<div id="app" v-cloak class="page-container">
+  <!-- Loading state -->
+  <div v-if="loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; color: var(--tok-text-secondary);">
+    <div style="width: 44px; height: 44px; border: 4px solid var(--tok-surface-light); border-top-color: var(--tok-teal); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+    <span style="margin-top: 16px;" data-i18n="loading">Loading...</span>
+  </div>
+
+  <div v-else>
+    <div class="workers-header">
+      <div class="workers-title">{{ t('manage_workers') }}</div>
+      <button v-if="canManage" class="tok-btn tok-btn-primary" @click="showInvite = true">
+        <span class="material-symbols-outlined" style="margin-right:6px;">person_add</span>
+        {{ t('invite_worker') }}
+      </button>
+    </div>
+
+    <div v-if="farms.length > 1" style="margin-bottom: 12px;">
+      <select class="tok-input" v-model="selectedFarmId" @change="onFarmChange">
+        <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
+      </select>
+    </div>
+
+    <div v-if="!canManage" class="tok-badge tok-badge-alert" style="margin-bottom: 12px;">
+      {{ t('owner_only_manage') }}
+    </div>
+
+    <div class="tok-card workers-summary" style="margin-bottom: 16px;">
+      <div>
+        <div style="font-size: 12px; color: var(--tok-text-secondary);">{{ t('workers_count') }}</div>
+        <div class="workers-count">{{ workers.length }}</div>
+      </div>
+      <div style="font-size: 12px; color: var(--tok-text-secondary); text-align: right;">
+        {{ currentFarmName }}
+      </div>
+    </div>
+
+    <div v-if="workers.length === 0" class="tok-card" style="text-align:center; padding: 28px;">
+      <span class="material-symbols-outlined" style="font-size: 40px; color: var(--tok-surface-light);">groups</span>
+      <div style="margin-top: 8px; color: var(--tok-text-secondary);" data-i18n="no_workers">No workers yet</div>
+    </div>
+
+    <div v-for="m in workers" :key="m.user_id" class="tok-card worker-card">
+      <div class="worker-info">
+        <div class="worker-avatar">
+          <span class="material-symbols-outlined">person</span>
+        </div>
+        <div class="worker-meta">
+          <div class="worker-name">{{ m.name || '—' }}</div>
+          <div class="worker-sub">{{ m.email || m.phone || '—' }}</div>
+          <div class="worker-sub">{{ formatDate(m.joined_at) }}</div>
+        </div>
+      </div>
+      <div class="worker-actions">
+        <select class="tok-input role-select" v-model="m.role" :disabled="!canManage" @change="updateRole(m)">
+          <option value="viewer">{{ t('viewer_role') }}</option>
+          <option value="worker">{{ t('worker_role') }}</option>
+        </select>
+        <button class="tok-btn tok-btn-secondary" :disabled="!canManage" @click="removeMember(m)">
+          {{ t('remove_member') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invite Modal -->
+  <div v-if="showInvite" class="modal-overlay" @click.self="showInvite=false">
+    <div class="modal-content" style="border-radius: 24px 24px 0 0; position: fixed; bottom: 0; max-width: 480px;">
+      <h3 style="margin-bottom: 24px; font-weight: 800;">{{ t('invite_worker') }}</h3>
+      <div class="tok-input-group">
+        <label class="tok-label">{{ t('contact_or_phone') }}</label>
+        <input class="tok-input" v-model="inviteContact" :placeholder="t('contact_or_phone')" />
+      </div>
+      <div class="tok-input-group">
+        <label class="tok-label">{{ t('member_role') }}</label>
+        <select class="tok-input" v-model="inviteRole">
+          <option value="viewer">{{ t('viewer_role') }}</option>
+          <option value="worker">{{ t('worker_role') }}</option>
+        </select>
+      </div>
+      <div v-if="inviteError" class="tok-badge tok-badge-alert" style="margin-bottom: 16px; width: 100%; text-align: center; padding: 8px;">{{ inviteError }}</div>
+      <div style="display:flex; gap: 12px;">
+        <button class="tok-btn tok-btn-secondary" style="flex:1;" @click="showInvite=false">{{ t('cancel') }}</button>
+        <button class="tok-btn tok-btn-primary" style="flex:1;" @click="inviteMember" :disabled="inviteLoading">
+          <span v-if="inviteLoading" class="spinner" style="width:18px;height:18px;border-width:2px;"></span>
+          <span v-else>{{ t('create') }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="navbar-placeholder"></div>
+
+<script src="/js/utils/i18n.js?v=1.5"></script>
+<script src="/js/utils/api.js?v=1.5"></script>
+<script src="/js/utils/components.js?v=1.5"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="/js/workers.js?v=1.0"></script>
+</body>
+</html>

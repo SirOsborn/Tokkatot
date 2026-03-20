@@ -81,6 +81,9 @@ func InviteFarmMemberHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return utils.BadRequest(c, "invalid_request", "Invalid request body")
 	}
+	if req.Role != "viewer" && req.Role != "worker" {
+		return utils.BadRequest(c, "invalid_role", "Role must be viewer or worker")
+	}
 
 	// Find target user
 	var targetUserID uuid.UUID
@@ -151,6 +154,9 @@ func UpdateFarmMemberRoleHandler(c *fiber.Ctx) error {
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return utils.BadRequest(c, "invalid_request", "Invalid request body")
+	}
+	if req.Role != "viewer" && req.Role != "worker" {
+		return utils.BadRequest(c, "invalid_role", "Role must be viewer or worker")
 	}
 
 	_, err = database.DB.Exec(`

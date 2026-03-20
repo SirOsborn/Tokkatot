@@ -16,6 +16,9 @@ type Coop struct {
 	CurrentCount *int       `json:"current_count,omitempty"`
 	ChickenType  *string    `json:"chicken_type,omitempty"`
 	MainDeviceID *uuid.UUID `json:"main_device_id,omitempty"`
+	TempMin      *float64   `json:"temp_min,omitempty"`
+	TempMax      *float64   `json:"temp_max,omitempty"`
+	WaterLevelHalfThreshold *float64 `json:"water_level_half_threshold,omitempty"`
 	Description  *string    `json:"description,omitempty"`
 	IsActive     bool       `json:"is_active"`
 	CreatedAt    time.Time  `json:"created_at"`

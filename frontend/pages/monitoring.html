@@ -11,7 +11,7 @@
   <!-- Tokkatot Design System (Modular) -->
   <link rel="stylesheet" href="/css/theme.css?v=1.5" />
   <link rel="stylesheet" href="/css/layout.css?v=1.5" />
-  <link rel="stylesheet" href="/css/monitoring.css?v=1.5" />
+  <link rel="stylesheet" href="/css/monitoring.css?v=1.6" />
   
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
@@ -21,8 +21,11 @@
 
 <div class="page-wrap">
 
-  <!-- Coop picker -->
-  <select id="coop-picker"></select>
+  <!-- Farm + Coop picker -->
+  <div style="display:flex; gap: 12px; margin-bottom: 12px;">
+    <select id="farm-picker" class="tok-input" style="flex:1;"></select>
+    <select id="coop-picker" class="tok-input" style="flex:1;"></select>
+  </div>
 
   <!-- Loading -->
   <div id="loading" class="spinner-wrap"><div class="spinner"></div></div>
@@ -88,10 +91,15 @@
 <script>
   // -- State --
   let farmId = null;
+  let farms  = [];
   let coops  = [];
 
   async function apiFetch(path) {
     return window.API.get(path);
+  }
+
+  function t(k) {
+    return window.i18n ? window.i18n.t(k) : k;
   }
 
   async function init() {
@@ -100,11 +108,35 @@
 
     const storedFarm = window.API.getSelectedFarmId();
     const farmsRes = await apiFetch('/v1/farms');
-    if (!farmsRes || !farmsRes.success || !farmsRes.data?.farms || farmsRes.data.farms.length === 0) {
+    const farmsRaw = (farmsRes && farmsRes.data && farmsRes.data.data) ? farmsRes.data.data
+                   : (farmsRes && farmsRes.data && farmsRes.data.farms) ? farmsRes.data.farms
+                   : (farmsRes && farmsRes.data && Array.isArray(farmsRes.data)) ? farmsRes.data : [];
+    if (!farmsRes || !farmsRes.success || farmsRaw.length === 0) {
       return showError('No farms found');
     }
-    farmId = storedFarm || farmsRes.data.farms[0].id;
+    farms = farmsRaw;
+    farmId = storedFarm || farms[0].id;
+    window.API.setSelectedFarmId(farmId);
 
+    const farmPicker = document.getElementById('farm-picker');
+    farmPicker.innerHTML = '';
+    farms.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = f.name;
+      if (String(f.id) === String(farmId)) opt.selected = true;
+      farmPicker.appendChild(opt);
+    });
+    farmPicker.addEventListener('change', async () => {
+      farmId = farmPicker.value;
+      window.API.setSelectedFarmId(farmId);
+      await loadCoops();
+    });
+
+    await loadCoops();
+  }
+
+  async function loadCoops() {
     const coopsRes = await apiFetch(`/v1/farms/${farmId}/coops`);
     if (!coopsRes || !coopsRes.success) {
       document.getElementById('loading').style.display = 'none';
@@ -121,15 +153,23 @@
     coops = coopsRaw;
 
     const picker = document.getElementById('coop-picker');
+    picker.innerHTML = '';
+    const storedCoop = window.API.getSelectedCoopId();
+    let coopId = storedCoop && coops.find(c => String(c.id) === storedCoop) ? storedCoop : coops[0].id;
     coops.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
       opt.textContent = c.name;
+      if (String(c.id) === String(coopId)) opt.selected = true;
       picker.appendChild(opt);
     });
-    picker.addEventListener('change', () => loadCoop(picker.value));
+    window.API.setSelectedCoopId(coopId);
+    picker.addEventListener('change', () => {
+      window.API.setSelectedCoopId(picker.value);
+      loadCoop(picker.value);
+    });
 
-    await loadCoop(coops[0].id);
+    await loadCoop(coopId);
   }
 
   async function loadCoop(coopId) {
@@ -166,6 +206,7 @@
 
   function renderHero(d) {
     const temp  = d.current_temp != null ? d.current_temp.toFixed(1) : '--';
+    const hum   = d.current_humidity != null ? `${Math.round(d.current_humidity)}%` : '--';
     const high  = d.today && d.today.high ? `${d.today.high.temp}°` : '--';
     const highT = d.today && d.today.high ? d.today.high.time : '';
     const low   = d.today && d.today.low  ? `${d.today.low.temp}°` : '--';
@@ -174,6 +215,7 @@
       <p class="coop-label">${escHtml(d.coop_name || 'Coop')}</p>
       <div class="temp-big">${temp}<sup>°C</sup></div>
       <div class="hl-row">H: ${high} at ${highT} &nbsp;·&nbsp; L: ${low} at ${lowT}</div>
+      <div class="hl-row">${t('humidity')}: ${hum}</div>
       <span class="hint-badge">${d.bg_hint}</span>
     `;
   }

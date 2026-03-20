@@ -73,13 +73,17 @@ const app = createApp({
         async fetchKeys() {
             const response = await this.apiCall('/v1/admin/reg-keys');
             if (response.success) {
-                this.keys = response.data;
+                this.keys = Array.isArray(response.data) ? response.data : [];
+            } else {
+                this.keys = [];
             }
         },
         async fetchFarmers() {
             const response = await this.apiCall('/v1/admin/farmers');
             if (response.success) {
-                this.farmers = response.data;
+                this.farmers = Array.isArray(response.data) ? response.data : [];
+            } else {
+                this.farmers = [];
             }
         },
         async generateKey() {
@@ -163,4 +167,8 @@ const app = createApp({
     }
 });
 app.mount('#app');
+const appEl = document.getElementById('app');
+if (appEl) {
+    appEl.removeAttribute('v-cloak');
+}
 console.log('[Admin] App mounted successfully');

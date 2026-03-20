@@ -1,6 +1,7 @@
 # 🏗️ Tokkatot System Architecture
 
-This document provides a technical deep dive into the **Tokkatot** smart poultry management system.
+This file mirrors `ARCHITECTURE.md` at the repository root.  
+Keep both files in sync when architecture changes.
 
 ---
 
@@ -75,5 +76,5 @@ The AI Service is a **Python FastAPI** application running a **PyTorch Ensemble*
 
 ---
 
-**Proprietary Software - Tokkatot Startup**
+**Proprietary Software - Tokkatot Startup**  
 *Designed for reliability, accessibility, and high impact in Cambodian agriculture.*

@@ -84,7 +84,7 @@ func (s *AdminService) ListRegistrationKeys() ([]models.RegistrationKey, error) 
 	}
 	defer rows.Close()
 
-	var keys []models.RegistrationKey
+	keys := make([]models.RegistrationKey, 0)
 	for rows.Next() {
 		var k models.RegistrationKey
 		var farmName, customerPhone, nationalID, fullName, sex, province sql.NullString
@@ -119,7 +119,7 @@ func (s *AdminService) ListAllFarmers() ([]models.User, error) {
 	}
 	defer rows.Close()
 
-	var users []models.User
+	users := make([]models.User, 0)
 	for rows.Next() {
 		var u models.User
 		var lastLogin sql.NullTime
@@ -177,12 +177,12 @@ func (s *AdminService) GetAdminStats() (map[string]int, error) {
 		return nil, err
 	}
 
-	// Count Workers (viewers)
+	// Count Workers (viewer + worker)
 	err = database.DB.QueryRow(`
 		SELECT COUNT(DISTINCT u.id) 
 		FROM users u 
 		JOIN farm_users fu ON u.id = fu.user_id 
-		WHERE fu.role = 'viewer'
+		WHERE fu.role IN ('viewer', 'worker')
 	`).Scan(&totalWorkers)
 	if err != nil {
 		return nil, err

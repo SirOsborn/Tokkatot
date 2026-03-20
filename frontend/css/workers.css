@@ -1,0 +1,102 @@
+/* 
+ * Workers Management Page
+ */
+
+.workers-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-lg);
+    gap: var(--space-md);
+}
+
+.workers-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--tok-text-primary);
+}
+
+.workers-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-md);
+}
+
+.workers-count {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--tok-teal);
+}
+
+.worker-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.worker-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.worker-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(0, 137, 123, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tok-teal);
+}
+
+.worker-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.worker-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--tok-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.worker-sub {
+    font-size: 12px;
+    color: var(--tok-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.worker-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.role-select {
+    min-width: 110px;
+}
+
+@media (max-width: 480px) {
+    .worker-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .worker-actions {
+        justify-content: flex-end;
+    }
+}
