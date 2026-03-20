@@ -47,7 +47,7 @@ func (s *FarmService) CheckAccess(userID, farmID uuid.UUID, minRole string) erro
 // ListFarms returns all farms the user is a member of with pagination
 func (s *FarmService) ListFarms(userID uuid.UUID, limit, offset int) ([]schemas.FarmWithRole, int64, error) {
 	query := `
-		SELECT f.id, f.name, f.location, f.description, fu.role, f.created_at,
+		SELECT f.id, f.name, f.location, f.province, f.description, fu.role, f.created_at,
 		       (SELECT COUNT(*) FROM coops WHERE farm_id = f.id AND is_active = true) as coop_count
 		FROM farms f
 		JOIN farm_users fu ON f.id = fu.farm_id
@@ -64,7 +64,7 @@ func (s *FarmService) ListFarms(userID uuid.UUID, limit, offset int) ([]schemas.
 	var farms []schemas.FarmWithRole
 	for rows.Next() {
 		var f schemas.FarmWithRole
-		if err := rows.Scan(&f.ID, &f.Name, &f.Location, &f.Description, &f.Role, &f.CreatedAt, &f.CoopCount); err != nil {
+		if err := rows.Scan(&f.ID, &f.Name, &f.Location, &f.Province, &f.Description, &f.Role, &f.CreatedAt, &f.CoopCount); err != nil {
 			continue
 		}
 		farms = append(farms, f)
@@ -80,12 +80,12 @@ func (s *FarmService) ListFarms(userID uuid.UUID, limit, offset int) ([]schemas.
 func (s *FarmService) GetFarm(userID, farmID uuid.UUID) (schemas.FarmWithRole, error) {
 	var f schemas.FarmWithRole
 	err := database.DB.QueryRow(`
-		SELECT f.id, f.name, f.location, f.description, fu.role, f.created_at,
+		SELECT f.id, f.name, f.location, f.province, f.description, fu.role, f.created_at,
 		       (SELECT COUNT(*) FROM coops WHERE farm_id = f.id AND is_active = true) as coop_count
 		FROM farms f
 		JOIN farm_users fu ON f.id = fu.farm_id
 		WHERE f.id = $1 AND fu.user_id = $2 AND f.is_active = true
-	`, farmID, userID).Scan(&f.ID, &f.Name, &f.Location, &f.Description, &f.Role, &f.CreatedAt, &f.CoopCount)
+	`, farmID, userID).Scan(&f.ID, &f.Name, &f.Location, &f.Province, &f.Description, &f.Role, &f.CreatedAt, &f.CoopCount)
 
 	if err == sql.ErrNoRows {
 		return f, ErrFarmNotFound
@@ -104,17 +104,17 @@ func (s *FarmService) CreateFarm(userID uuid.UUID, req schemas.CreateFarmRequest
 	farmID := uuid.New()
 	now := time.Now()
 	_, err = tx.Exec(`
-		INSERT INTO farms (id, name, location, description, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, farmID, req.Name, req.Location, req.Description, now, now)
+		INSERT INTO farms (id, name, location, province, description, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, farmID, req.Name, req.Location, req.Province, req.Description, now, now)
 	if err != nil {
 		return nil, err
 	}
 
 	_, err = tx.Exec(`
-		INSERT INTO farm_users (farm_id, user_id, role, created_at)
-		VALUES ($1, $2, 'farmer', $3)
-	`, farmID, userID, now)
+		INSERT INTO farm_users (id, farm_id, user_id, role, invited_by, created_at, updated_at)
+		VALUES ($1, $2, $3, 'farmer', $4, $5, $5)
+	`, uuid.New(), farmID, userID, userID, now)
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +127,7 @@ func (s *FarmService) CreateFarm(userID uuid.UUID, req schemas.CreateFarmRequest
 		ID:          farmID,
 		Name:        req.Name,
 		Location:    req.Location,
+		Province:    req.Province,
 		Description: req.Description,
 		CreatedAt:   now,
 	}, nil
@@ -142,14 +143,15 @@ func (s *FarmService) UpdateFarm(userID, farmID uuid.UUID, req schemas.UpdateFar
 		UPDATE farms SET
 			name = COALESCE($1, name),
 			location = COALESCE($2, location),
-			description = COALESCE($3, description),
+			province = COALESCE($3, province),
+			description = COALESCE($4, description),
 			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $4
-		RETURNING id, name, location, description, created_at
+		WHERE id = $5
+		RETURNING id, name, location, province, description, created_at
 	`
 	var f models.Farm
-	err := database.DB.QueryRow(query, req.Name, req.Location, req.Description, farmID).
-		Scan(&f.ID, &f.Name, &f.Location, &f.Description, &f.CreatedAt)
+	err := database.DB.QueryRow(query, req.Name, req.Location, req.Province, req.Description, farmID).
+		Scan(&f.ID, &f.Name, &f.Location, &f.Province, &f.Description, &f.CreatedAt)
 
 	if err == sql.ErrNoRows {
 		return nil, ErrFarmNotFound

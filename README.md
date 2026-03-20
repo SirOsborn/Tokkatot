@@ -57,9 +57,9 @@ Tokkatot is a comprehensive smart poultry management system designed for Cambodi
 
 ## 📖 Documentation
 
-- **[ARCHITECHTURE.md](docs/ARCHITECTURE.md)**: Technical deep dive into the system design.
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Technical deep dive into the system design.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)**: Development guidelines and AI Agent instructions.
-- **[USER_GUIDE.md](docs/USER_GUIDE.md)** (Coming Soon): Guide for farm owners and workers.
+- **[USER_GUIDE.md](docs/USER_GUIDE.md)**: Guide for farm owners and workers (in progress).
 
 ---
 

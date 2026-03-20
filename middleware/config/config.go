@@ -30,6 +30,7 @@ type Config struct {
 
 	// Environment
 	Environment string
+
 }
 
 var AppConfig *Config
@@ -62,6 +63,7 @@ func LoadConfig() *Config {
 
 		// Environment
 		Environment: getEnv("ENVIRONMENT", "development"),
+
 	}
 
 	// Validate required fields

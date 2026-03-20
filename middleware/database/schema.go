@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS farm_users (
     id UUID PRIMARY KEY,
     farm_id UUID NOT NULL REFERENCES farms(id),
     user_id UUID NOT NULL REFERENCES users(id),
-    role VARCHAR(20) NOT NULL CHECK (role IN ('farmer', 'viewer')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('farmer', 'worker', 'viewer')),
     invited_by UUID NOT NULL REFERENCES users(id),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -8,6 +8,9 @@ const app = createApp({
       showAddFarm:  false,
       addFarmError: '',
       addFarmLoading: false,
+      showAddCoop:  false,
+      addCoopError: '',
+      addCoopLoading: false,
       lang: window.i18n ? window.i18n.getLang() : 'km',
       farms:        [],
       selectedFarmId: null,
@@ -24,6 +27,7 @@ const app = createApp({
       isAdmin:      false,
       userRole:     'farmer',
       newFarm:      { name: '', province: '' },
+      newCoop:      { number: 1, name: '', capacity: null, current_count: null, chicken_type: '', description: '' },
       provinces:    window.i18n ? window.i18n.provinces() : [],
     };
   },
@@ -82,7 +86,8 @@ const app = createApp({
       if (!fid) return;
       try {
         const data = await window.API.get('/v1/farms/' + fid + '/coops');
-        this.coops = (data && data.data && data.data.coops) ? data.data.coops : [];
+        this.coops = (data && data.data && data.data.coops) ? data.data.coops
+                   : (data && data.data && Array.isArray(data.data)) ? data.data : [];
         if (this.coops.length > 0) {
           const saved = window.API.getSelectedCoopId();
           const match = saved && this.coops.find(c => String(c.id) === saved);
@@ -115,9 +120,9 @@ const app = createApp({
 
     async loadDevices() {
       const fid = this.selectedFarmId;
-      if (!fid) return;
+      if (!fid || !this.selectedCoopId) return;
       try {
-        const data = await window.API.get('/v1/farms/' + fid + '/devices');
+        const data = await window.API.get('/v1/farms/' + fid + '/devices?coop_id=' + this.selectedCoopId);
         const raw = (data && data.data && data.data.devices) ? data.data.devices : [];
         this.devices = raw.map(d => ({ ...d, loading: false }));
       } catch(e) { console.error(e); }
@@ -127,7 +132,8 @@ const app = createApp({
       device.loading = true;
       const cmd = device.last_state === 'on' ? 'turn_off' : 'turn_on';
       try {
-        await window.API.post('/v1/devices/' + device.id + '/command', { command_type: cmd });
+        const fid = this.selectedFarmId;
+        await window.API.post('/v1/farms/' + fid + '/devices/' + device.id + '/commands', { command_type: cmd });
         device.last_state = device.last_state === 'on' ? 'off' : 'on';
       } catch(e) { console.error(e); }
       finally { device.loading = false; }
@@ -157,6 +163,36 @@ const app = createApp({
         }
       } catch(e) { this.addFarmError = this.t('error') + ': ' + (e.message || e); }
       finally { this.addFarmLoading = false; }
+    },
+
+    async createCoop() {
+      this.addCoopError = '';
+      const fid = this.selectedFarmId;
+      if (!fid) { this.addCoopError = this.t('error'); return; }
+      if (!this.newCoop.name || !this.newCoop.number) {
+        this.addCoopError = this.t('coop_name') + ' / ' + this.t('coop_number');
+        return;
+      }
+      this.addCoopLoading = true;
+      try {
+        const payload = {
+          number: this.newCoop.number,
+          name: this.newCoop.name,
+          capacity: this.newCoop.capacity || undefined,
+          current_count: this.newCoop.current_count || undefined,
+          chicken_type: this.newCoop.chicken_type || undefined,
+          description: this.newCoop.description || undefined
+        };
+        const res = await window.API.post('/v1/farms/' + fid + '/coops', payload);
+        if (res && res.success) {
+          this.showAddCoop = false;
+          this.newCoop = { number: 1, name: '', capacity: null, current_count: null, chicken_type: '', description: '' };
+          await this.loadCoops();
+        } else {
+          this.addCoopError = (res && res.message) || this.t('error');
+        }
+      } catch(e) { this.addCoopError = this.t('error') + ': ' + (e.message || e); }
+      finally { this.addCoopLoading = false; }
     },
 
     connectWS() {

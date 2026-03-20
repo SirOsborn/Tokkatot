@@ -6,23 +6,32 @@ import (
 	"middleware/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/google/uuid"
 )
 
 // AuthMiddleware validates JWT token from Authorization header
 func AuthMiddleware(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
+	tokenString := ""
 	if authHeader == "" {
-		return utils.Unauthorized(c, "Missing authorization header")
+		// Allow websocket auth via query parameter (browser limitation)
+		if websocket.IsWebSocketUpgrade(c) {
+			tokenString = c.Query("token")
+			if tokenString == "" {
+				return utils.Unauthorized(c, "Missing authorization token")
+			}
+		} else {
+			return utils.Unauthorized(c, "Missing authorization header")
+		}
+	} else {
+		// Extract and validate JWT
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			return utils.Unauthorized(c, "Invalid authorization header format")
+		}
+		tokenString = parts[1]
 	}
-
-	// Extract and validate JWT
-	parts := strings.SplitN(authHeader, " ", 2)
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		return utils.Unauthorized(c, "Invalid authorization header format")
-	}
-
-	tokenString := parts[1]
 	claims, err := utils.ValidateToken(tokenString)
 	if err != nil {
 		return utils.Unauthorized(c, err.Error())

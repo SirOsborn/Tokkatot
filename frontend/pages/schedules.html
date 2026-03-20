@@ -204,8 +204,19 @@
     </div>
   </div>
 
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+  <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
     <div style="font-size: 24px; font-weight: 700; color: var(--tok-text-primary);" data-i18n="schedules">Schedules</div>
+    <div v-if="farms.length > 1">
+      <select class="tok-input" v-model="selectedFarmId" @change="onFarmChange">
+        <option v-for="f in farms" :key="f.id" :value="f.id">{{ f.name }}</option>
+      </select>
+    </div>
+    <div v-if="coops.length > 0">
+      <select class="tok-input" v-model="selectedCoopId" @change="onCoopChange">
+        <option value="">-- {{ t('select_coop') }} --</option>
+        <option v-for="c in coops" :key="c.id" :value="c.id">{{ c.name }}</option>
+      </select>
+    </div>
   </div>
 
   <div v-if="loading" style="display: flex; justify-content: center; padding: 60px 0;">
@@ -295,6 +306,8 @@ createApp({
     return {
       loading: true, saving: false, deleting: false,
       schedules: [], devices: [],
+      farms: [], coops: [],
+      selectedFarmId: null, selectedCoopId: '',
       showForm: false, editingId: null,
       form: JSON.parse(JSON.stringify(EMPTY_FORM)),
       useSequence: false,
@@ -338,21 +351,46 @@ createApp({
     if (window.i18n && window.i18n.applyAll) {
       window.i18n.applyAll();
     }
-    await Promise.all([this.loadSchedules(), this.loadDevices()]);
+    await this.loadFarms();
   },
   methods: {
     t(k) { return window.i18n ? window.i18n.t(k) : k; },
-    getFarmId() { return window.API.getSelectedFarmId(); },
+    getFarmId() { return this.selectedFarmId || window.API.getSelectedFarmId(); },
     deviceName(id) {
       const d = this.devices.find(x => x.id === id);
       return d ? d.name : (id || '--');
+    },
+    async loadFarms() {
+      const data = await window.API.get('/v1/farms');
+      this.farms = (data && data.data && data.data.data) ? data.data.data
+                 : (data && data.data && Array.isArray(data.data)) ? data.data : [];
+      if (this.farms.length > 0) {
+        const saved = window.API.getSelectedFarmId();
+        const match = saved && this.farms.find(f => String(f.id) === saved);
+        this.selectedFarmId = match ? match.id : this.farms[0].id;
+        window.API.setSelectedFarmId(this.selectedFarmId);
+        await this.loadCoops();
+      }
+    },
+    async loadCoops() {
+      const fid = this.getFarmId();
+      if (!fid) return;
+      const data = await window.API.get('/v1/farms/' + fid + '/coops');
+      this.coops = (data && data.data && data.data.coops) ? data.data.coops
+                 : (data && data.data && Array.isArray(data.data)) ? data.data : [];
+      const saved = window.API.getSelectedCoopId();
+      const match = saved && this.coops.find(c => String(c.id) === saved);
+      this.selectedCoopId = match ? match.id : '';
+      if (this.selectedCoopId) window.API.setSelectedCoopId(this.selectedCoopId);
+      await Promise.all([this.loadSchedules(), this.loadDevices()]);
     },
     async loadSchedules() {
       this.loading = true;
       const fid = this.getFarmId();
       if (!fid) { this.loading = false; return; }
       try {
-        const data = await window.API.get('/v1/farms/' + fid + '/schedules');
+        const coopQuery = this.selectedCoopId ? ('?coop_id=' + this.selectedCoopId) : '';
+        const data = await window.API.get('/v1/farms/' + fid + '/schedules' + coopQuery);
         this.schedules = ((data && data.data && data.data.schedules) ? data.data.schedules : [])
           .map(s => ({ ...s, executing: false }));
       } catch(e) { console.error(e); }
@@ -362,9 +400,19 @@ createApp({
       const fid = this.getFarmId();
       if (!fid) return;
       try {
-        const data = await window.API.get('/v1/farms/' + fid + '/devices');
+        const coopQuery = this.selectedCoopId ? ('?coop_id=' + this.selectedCoopId) : '';
+        const data = await window.API.get('/v1/farms/' + fid + '/devices' + coopQuery);
         this.devices = (data && data.data && data.data.devices) ? data.data.devices : [];
       } catch(e) { console.error(e); }
+    },
+    async onFarmChange() {
+      window.API.setSelectedFarmId(this.selectedFarmId);
+      this.selectedCoopId = '';
+      await this.loadCoops();
+    },
+    async onCoopChange() {
+      if (this.selectedCoopId) window.API.setSelectedCoopId(this.selectedCoopId);
+      await Promise.all([this.loadSchedules(), this.loadDevices()]);
     },
     parseCronToPickers(cron) {
       const parts = (cron || '0 6 * * *').trim().split(/\s+/);
@@ -469,7 +517,9 @@ createApp({
         cron_expression: s.cron_expression || '0 6 * * *',
         action_duration: s.action_duration || 0,
         is_enabled: s.is_enabled,
-        sequence: s.action_sequence ? JSON.parse(s.action_sequence) : JSON.parse(JSON.stringify(EMPTY_FORM.sequence))
+        sequence: Array.isArray(s.action_sequence)
+          ? s.action_sequence
+          : (s.action_sequence ? JSON.parse(s.action_sequence) : JSON.parse(JSON.stringify(EMPTY_FORM.sequence)))
       };
       this.useSequence = !!s.action_sequence;
       this.showAdvanced = !!s.action_sequence;
@@ -498,8 +548,9 @@ createApp({
         action_value: this.form.action_value,
         priority: 5, is_enabled: this.form.is_enabled
       };
+      if (this.selectedCoopId) payload.coop_id = this.selectedCoopId;
       if (this.useSequence) {
-        payload.action_sequence = JSON.stringify(this.form.sequence);
+        payload.action_sequence = this.form.sequence;
       } else {
         const secs = this.durationPreset === 'custom'
           ? (this.customDurationMinutes || 1) * 60

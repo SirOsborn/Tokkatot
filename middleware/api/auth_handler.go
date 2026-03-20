@@ -76,19 +76,18 @@ func LoginHandler(c *fiber.Ctx) error {
 	}, "Login successful")
 }
 
-func VerifyContactHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Contact verified (mock)")
-}
-
 // RefreshTokenHandler refreshes a JWT
 // @Summary Refresh Token
 // @Description Returns a new JWT using a valid refresh token
 // @Tags Auth
 // @Produce json
 // @Success 200 {object} schemas.JSONResponse
-// @Router /v1/auth/token/refresh [post]
+// @Router /v1/auth/refresh [post]
 func RefreshTokenHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{"token": "new_token_mock"}, "Token refreshed")
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+		"access_token":  "new_token_mock",
+		"refresh_token": "new_refresh_token_mock",
+	}, "Token refreshed")
 }
 
 // LogoutHandler invalidates a session
@@ -100,14 +99,6 @@ func RefreshTokenHandler(c *fiber.Ctx) error {
 // @Router /v1/auth/logout [post]
 func LogoutHandler(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Logout successful")
-}
-
-func ForgotPasswordHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Reset email sent (mock)")
-}
-
-func ResetPasswordHandler(c *fiber.Ctx) error {
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Password reset successful (mock)")
 }
 
 // AuthMiddleware and AdminMiddleware have been removed from here as they are in auth_middleware.go or common.go

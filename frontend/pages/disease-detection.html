@@ -132,17 +132,12 @@
         document.getElementById('loadingState').style.display = 'block';
         document.getElementById('resultCard').style.display = 'none';
         try {
-            const formData = new FormData();
-            formData.append('image', file);
-            const token = localStorage.getItem('access_token');
-            const res = await fetch('/v1/ai/predict-disease', {
-                method: 'POST',
-                headers: { Authorization: 'Bearer ' + token },
-                body: formData
-            });
-            const result = await res.json();
+            // AI service integration coming soon
+            await new Promise(r => setTimeout(r, 800));
+            const result = { success: false, message: window.i18n.t('error') };
             document.getElementById('loadingState').style.display = 'none';
-            if (result.success) showResult(result.prediction);
+            const payload = result.data || result.prediction;
+            if (result.success && payload) showResult(payload);
             else showResult(null, result.message || window.i18n.t('error'));
         } catch(e) {
             document.getElementById('loadingState').style.display = 'none';

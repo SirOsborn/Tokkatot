@@ -99,5 +99,55 @@ func (s *CoopService) CreateCoop(userID, farmID uuid.UUID, req models.Coop) (*mo
 	req.ID = coopID
 	req.FarmID = farmID
 	req.CreatedAt = now
+	req.UpdatedAt = now
 	return &req, nil
+}
+
+// UpdateCoop updates an existing coop
+func (s *CoopService) UpdateCoop(userID, farmID, coopID uuid.UUID, number *int, name *string, capacity *int, currentCount *int, chickenType *string, description *string) (*models.Coop, error) {
+	if err := s.farmService.CheckAccess(userID, farmID, "farmer"); err != nil {
+		return nil, err
+	}
+
+	var c models.Coop
+	err := database.DB.QueryRow(`
+		UPDATE coops SET
+			number = COALESCE($1, number),
+			name = COALESCE($2, name),
+			capacity = COALESCE($3, capacity),
+			current_count = COALESCE($4, current_count),
+			chicken_type = COALESCE($5, chicken_type),
+			description = COALESCE($6, description),
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = $7 AND farm_id = $8 AND is_active = true
+		RETURNING id, farm_id, number, name, capacity, current_count, chicken_type, main_device_id, description, is_active, created_at, updated_at
+	`, number, name, capacity, currentCount, chickenType, description, coopID, farmID).Scan(
+		&c.ID, &c.FarmID, &c.Number, &c.Name, &c.Capacity, &c.CurrentCount, &c.ChickenType, &c.MainDeviceID, &c.Description, &c.IsActive, &c.CreatedAt, &c.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, ErrCoopNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+// DeleteCoop deactivates a coop
+func (s *CoopService) DeleteCoop(userID, farmID, coopID uuid.UUID) error {
+	if err := s.farmService.CheckAccess(userID, farmID, "farmer"); err != nil {
+		return err
+	}
+	res, err := database.DB.Exec(`
+		UPDATE coops SET is_active = false, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1 AND farm_id = $2
+	`, coopID, farmID)
+	if err != nil {
+		return err
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return ErrCoopNotFound
+	}
+	return nil
 }

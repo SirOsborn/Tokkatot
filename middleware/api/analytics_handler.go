@@ -85,7 +85,7 @@ func ExportReportHandler(c *fiber.Ctx) error {
 // @Produce json
 // @Param farm_id path string true "Farm ID (UUID)"
 // @Success 200 {object} []models.EventLog
-// @Router /v1/farms/{farm_id}/logs [get]
+// @Router /v1/farms/{farm_id}/events [get]
 func GetFarmEventLogHandler(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, fiber.StatusOK, []interface{}{}, "Event logs retrieved (mock)")
 }

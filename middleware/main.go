@@ -9,6 +9,7 @@ import (
 	"middleware/config"
 	"middleware/database"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 )
 
 // @title Tokkatot API
@@ -139,11 +140,8 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	auth := v1.Group("/auth")
 	auth.Post("/signup", api.SignupHandler)
 	auth.Post("/login", api.LoginHandler)
-	auth.Post("/verify", api.VerifyContactHandler) // Email/Phone verification
 	auth.Post("/refresh", api.RefreshTokenHandler)
 	auth.Post("/logout", api.LogoutHandler)
-	auth.Post("/forgot-password", api.ForgotPasswordHandler)
-	auth.Post("/reset-password", api.ResetPasswordHandler)
 
 	// Protected routes (require authentication)
 	protected := v1.Group("")
@@ -234,8 +232,10 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Get("/farms/:farm_id/reports/export", api.ExportReportHandler)
 	protected.Get("/farms/:farm_id/events", api.GetFarmEventLogHandler)
 
+
 	// WebSocket for real-time updates (requires authentication)
-	protected.Get("/ws", api.WebSocketUpgradeHandler)
+	protected.Use("/ws", api.WebSocketUpgradeMiddleware)
+	protected.Get("/ws", websocket.New(api.WebSocketHandler))
 	protected.Get("/ws/stats", api.GetWebSocketStatsHandler)
 
 	// Device heartbeat (for IoT devices - no AuthMiddleware, uses device key)

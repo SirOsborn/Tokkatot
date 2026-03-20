@@ -18,6 +18,7 @@ type FarmWithRole struct {
 type CreateFarmRequest struct {
 	Name        string `json:"name" example:"Sunny Valley Farm"`
 	Location    *string `json:"location,omitempty"`
+	Province    *string `json:"province,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Timezone    *string `json:"timezone,omitempty"`
 }
@@ -26,6 +27,7 @@ type CreateFarmRequest struct {
 type UpdateFarmRequest struct {
 	Name        *string `json:"name,omitempty"`
 	Location    *string `json:"location,omitempty"`
+	Province    *string `json:"province,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Timezone    *string `json:"timezone,omitempty"`
 }
