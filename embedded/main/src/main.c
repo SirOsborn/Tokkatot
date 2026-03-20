@@ -21,7 +21,6 @@ void app_main(void)
 
     ESP_LOGI(TAG, "System initialization complete");
 
-    static bool was_water_low = false;  // Track previous water state to prevent rapid switching
     static uint32_t last_sensors_read_ms = 0;
     sensor_data_t current_data;
 
@@ -46,38 +45,18 @@ void app_main(void)
             
             // Temperature control
             if (temp <= 28.0f) {
-                // Cold condition: Turn on bulb, turn off fan
-                device_state.bulb = true;
+                // Cold condition: Heater ON, Fan OFF
+                device_state.heater = true;
                 device_state.fan = false;
-                // ESP_LOGI(TAG, "Auto: Cold (%.2f°C) - Bulb ON, Fan OFF", temp);
             } else if (temp >= 32.0f) {
-                // Hot condition: Turn on fan, turn off bulb
-                device_state.bulb = false;
+                // Hot condition: Fan ON, Heater OFF
+                device_state.heater = false;
                 device_state.fan = true;
-                // ESP_LOGI(TAG, "Auto: Hot (%.2f°C) - Bulb OFF, Fan ON", temp);
             } else {
-                // Comfortable range: Both off
-                device_state.bulb = false;
+                // Comfortable range: Both OFF
+                device_state.heater = false;
                 device_state.fan = false;
-                // ESP_LOGI(TAG, "Auto: Normal (%.2f°C) - Both OFF", temp);
             }
-
-            // Water level control with hysteresis
-            // if (current_data.water_level <= WATER_LEVEL_LOW) {
-            //     if (!was_water_low) {
-            //         // Water level just became low
-            //         device_states.pump = true;
-            //         was_water_low = true;
-            //         ESP_LOGI(TAG, "Auto: Water Low (%.2fV) - Pump ON", current_data.water_level);
-            //     }
-            // } else if (current_data.water_level >= WATER_LEVEL_FULL) {
-            //     if (was_water_low) {
-            //         // Water level reached full
-            //         device_states.pump = false;
-            //         was_water_low = false;
-            //         ESP_LOGI(TAG, "Auto: Water Full (%.2fV) - Pump OFF", current_data.water_level);
-            //     }
-            // }
 
             // Update device states
             update_device_state(&device_state);

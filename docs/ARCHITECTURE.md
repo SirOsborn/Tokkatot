@@ -74,6 +74,7 @@ The AI Service is planned for a later patch and is **not integrated yet**.
 - **Logic**: ON/OFF relays + sequence schedules executed by gateway.
 - **Telemetry**: Pi posts temperature/humidity/water level to cloud.
 - **Water Alert Rule**: Water below half threshold for 1 minute triggers alert.
+- **Gateway Security (planned)**: per-gateway key + HMAC signature + nonce/replay protection.
 
 ---
 

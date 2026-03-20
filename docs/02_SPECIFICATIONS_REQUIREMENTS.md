@@ -72,6 +72,7 @@ Required cloud endpoints:
 - **Today** view: hourly low/high.
 - **History** view: daily low/high (yesterday, previous days).
 - Coop selectors control which data is displayed.
+- Cloud keeps **raw telemetry for 7 days** (auto-delete).
 
 ---
 
@@ -80,3 +81,4 @@ Required cloud endpoints:
 - High-contrast UI for visibility in bright farm environments.
 - API must remain responsive under intermittent connectivity.
 - System must tolerate missing devices without errors.
+- Gateway security hardening (future): device key + HMAC + replay protection.

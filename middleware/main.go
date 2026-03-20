@@ -4,10 +4,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"middleware/api"
 	"middleware/config"
 	"middleware/database"
+	"middleware/services"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
@@ -76,6 +78,10 @@ func main() {
 	go api.WSHub.RunHub()
 	log.Println("✅ WebSocket hub started")
 
+	// Start telemetry retention cleanup
+	go startTelemetryRetentionCleanup(cfg.TelemetryRetentionDays)
+	log.Printf("✅ Telemetry retention cleanup started (days=%d)", cfg.TelemetryRetentionDays)
+
 	// Setup routes
 	setupRoutes(app, frontendPath)
 
@@ -83,6 +89,22 @@ func main() {
 	log.Printf("✅ Server starting on %s:%s", cfg.ServerHost, cfg.ServerPort)
 	if err := app.Listen(cfg.ServerHost + ":" + cfg.ServerPort); err != nil {
 		log.Fatalf("❌ Server failed: %v", err)
+	}
+}
+
+func startTelemetryRetentionCleanup(retentionDays int) {
+	service := services.NewTelemetryService()
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+
+	for {
+		deleted, err := service.CleanupOldReadings(retentionDays)
+		if err != nil {
+			log.Printf("⚠️  Telemetry cleanup failed: %v", err)
+		} else if deleted > 0 {
+			log.Printf("🧹 Telemetry cleanup removed %d readings", deleted)
+		}
+		<-ticker.C
 	}
 }
 
