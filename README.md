@@ -2,9 +2,9 @@
 
 ![Tokkatot Logo](frontend/assets/images/tokkatot%20logo-02.png)
 
-**Advanced IoT-Based Poultry Disease Detection & Farm Automation**
+**IoT-Based Poultry Automation with Coop-Level Monitoring**
 
-Tokkatot is a comprehensive smart poultry management system designed for Cambodian farmers. It combines IoT sensor technology, AI-powered disease detection, and automated farm controls to improve poultry health monitoring and farm productivity.
+Tokkatot is a comprehensive smart poultry management system designed for Cambodian farmers. It combines IoT sensor technology, coop-level automation, and (later) AI-powered disease detection to improve poultry health monitoring and farm productivity.
 
 ---
 
@@ -40,8 +40,8 @@ Tokkatot is a comprehensive smart poultry management system designed for Cambodi
 | **Backend** | Go 1.23 / Fiber v2 | High-performance REST API with JWT Auth |
 | **Database** | PostgreSQL 17 | Unified schema for Users, Farms, and Devices |
 | **Frontend** | Vue.js 3 / PWA | Mobile-first, Khmer-language, zero-build PWA |
-| **AI Service** | FastAPI / PyTorch | EfficientNetB0 + DenseNet121 Ensemble |
-| **IoT/Embedded** | ESP32 / ESP-IDF | C-based firmware with MQTT communication |
+| **AI Service** | FastAPI / PyTorch | Planned, not integrated yet |
+| **IoT/Embedded** | ESP32 / ESP-IDF + Raspberry Pi | Local HTTPS control, Pi gateway posts telemetry |
 
 ---
 
@@ -65,7 +65,7 @@ Tokkatot is a comprehensive smart poultry management system designed for Cambodi
 
 ## 🔐 Security & Compliance
 
-Tokkatot uses **JWT-based authentication** and a **Registration Key system** to ensure zero SMS costs for farmers while maintaining high security. The system implements a **Unified Schema** where user profiles and farm data are tightly synchronized.
+Tokkatot uses **JWT-based authentication** and a **Registration Key system** to ensure zero SMS costs for farmers while maintaining high security. Coop-level automation is the primary control unit.
 
 ---
 
