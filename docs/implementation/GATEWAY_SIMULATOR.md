@@ -27,6 +27,7 @@ go run middleware/scripts/gateway_sim.go --phone "+85512345678" --password "your
 - `--interval` seconds between telemetry (default 10)
 - `--once` send a single telemetry event and exit
 - `--poll-schedules` to fetch schedules each cycle
+- `--live` fetch monitoring timeline each cycle (updates dashboard cards)
 - `--e2e` run the full end-to-end test sequence once
 
 ---
