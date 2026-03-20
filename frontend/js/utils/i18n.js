@@ -14,13 +14,14 @@
   'use strict';
 
   const translations = {
-    km: {
-      /* --- Navigation --- */
-      nav_home:         'ទំព័រដើម',
-      nav_monitoring:   'ត្រួតពិនិត្យ',
-      nav_disease:      'ជំងឺវិភាគ',
-      nav_schedules:    'កាលវិភាគ',
-      nav_settings:     'ការកំណត់',
+      km: {
+        /* --- Navigation --- */
+        nav_home:         'ទំព័រដើម',
+        nav_monitoring:   'ត្រួតពិនិត្យ',
+        nav_disease:      'ជំងឺវិភាគ',
+        nav_schedules:    'កាលវិភាគ',
+        nav_settings:     'ការកំណត់',
+        alerts:           'ការជូនដំណឹង',
 
       /* --- Auth --- */
       login:            'ចូលគណនី',
@@ -214,10 +215,21 @@
       farmer_id_req:    'សូមបញ្ចូល ID ម្ចាស់កសិដ្ឋាន',
       pwd_mismatch:     'លេខសម្ងាត់មិនត្រូវគ្នា',
       pwd_min_len:      'លេខសម្ងាត់យ៉ាងតិច ៦ តួ',
-      no_farm_access:   'មិនមានសិទ្ធិចូលមើលកសិដ្ឋាន',
-      contact_owner:    'សូមទំនាក់ទំនងម្ចាស់កសិដ្ឋានដើម្បីទទួលបានការអនុញ្ញាត',
-      add_farm:         'បង្កើតកសិដ្ឋាន',
-      farm_name:        'ឈ្មោះកសិដ្ឋាន',
+        no_farm_access:   'មិនមានសិទ្ធិចូលមើលកសិដ្ឋាន',
+        contact_owner:    'សូមទំនាក់ទំនងម្ចាស់កសិដ្ឋានដើម្បីទទួលបានការអនុញ្ញាត',
+        add_farm:         'បង្កើតកសិដ្ឋាន',
+        workers:          'បុគ្គលិក',
+        manage_workers:   'គ្រប់គ្រងបុគ្គលិក',
+        workers_count:    'ចំនួនបុគ្គលិក',
+        invite_worker:    'អញ្ជើញបុគ្គលិក',
+        member_role:      'តួនាទី',
+        viewer_role:      'មើលតែប៉ុណ្ណោះ',
+        worker_role:      'កម្មករ',
+        remove_member:    'លុបចេញ',
+        no_workers:       'មិនទាន់មានបុគ្គលិក',
+        contact_or_phone: 'អ៊ីមែល ឬ លេខទូរស័ព្ទ',
+        owner_only_manage:'តែម្ចាស់កសិដ្ឋានប៉ុណ្ណោះអាចគ្រប់គ្រងបុគ្គលិក',
+        farm_name:        'ឈ្មោះកសិដ្ឋាន',
       province_city:    'ខេត្ត/ក្រុង',
       select_province:  '-- ជ្រើសរើសខេត្ត --',
       create:           'បង្កើត',
@@ -271,13 +283,14 @@
       duration_custom:  'រយៈពេលផ្ទាល់ខ្លួន',
     },
 
-    en: {
-      /* --- Navigation --- */
-      nav_home:         'Home',
-      nav_monitoring:   'Dashboard',
-      nav_disease:      'AI Disease',
-      nav_schedules:    'Schedules',
-      nav_settings:     'Settings',
+      en: {
+        /* --- Navigation --- */
+        nav_home:         'Home',
+        nav_monitoring:   'Dashboard',
+        nav_disease:      'AI Disease',
+        nav_schedules:    'Schedules',
+        nav_settings:     'Settings',
+        alerts:           'Alerts',
       
       /* --- Auth --- */
       login:            'Login',
@@ -438,10 +451,21 @@
       farmer_id_req:    "Farmer's ID is required",
       pwd_mismatch:     'Passwords do not match',
       pwd_min_len:      'Password must be at least 6 characters',
-      no_farm_access:   'No farm access',
-      contact_owner:    'Contact your farm owner to get access.',
-      add_farm:         'Add Farm',
-      farm_name:        'Farm Name',
+        no_farm_access:   'No farm access',
+        contact_owner:    'Contact your farm owner to get access.',
+        add_farm:         'Add Farm',
+        workers:          'Workers',
+        manage_workers:   'Manage Workers',
+        workers_count:    'Workers',
+        invite_worker:    'Invite Worker',
+        member_role:      'Role',
+        viewer_role:      'Viewer',
+        worker_role:      'Worker',
+        remove_member:    'Remove',
+        no_workers:       'No workers yet',
+        contact_or_phone: 'Email or phone',
+        owner_only_manage:'Only the farm owner can manage workers',
+        farm_name:        'Farm Name',
       province_city:    'Province / City',
       select_province:  '-- Select Province --',
       create:           'Create',

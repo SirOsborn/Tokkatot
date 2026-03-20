@@ -100,6 +100,8 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 		return c.SendFile(filepath.Join(frontendPath, "pages", "index.html"))
 	})
 	app.Get("/admin", func(c *fiber.Ctx) error {
+		c.Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		c.Set("Pragma", "no-cache")
 		return c.SendFile(filepath.Join(frontendPath, "pages", "admin.html"))
 	})
 	app.Get("/login", func(c *fiber.Ctx) error {
@@ -131,6 +133,9 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	})
 	app.Get("/alerts", func(c *fiber.Ctx) error {
 		return c.SendFile(filepath.Join(frontendPath, "pages", "alerts.html"))
+	})
+	app.Get("/workers", func(c *fiber.Ctx) error {
+		return c.SendFile(filepath.Join(frontendPath, "pages", "workers.html"))
 	})
 
 	// v1 API Group

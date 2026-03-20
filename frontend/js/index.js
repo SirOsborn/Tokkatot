@@ -26,6 +26,7 @@ const app = createApp({
       ws:           null,
       isAdmin:      false,
       userRole:     'farmer',
+      workersCount: 0,
       newFarm:      { name: '', province: '' },
       newCoop:      { number: 1, name: '', capacity: null, current_count: null, chicken_type: '', description: '' },
       provinces:    window.i18n ? window.i18n.provinces() : [],
@@ -78,6 +79,15 @@ const app = createApp({
 
     async onFarmChange() {
       window.API.setSelectedFarmId(this.selectedFarmId);
+      this.selectedCoopId = null;
+      this.coops = [];
+      this.devices = [];
+      this.temp = null;
+      this.humidity = null;
+      this.coopChickens = null;
+      this.coopCapacity = null;
+      this.lastUpdated = '--';
+      if (this.ws) { try { this.ws.close(); } catch(_) {} this.ws = null; this.wsConnected = false; }
       await this.loadCoops();
     },
 
@@ -92,8 +102,18 @@ const app = createApp({
           const saved = window.API.getSelectedCoopId();
           const match = saved && this.coops.find(c => String(c.id) === saved);
           await this.selectCoop(match || this.coops[0]);
+        } else {
+          this.selectedCoopId = null;
+          this.devices = [];
+          this.temp = null;
+          this.humidity = null;
+          this.coopChickens = null;
+          this.coopCapacity = null;
+          this.lastUpdated = '--';
+          if (this.ws) { try { this.ws.close(); } catch(_) {} this.ws = null; this.wsConnected = false; }
         }
         await this.loadDevices();
+        await this.loadWorkersCount();
       } catch(e) { console.error(e); }
     },
 
@@ -126,6 +146,16 @@ const app = createApp({
         const raw = (data && data.data && data.data.devices) ? data.data.devices : [];
         this.devices = raw.map(d => ({ ...d, loading: false }));
       } catch(e) { console.error(e); }
+    },
+
+    async loadWorkersCount() {
+      const fid = this.selectedFarmId;
+      if (!fid) { this.workersCount = 0; return; }
+      try {
+        const data = await window.API.get('/v1/farms/' + fid + '/members');
+        const members = (data && data.data && data.data.members) ? data.data.members : [];
+        this.workersCount = members.filter(m => m.role && m.role !== 'farmer').length;
+      } catch(e) { console.error(e); this.workersCount = 0; }
     },
 
     async toggleDevice(device) {

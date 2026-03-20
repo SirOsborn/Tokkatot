@@ -104,9 +104,9 @@ func (s *FarmService) CreateFarm(userID uuid.UUID, req schemas.CreateFarmRequest
 	farmID := uuid.New()
 	now := time.Now()
 	_, err = tx.Exec(`
-		INSERT INTO farms (id, name, location, province, description, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`, farmID, req.Name, req.Location, req.Province, req.Description, now, now)
+		INSERT INTO farms (id, owner_id, name, location, province, description, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`, farmID, userID, req.Name, req.Location, req.Province, req.Description, now, now)
 	if err != nil {
 		return nil, err
 	}

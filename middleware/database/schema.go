@@ -219,6 +219,7 @@ CREATE TABLE IF NOT EXISTS alerts (
     threshold_value DECIMAL(10,4),
     actual_value DECIMAL(10,4),
     is_active BOOLEAN DEFAULT true,
+    is_acknowledged BOOLEAN DEFAULT false,
     triggered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     acknowledged_by UUID REFERENCES users(id),
     acknowledged_at TIMESTAMP,

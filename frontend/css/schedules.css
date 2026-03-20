@@ -199,6 +199,11 @@
 .fab:active { transform: scale(0.9) rotate(90deg); }
 .fab .material-symbols-outlined { font-size: 32px; }
 
+@media (min-width: 600px) {
+    /* Align FAB with centered content column */
+    .fab { right: calc(50% - 240px + 20px); }
+}
+
 /* Sequence builder */
 .seq-step { 
     display: flex; 

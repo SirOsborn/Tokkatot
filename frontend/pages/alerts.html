@@ -125,6 +125,7 @@ createApp({
     this.loading = false;
   },
   methods: {
+    t(k) { return window.i18n ? window.i18n.t(k) : k; },
     async loadCoops() {
       if (!this.selectedFarmId) return;
       const data = await window.API.get(`/v1/farms/${this.selectedFarmId}/coops`);

@@ -182,26 +182,22 @@
         </div>
       </div>
 
-      <!-- Quick shortcuts grid -->
+      <!-- Workers management card -->
       <div class="section">
-         <div class="metrics-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
-            <a href="/monitoring" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">analytics</span>
-              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_monitoring') }}</div>
-            </a>
-            <a href="/disease-detection" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">biotech</span>
-              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_disease') }}</div>
-            </a>
-            <a href="/schedules" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">calendar_month</span>
-              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('nav_schedules') }}</div>
-            </a>
-            <a href="/profile" class="tok-card" style="text-decoration: none; text-align: center; padding: 20px 12px;">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: var(--tok-teal); margin-bottom: 8px;">account_circle</span>
-              <div style="font-size: 13px; font-weight: 700; color: var(--tok-text-primary);">{{ t('my_profile') }}</div>
-            </a>
-         </div>
+        <div class="tok-card" style="display:flex; align-items:center; justify-content: space-between; gap: 12px; padding: 18px;">
+          <div style="display:flex; align-items:center; gap: 12px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0, 137, 123, 0.1); display:flex; align-items:center; justify-content:center; color: var(--tok-teal);">
+              <span class="material-symbols-outlined">groups</span>
+            </div>
+            <div>
+              <div style="font-weight: 800; font-size: 16px;">{{ t('manage_workers') }}</div>
+              <div style="font-size: 12px; color: var(--tok-text-secondary);">{{ workersCount }} {{ t('workers') }}</div>
+            </div>
+          </div>
+          <a href="/workers" class="tok-btn tok-btn-secondary" style="min-height: 40px; padding: 8px 14px; text-decoration: none;">
+            {{ t('manage_workers') }}
+          </a>
+        </div>
       </div>
     </div> <!-- End has farms else -->
 
