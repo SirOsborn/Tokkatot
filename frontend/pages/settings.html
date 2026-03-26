@@ -7,14 +7,60 @@
   <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#00897B" />
-  
+
   <!-- Tokkatot Design System (Modular) -->
-  <link rel="stylesheet" href="/css/theme.css?v=1.5" />
-  <link rel="stylesheet" href="/css/components.css?v=1.5" />
-  <link rel="stylesheet" href="/css/layout.css?v=1.5" />
-  <link rel="stylesheet" href="/css/settings.css?v=1.5" />
-  
+  <link rel="stylesheet" href="/css/theme.css?v=2.0" />
+  <link rel="stylesheet" href="/css/components.css?v=2.0" />
+  <link rel="stylesheet" href="/css/layout.css?v=2.0" />
+  <link rel="stylesheet" href="/css/settings.css?v=2.0" />
+
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+  <style>
+    /* ===== App Install Banner ===== */
+    .install-banner {
+      background: linear-gradient(135deg, #00897B 0%, #00695C 100%);
+      border-radius: var(--border-radius-md);
+      padding: 20px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-md);
+    }
+    .install-banner-icon {
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .install-banner-text { flex: 1; }
+    .install-banner-title { font-size: 16px; font-weight: 700; }
+    .install-banner-sub { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+    .install-banner-btn {
+      background: white;
+      color: var(--tok-teal-dark);
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      min-height: 44px;
+      transition: var(--tok-transition);
+    }
+    .install-banner-btn:active { transform: scale(0.97); }
+    .logout-btn:hover { background: #b91c1c !important; }
+
+    /* Notification status badge */
+    .notif-status { font-size: 12px; font-weight: 600; }
+    .notif-status.granted { color: var(--tok-success); }
+    .notif-status.denied  { color: var(--tok-error); }
+    .notif-status.default { color: var(--tok-text-secondary); }
+  </style>
 </head>
 <body>
 
@@ -22,7 +68,7 @@
 
 <div id="app" v-cloak class="page-container">
 
-  <!-- Confirm dialog overlay -->
+  <!-- Confirm logout dialog -->
   <div v-if="showLogoutConfirm" class="modal-overlay" @click.self="showLogoutConfirm=false">
     <div class="modal-content" style="max-width: 340px; text-align: center; padding: 32px;">
       <span class="material-symbols-outlined" style="font-size: 56px; color: var(--tok-error); margin-bottom: 16px;">logout</span>
@@ -37,6 +83,24 @@
 
   <div style="font-size: 24px; font-weight: 700; color: var(--tok-text-primary); margin-bottom: 24px;" data-i18n="settings">Settings</div>
 
+  <!-- PWA Install Banner — only shown when the app is installable -->
+  <div v-if="showInstallBanner" class="install-banner">
+    <div class="install-banner-icon">
+      <span class="material-symbols-outlined" style="font-size: 28px; color: white;">install_mobile</span>
+    </div>
+    <div class="install-banner-text">
+      <div class="install-banner-title">{{ t('install_app') || 'Install Tokkatot' }}</div>
+      <div class="install-banner-sub">{{ t('install_app_sub') || 'Add to your home screen like a native app' }}</div>
+    </div>
+    <button class="install-banner-btn" @click="installApp">{{ t('install') || 'Install' }}</button>
+  </div>
+
+  <!-- Already installed notice -->
+  <div v-if="isInstalled" class="tok-card" style="display:flex;align-items:center;gap:12px;padding:16px;margin-bottom:20px;background:rgba(16,185,129,0.06);">
+    <span class="material-symbols-outlined" style="color:var(--tok-success);font-size:28px;">check_circle</span>
+    <span style="font-weight:600;color:var(--tok-success);">{{ t('app_installed') || 'App is installed on your device' }}</span>
+  </div>
+
   <!-- Account -->
   <div class="section-label" data-i18n="account">Account</div>
   <div class="settings-group">
@@ -50,18 +114,23 @@
     </a>
   </div>
 
-  <!-- General -->
+  <!-- App & Notifications -->
   <div class="section-label" data-i18n="system">System</div>
   <div class="settings-group">
-    <!-- Notifications -->
+
+    <!-- Push Notifications toggle -->
     <div class="list-item">
-      <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">notifications</span></div>
+      <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">notifications_active</span></div>
       <div class="list-item-content">
-        <div class="list-item-title" data-i18n="notifications">Notifications</div>
-        <div class="list-item-subtitle">{{ notifEnabled ? t('enabled') : t('disabled') }}</div>
+        <div class="list-item-title" data-i18n="notifications">Push Notifications</div>
+        <div class="list-item-subtitle">
+          <span v-if="notifPermission === 'granted'" class="notif-status granted">✓ {{ t('enabled') || 'Enabled' }}</span>
+          <span v-else-if="notifPermission === 'denied'" class="notif-status denied">✗ {{ t('blocked_in_browser') || 'Blocked in browser' }}</span>
+          <span v-else class="notif-status default">{{ t('tap_to_enable') || 'Tap toggle to enable' }}</span>
+        </div>
       </div>
       <label class="toggle-switch">
-        <input type="checkbox" v-model="notifEnabled" @change="saveNotifSetting" />
+        <input type="checkbox" :checked="notifPermission === 'granted'" @change="toggleNotifications" :disabled="notifPermission === 'denied'" />
         <span class="toggle-slider"></span>
       </label>
     </div>
@@ -71,7 +140,7 @@
       <div class="list-item-icon" style="background: rgba(0, 137, 123, 0.1);"><span class="material-symbols-outlined" style="color: var(--tok-teal);">translate</span></div>
       <div class="list-item-content">
         <div class="list-item-title" data-i18n="language">Language</div>
-        <div class="list-item-subtitle">{{ lang === 'km' ? 'Khmer → English' : 'English → Khmer' }}</div>
+        <div class="list-item-subtitle">{{ lang === 'km' ? 'ខ្មែរ → English' : 'English → ខ្មែរ' }}</div>
       </div>
       <span class="list-item-chevron material-symbols-outlined">swap_horiz</span>
     </div>
@@ -95,7 +164,7 @@
   <!-- About -->
   <div class="section-label" data-i18n="about">About</div>
   <div class="settings-group">
-    <a href="https://tokkatot.aztrolabe.com" target="_blank" class="list-item">
+    <a href="https://tokkatot.com" target="_blank" class="list-item">
       <div class="list-item-icon" style="background: white;">
         <img src="/assets/images/tokkatot logo-02.png" style="width: 28px; height: 28px; object-fit: contain;" alt="logo" />
       </div>
@@ -108,7 +177,7 @@
   </div>
 
   <!-- Logout -->
-  <button class="tok-btn tok-btn-primary logout-btn" style="background: var(--tok-error); border-color: var(--tok-error); width: 100%; margin-top: 24px;" onclick="window.API.logout()">
+  <button class="tok-btn tok-btn-primary logout-btn" style="background: var(--tok-error); border-color: var(--tok-error); width: 100%; margin-top: 24px;" @click="showLogoutConfirm=true">
     <span class="material-symbols-outlined" style="margin-right: 8px;">logout</span>
     <span data-i18n="logout">Logout</span>
   </button>
@@ -117,9 +186,9 @@
 
 <div id="navbar-placeholder"></div>
 
-<script src="/js/utils/i18n.js?v=1.5"></script>
-<script src="/js/utils/api.js?v=1.5"></script>
-<script src="/js/utils/components.js?v=1.5"></script>
+<script src="/js/utils/i18n.js?v=2.0"></script>
+<script src="/js/utils/api.js?v=2.0"></script>
+<script src="/js/utils/components.js?v=2.0"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script>
 const { createApp } = Vue;
@@ -127,18 +196,133 @@ createApp({
   data() {
     return {
       lang: window.i18n ? window.i18n.getLang() : 'km',
-      notifEnabled: localStorage.getItem('notif_enabled') !== 'false',
+      notifPermission: 'default',  // 'default' | 'granted' | 'denied'
       showLogoutConfirm: false,
-      userName: localStorage.getItem('user_name') || ''
+      showInstallBanner: false,
+      isInstalled: false,
+      userName: localStorage.getItem('user_name') || '',
+      _deferredPrompt: null,
     };
   },
+
   async mounted() {
     if (!window.API.requireAuth()) return;
     await loadComponents();
     if (window.i18n) window.i18n.applyAll();
+
+    // Check browser notification permission
+    if ('Notification' in window) {
+      this.notifPermission = Notification.permission;
+    }
+
+    // Check if already installed (standalone mode)
+    this.isInstalled = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+
+    // Listen for installability
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._deferredPrompt = e;
+      if (!this.isInstalled) {
+        this.showInstallBanner = true;
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      this.showInstallBanner = false;
+      this.isInstalled = true;
+      this._deferredPrompt = null;
+    });
   },
+
   methods: {
     t(k) { return window.i18n ? window.i18n.t(k) : k; },
+
+    // ── PWA Install ────────────────────────────────
+    async installApp() {
+      if (!this._deferredPrompt) {
+        alert(this.t('install_manual') || 'Use your browser menu → "Add to Home Screen"');
+        return;
+      }
+      this._deferredPrompt.prompt();
+      const { outcome } = await this._deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        this.showInstallBanner = false;
+      }
+      this._deferredPrompt = null;
+    },
+
+    // ── Push Notifications ─────────────────────────
+    async toggleNotifications(event) {
+      if (this.notifPermission === 'denied') return;
+
+      if (this.notifPermission === 'granted') {
+        // User is turning off — unsubscribe from our server
+        await this._unsubscribePush();
+        return;
+      }
+
+      // Request permission
+      const permission = await Notification.requestPermission();
+      this.notifPermission = permission;
+
+      if (permission === 'granted') {
+        await this._subscribePush();
+      }
+    },
+
+    async _subscribePush() {
+      try {
+        const sw = await navigator.serviceWorker.ready;
+
+        // Fetch the VAPID public key from the backend
+        const keyRes = await fetch('/v1/users/push-key');
+        const keyData = await keyRes.json();
+        const publicKey = keyData.data && keyData.data.public_key;
+        if (!publicKey) throw new Error('No VAPID key from server');
+
+        const subscription = await sw.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: this._urlBase64ToUint8Array(publicKey),
+        });
+
+        // Send subscription to our backend
+        await window.API.post('/v1/users/push-subscribe', {
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+            auth:   btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+          },
+        });
+      } catch (err) {
+        console.error('[Push] Subscribe failed:', err);
+        this.notifPermission = Notification.permission;
+      }
+    },
+
+    async _unsubscribePush() {
+      try {
+        const sw = await navigator.serviceWorker.ready;
+        const sub = await sw.pushManager.getSubscription();
+        if (sub) {
+          await window.API.post('/v1/users/push-unsubscribe', { endpoint: sub.endpoint });
+          await sub.unsubscribe();
+        }
+        this.notifPermission = 'default';
+      } catch (err) {
+        console.error('[Push] Unsubscribe failed:', err);
+      }
+    },
+
+    // Converts a URL-safe Base64 key string to Uint8Array (required by Web Push API)
+    _urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+    },
+
+    // ── Language ───────────────────────────────────
     toggleLang() {
       if (window.i18n) {
         window.i18n.toggleLang();
@@ -146,17 +330,11 @@ createApp({
         if (window.i18n.applyAll) window.i18n.applyAll();
       }
     },
-    saveNotifSetting() {
-      localStorage.setItem('notif_enabled', this.notifEnabled ? 'true' : 'false');
-    },
-    confirmLogout() {
-      window.API.logout();
-    }
+
+    confirmLogout() { window.API.logout(); }
   }
 }).mount('#app');
 </script>
 
-<style>
-.logout-btn:hover { background: #b91c1c !important; }
-</style>
 </body>
+</html>

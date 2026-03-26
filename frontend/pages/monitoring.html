@@ -76,12 +76,35 @@
   </div><!-- /content -->
 
   <!-- No sensor -->
-  <div id="no-sensor" class="no-sensor" style="display:none">
-    <h2 data-i18n="no_sensor_found">No Sensor Found</h2>
-    <p data-i18n="no_sensor_msg">This coop does not have an active temperature sensor attached.</p>
+  <div id="no-sensor" class="no-sensor" style="display:none; text-align: center; padding: 40px 20px;">
+    <span class="material-symbols-outlined" style="font-size: 48px; color: var(--tok-text-secondary); margin-bottom: 16px;">router</span>
+    <h2 data-i18n="no_sensor_found">No Gateway Linked</h2>
+    <p data-i18n="no_sensor_msg" style="margin-bottom: 24px;">This coop does not have an active gateway attached. Run the gateway on your Pi and enter the setup code here.</p>
+    <button class="tok-btn tok-btn-primary" onclick="showClaimModal()" style="margin: 0 auto;">
+      <span class="material-symbols-outlined">add_link</span>
+      Pair New Gateway
+    </button>
   </div>
 
 </div><!-- /page-wrap -->
+
+<!-- Claim Modal -->
+<div id="claim-modal" class="modal-overlay" style="display:none">
+  <div class="modal-content" style="border-radius: 24px;">
+    <h3 style="font-weight: 800; margin-bottom: 12px;">Pair Your Gateway</h3>
+    <p style="color: var(--tok-text-secondary); font-size: 14px; margin-bottom: 24px;">Enter the 6-digit code displayed on your Raspberry Pi screen.</p>
+    
+    <div class="tok-input-group">
+      <label class="tok-label">Setup Code (e.g. ABC-123)</label>
+      <input type="text" id="setup-code-input" class="tok-input" placeholder="XXX-XXX" style="text-align: center; font-size: 24px; letter-spacing: 2px; font-weight: 800; text-transform: uppercase;">
+    </div>
+    
+    <div style="display: flex; gap: 12px; margin-top: 24px;">
+      <button class="tok-btn tok-btn-secondary" style="flex:1" onclick="hideClaimModal()">Cancel</button>
+      <button id="claim-btn" class="tok-btn tok-btn-primary" style="flex:1" onclick="handleClaimGateway()">Pair</button>
+    </div>
+  </div>
+</div>
 
 <div id="navbar-placeholder"></div>
 
@@ -328,6 +351,47 @@
   function escHtml(str) {
     return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
+  
+  function showClaimModal() {
+    document.getElementById('claim-modal').style.display = 'flex';
+  }
+  
+  function hideClaimModal() {
+    document.getElementById('claim-modal').style.display = 'none';
+  }
+  
+  async function handleClaimGateway() {
+    const code = document.getElementById('setup-code-input').value.trim();
+    const btn = document.getElementById('claim-btn');
+    const coopId = window.API.getSelectedCoopId();
+    const farmId = window.API.getSelectedFarmId();
+    
+    if (!code) return alert("Please enter the setup code");
+    
+    btn.disabled = true;
+    btn.textContent = "Pairing...";
+    
+    try {
+      const res = await window.API.post(`/v1/farms/${farmId}/claim-gateway`, {
+        setup_code: code,
+        coop_id: coopId
+      });
+      
+      if (res.success) {
+        alert("Gateway paired successfully! Monitoring will start in a few seconds.");
+        hideClaimModal();
+        location.reload();
+      } else {
+        alert("Pairing failed: " + (res.message || "Invalid code"));
+      }
+    } catch (e) {
+      alert("Network error: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Pair";
+    }
+  }
+
   function showError(msg) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('no-sensor').style.display = 'block';

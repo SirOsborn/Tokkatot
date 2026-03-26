@@ -6,6 +6,7 @@ const app = createApp({
             currentTab: 'keys',
             keys: [],
             farmers: [],
+            gateways: [],
             showKeyModal: false,
             loading: true,
             generatedKey: null,
@@ -21,7 +22,8 @@ const app = createApp({
                 total_farmers: 0,
                 total_workers: 0,
                 total_farms: 0,
-                active_keys: 0
+                active_keys: 0,
+                active_gateways: 0
             },
             provinces: window.i18n ? window.i18n.provinces() : [],
             toast: { show: false, message: '', type: 'success' }
@@ -57,8 +59,10 @@ const app = createApp({
                 await this.fetchStats();
                 if (this.currentTab === 'keys') {
                     await this.fetchKeys();
-                } else {
+                } else if (this.currentTab === 'farmers') {
                     await this.fetchFarmers();
+                } else if (this.currentTab === 'gateways') {
+                    await this.fetchGateways();
                 }
             } finally {
                 this.loading = false;
@@ -86,6 +90,37 @@ const app = createApp({
                 this.farmers = [];
             }
         },
+        async fetchGateways() {
+            const response = await this.apiCall('/v1/admin/gateways');
+            if (response.success) {
+                this.gateways = Array.isArray(response.data) ? response.data : [];
+            } else {
+                this.gateways = [];
+            }
+        },
+        async revokeGateway(gw) {
+            if (!confirm(`Are you sure you want to revoke access for ${gw.name || 'this gateway'}?`)) return;
+            
+            this.loading = true;
+            try {
+                const response = await this.apiCall(`/v1/admin/gateways/${gw.id}`, 'DELETE');
+                if (response.success) {
+                    this.showToast('Gateway access revoked successfully');
+                    await this.fetchGateways();
+                } else {
+                    this.showToast(response.message || 'Failed to revoke access', 'error');
+                }
+            } finally {
+                this.loading = false;
+            }
+        },
+        isOnline(lastUsedAt) {
+            if (!lastUsedAt) return false;
+            const lastSeen = new Date(lastUsedAt);
+            const now = new Date();
+            // Online if seen in the last 2 minutes (heartbeat is every 60s)
+            return (now - lastSeen) < (2 * 60 * 1000);
+        },
         async generateKey() {
             this.loading = true;
             try {
@@ -105,16 +140,13 @@ const app = createApp({
         },
         async toggleUserStatus(user) {
             const newStatus = !user.is_active;
-            if (!newStatus) {
-                const response = await this.apiCall(`/v1/admin/farmers/${user.id}`, 'DELETE');
-                if (response.success) {
-                    user.is_active = false;
-                    this.showToast('Farmer deactivated');
-                } else {
-                    this.showToast(response.message || 'Action failed', 'error');
-                }
+            const response = await this.apiCall(`/v1/admin/farmers/${user.id}`, 'DELETE', { active: newStatus });
+            if (response.success) {
+                user.is_active = newStatus;
+                this.showToast(`Farmer ${newStatus ? 'activated' : 'deactivated'} successfully`);
+                await this.fetchStats();
             } else {
-                this.showToast('Activation not implemented yet', 'error');
+                this.showToast(response.message || 'Action failed', 'error');
             }
         },
         async apiCall(endpoint, method = 'GET', body = null) {
