@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -123,4 +125,10 @@ func ExtractUserIDFromToken(authHeader string) (uuid.UUID, error) {
 	}
 
 	return claims.UserID, nil
+}
+
+// HashToken returns a SHA-256 hash of the given token
+func HashToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:])
 }

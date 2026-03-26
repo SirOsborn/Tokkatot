@@ -91,3 +91,24 @@ func ListRegKeysHandler(c *fiber.Ctx) error {
 func UpdateAdminProfileHandler(c *fiber.Ctx) error {
 	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Admin profile updated")
 }
+
+func ListGatewaysHandler(c *fiber.Ctx) error {
+	gateways, err := adminService.ListGateways()
+	if err != nil {
+		return utils.InternalError(c, "Failed to fetch gateways")
+	}
+	return utils.SuccessResponse(c, fiber.StatusOK, gateways, "Gateways retrieved")
+}
+
+func RevokeGatewayHandler(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid gateway token ID")
+	}
+
+	err = adminService.RevokeGateway(id)
+	if err != nil {
+		return utils.InternalError(c, "Failed to revoke gateway")
+	}
+	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Gateway access revoked")
+}

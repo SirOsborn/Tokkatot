@@ -244,6 +244,18 @@ CREATE TABLE IF NOT EXISTS alert_subscriptions (
     UNIQUE(user_id, alert_type, channel)
 );
 
+-- Web Push Subscriptions
+CREATE TABLE IF NOT EXISTS web_push_subscriptions (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Device configurations
 CREATE TABLE IF NOT EXISTS device_configurations (
     id UUID PRIMARY KEY,
@@ -269,6 +281,31 @@ CREATE TABLE IF NOT EXISTS device_readings (
     unit VARCHAR(20) NOT NULL DEFAULT '',
     quality VARCHAR(20) NOT NULL DEFAULT 'good',
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Gateway persistent tokens (API Keys)
+CREATE TABLE IF NOT EXISTS gateway_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    farm_id UUID NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
+    device_id UUID REFERENCES devices(id) ON DELETE SET NULL,
+    user_id UUID NOT NULL REFERENCES users(id),
+    token_hash TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    last_used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Gateway temporary provisioning codes
+CREATE TABLE IF NOT EXISTS gateway_provisions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    setup_code VARCHAR(12) NOT NULL UNIQUE,
+    hardware_id TEXT NOT NULL,
+    farm_id UUID REFERENCES farms(id) ON DELETE CASCADE,
+    coop_id UUID REFERENCES coops(id) ON DELETE CASCADE,
+    is_claimed BOOLEAN DEFAULT false,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ===== PERFORMANCE INDEXES =====
@@ -319,8 +356,13 @@ CREATE INDEX IF NOT EXISTS idx_alerts_is_active ON alerts(is_active);
 CREATE INDEX IF NOT EXISTS idx_alerts_severity ON alerts(severity);
 CREATE INDEX IF NOT EXISTS idx_alerts_triggered_at ON alerts(triggered_at DESC);
 CREATE INDEX IF NOT EXISTS idx_alert_subscriptions_user_id ON alert_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_web_push_user_id ON web_push_subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_device_configs_device_id ON device_configurations(device_id);
 CREATE INDEX IF NOT EXISTS idx_device_readings_device_id ON device_readings(device_id);
 CREATE INDEX IF NOT EXISTS idx_device_readings_timestamp ON device_readings(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_device_readings_sensor_type ON device_readings(device_id, sensor_type);
+CREATE INDEX IF NOT EXISTS idx_gateway_tokens_farm_id ON gateway_tokens(farm_id);
+CREATE INDEX IF NOT EXISTS idx_gateway_tokens_token_hash ON gateway_tokens(token_hash);
+CREATE INDEX IF NOT EXISTS idx_gateway_provisions_setup_code ON gateway_provisions(setup_code);
+CREATE INDEX IF NOT EXISTS idx_gateway_provisions_expires_at ON gateway_provisions(expires_at);
 `

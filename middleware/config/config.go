@@ -35,6 +35,10 @@ type Config struct {
 	// Telemetry retention
 	TelemetryRetentionDays int
 
+	// Web Push (VAPID)
+	VapidPublicKey  string
+	VapidPrivateKey string
+	VapidSubject    string
 }
 
 var AppConfig *Config
@@ -71,6 +75,10 @@ func LoadConfig() *Config {
 		// Telemetry retention (days)
 		TelemetryRetentionDays: getEnvInt("TELEMETRY_RETENTION_DAYS", 7),
 
+		// Web Push Configuration
+		VapidPublicKey:  getEnv("VAPID_PUBLIC_KEY", ""),
+		VapidPrivateKey: getEnv("VAPID_PRIVATE_KEY", ""),
+		VapidSubject:    getEnv("VAPID_SUBJECT", "mailto:admin@tokkatot.com"),
 	}
 
 	// Validate required fields
