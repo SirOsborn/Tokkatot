@@ -122,18 +122,7 @@ func SeedInitialAdmin() error {
 		return nil
 	}
 
-	// Check if admin already exists
-	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM admins").Scan(&count)
-	if err != nil {
-		return fmt.Errorf("failed to check existing admins: %w", err)
-	}
-
-	if count > 0 {
-		return nil // Admin already exists
-	}
-
-	log.Println("🌱 Seeding initial super admin...")
+	log.Println("🌱 Syncing initial super admin...")
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(cfg.InitialAdminPassword), bcrypt.DefaultCost)
 	if err != nil {
@@ -141,25 +130,32 @@ func SeedInitialAdmin() error {
 	}
 
 	adminID := "00000000-0000-0000-0000-000000000001"
+	
+	// Sync user row
 	_, err = DB.Exec(`
 		INSERT INTO users (id, name, email, phone, password_hash, is_active, full_name)
 		VALUES ($1, 'Admin', $2, 'N/A', $3, true, 'Tokkatot Admin')
-		ON CONFLICT DO NOTHING
+		ON CONFLICT (id) DO UPDATE SET 
+			email = EXCLUDED.email,
+			password_hash = EXCLUDED.password_hash
 	`, adminID, cfg.InitialAdminEmail, string(hash))
 	if err != nil {
-		return fmt.Errorf("failed to seed user row for admin: %w", err)
+		return fmt.Errorf("failed to sync user row for admin: %w", err)
 	}
 
+	// Sync admin row
 	_, err = DB.Exec(`
 		INSERT INTO admins (id, name, email, phone, password_hash, is_active)
 		VALUES ($1, 'Admin', $2, 'N/A', $3, true)
-		ON CONFLICT DO NOTHING
+		ON CONFLICT (id) DO UPDATE SET 
+			email = EXCLUDED.email,
+			password_hash = EXCLUDED.password_hash
 	`, adminID, cfg.InitialAdminEmail, string(hash))
 	if err != nil {
-		return fmt.Errorf("failed to seed admin row: %w", err)
+		return fmt.Errorf("failed to sync admin row: %w", err)
 	}
 
-	log.Printf("✅ Initial admin created: %s", cfg.InitialAdminEmail)
+	log.Printf("✅ Initial admin synced: %s", cfg.InitialAdminEmail)
 	return nil
 }
 
