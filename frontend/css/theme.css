@@ -1,98 +1,123 @@
 /* 
- * TOKKATOT DESIGN SYSTEM
- * Centralized variables for a premium, accessible, and fast UI.
+ * TOKKATOT DESIGN SYSTEM — v2.0
+ * Centralized design tokens. Elderly-farmer accessible + premium modern aesthetic.
  */
 
 @import url('https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Khmer/MiSansKhmer-Regular.min.css');
 @import url('https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Regular.min.css');
 
 :root {
-    /* Brand Colors (Agri-tech palette) */
+    /* ── Brand Colors (Agri-tech palette) ── */
     --tok-teal: #00897B;
     --tok-teal-light: #4DB6AC;
     --tok-teal-dark: #00695C;
     --tok-amber: #FFA000;
     --tok-coral: #FF7043;
-    
+
     /* HSL Tokens for dynamic transparency */
     --tok-teal-hsl: 174, 100%, 27%;
     --tok-amber-hsl: 38, 100%, 50%;
     --tok-coral-hsl: 14, 100%, 63%;
     --tok-blue-hsl: 217, 91%, 60%;
-    
-    /* Semantic Colors (Light Theme) */
-    --tok-bg: #F4F7F6; /* Softer, slightly greenish grey */
+
+    /* ── Semantic Colors (Light Theme) ── */
+    --tok-bg: #F0F5F4;
     --tok-surface: #FFFFFF;
-    --tok-surface-light: #F0F4F3;
-    --tok-text-primary: #121417;
-    --tok-text-secondary: #5C636D;
+    --tok-surface-light: #E8EFEE;
+    --tok-text-primary: #0E1512;
+    --tok-text-secondary: #4A5568;
     --tok-text-disabled: #A1A7B0;
     --tok-accent: var(--tok-teal);
     --tok-success: #10B981;
     --tok-warning: #F59E0B;
     --tok-error: #EF4444;
-    
-    /* Typography */
+
+    /* ── Typography — ELDERLY-OPTIMISED ──
+       Base: 18px (up from 16px) for better readability in bright sunlight.
+       All sizes use rem so the system scales proportionally. */
     --font-primary: 'MiSans Latin', 'MiSans Khmer', 'Inter', -apple-system, sans-serif;
     --font-khmer: 'MiSans Khmer', 'MiSans Latin', sans-serif;
-    --font-size-base: 16px;
-    --font-size-lg: 18px;
-    --font-size-sm: 14px;
-    --font-size-xs: 12px;
-    --line-height-tight: 1.25;
-    --line-height-base: 1.6;
-    
-    /* Accessibility (Elderly-farmer friendly) */
-    --touch-target-min: 48px;
-    --border-radius-sm: 10px;
-    --border-radius-md: 16px;
+
+    --font-size-base: 18px;       /* Body text — large for elderly users */
+    --font-size-lg: 20px;         /* Subtitles, card labels */
+    --font-size-xl: 24px;         /* Section headings */
+    --font-size-sm: 15px;         /* Secondary info (previously 14px) */
+    --font-size-xs: 13px;         /* Badges, meta (previously 12px) */
+    --line-height-tight: 1.3;
+    --line-height-base: 1.7;      /* More breathing room for Khmer script */
+
+    /* ── Accessibility — Touch Targets ──
+       WCAG recommends 44px min; we use 52px for glove/rough-finger use. */
+    --touch-target-min: 52px;
+
+    /* ── Border Radius ── */
+    --border-radius-sm: 12px;
+    --border-radius-md: 18px;
     --border-radius-lg: 28px;
-    
-    /* Spacing */
+    --border-radius-xl: 36px;
+
+    /* ── Spacing ── */
     --space-xs: 4px;
     --space-sm: 8px;
     --space-md: 16px;
     --space-lg: 24px;
     --space-xl: 32px;
-    
-    /* Shadows & Effects (Modern, soft elevation) */
-    --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
-    --shadow-md: 0 10px 30px rgba(0, 137, 123, 0.08);
-    --shadow-lg: 0 15px 45px rgba(0, 137, 123, 0.12);
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-blur: blur(20px);
-    --border-glass: 1px solid rgba(255, 255, 255, 0.4);
-    --tok-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --space-2xl: 48px;
+
+    /* ── Elevation & Glass Effects ── */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 8px 28px rgba(0, 137, 123, 0.10);
+    --shadow-lg: 0 16px 48px rgba(0, 137, 123, 0.14);
+    --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --glass-bg: rgba(255, 255, 255, 0.88);
+    --glass-blur: blur(24px);
+    --border-glass: 1px solid rgba(255, 255, 255, 0.5);
+    --tok-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Base Resets */
+/* ── Base Resets ── */
 [v-cloak] { display: none; }
 
-* {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+html {
+    /* Ensures rem scales from the correct base */
+    font-size: var(--font-size-base);
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
     background-color: var(--tok-bg);
     color: var(--tok-text-primary);
     font-family: var(--font-primary);
-    font-size: var(--font-size-base);
+    font-size: 1rem;
     line-height: var(--line-height-base);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-weight: 400;
+    /* Prevent layout shifts on scroll (especially on iOS) */
+    overflow-x: hidden;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-weight: 600;
-}
+h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
+h2 { font-size: 1.4rem;  font-weight: 700; line-height: 1.25; }
+h3 { font-size: 1.2rem;  font-weight: 600; line-height: 1.3; }
+h4 { font-size: 1.05rem; font-weight: 600; }
+h5, h6 { font-size: 1rem; font-weight: 600; }
 
-/* Utility Classes */
+a { color: var(--tok-teal); text-decoration: none; }
+
+/* ── Utility Classes ── */
 .tok-glass {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     border: var(--border-glass);
     border-radius: var(--border-radius-md);
 }
@@ -107,4 +132,28 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* ── Smooth scrolling ── */
+@media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+}
+
+/* ── Keyframe animations ── */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+}
+
+.tok-animate-fade-up {
+    animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
 }

@@ -200,12 +200,65 @@ func (s *AdminService) GetAdminStats() (map[string]int, error) {
 		return nil, err
 	}
 
+	// Count Active Gateways
+	var activeGateways int
+	_ = database.DB.QueryRow("SELECT COUNT(*) FROM gateway_tokens WHERE is_active = true").Scan(&activeGateways)
+
 	return map[string]int{
-		"total_farmers": totalFarmers,
-		"total_workers": totalWorkers,
-		"total_farms":   totalFarms,
-		"active_keys":   activeKeys,
+		"total_farmers":   totalFarmers,
+		"total_workers":   totalWorkers,
+		"total_farms":     totalFarms,
+		"active_keys":     activeKeys,
+		"active_gateways": activeGateways,
 	}, nil
+}
+
+// ListGateways returns all persistent gateway tokens
+func (s *AdminService) ListGateways() ([]map[string]interface{}, error) {
+	rows, err := database.DB.Query(`
+		SELECT id, farm_id, user_id, token_hash, name, is_active, last_used_at, created_at
+		FROM gateway_tokens
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	gateways := make([]map[string]interface{}, 0)
+	for rows.Next() {
+		var id, farmID, userID uuid.UUID
+		var tokenHash, name string
+		var isActive bool
+		var createdAt time.Time
+		var lastUsedAtNull sql.NullTime
+
+		err := rows.Scan(&id, &farmID, &userID, &tokenHash, &name, &isActive, &lastUsedAtNull, &createdAt)
+		if err != nil {
+			return nil, err
+		}
+
+		gw := map[string]interface{}{
+			"id":           id,
+			"farm_id":      farmID,
+			"user_id":      userID,
+			"token_hash":   tokenHash,
+			"name":         name,
+			"is_active":    isActive,
+			"created_at":   createdAt,
+		}
+		if lastUsedAtNull.Valid {
+			gw["last_used_at"] = lastUsedAtNull.Time
+		}
+		gateways = append(gateways, gw)
+	}
+	return gateways, nil
+}
+
+// RevokeGateway deactivates a gateway token
+func (s *AdminService) RevokeGateway(id uuid.UUID) error {
+	_, err := database.DB.Exec("UPDATE gateway_tokens SET is_active = false WHERE id = $1", id)
+	return err
 }
 
 // generateSecureKey creates a random string of specified length

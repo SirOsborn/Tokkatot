@@ -211,9 +211,10 @@ func (s *AuthService) Login(identifier, password string) (*models.User, string, 
 		FROM admins WHERE email = $1 OR phone = $1
 	`, identifier).Scan(&user.ID, &user.Email, &user.Phone, &user.Name, &passwordHash, &user.IsActive)
 
-	if err == nil {
+	switch err {
+case nil:
 		role = "admin"
-	} else if err == sql.ErrNoRows {
+	case sql.ErrNoRows:
 		// Fallback to regular users table
 		err = database.DB.QueryRow(`
 			SELECT id, email, phone, name, password_hash, is_active 
@@ -223,7 +224,7 @@ func (s *AuthService) Login(identifier, password string) (*models.User, string, 
 		if err == sql.ErrNoRows {
 			return nil, "", "", ErrUserNotFound
 		}
-	} else {
+	default:
 		return nil, "", "", err
 	}
 

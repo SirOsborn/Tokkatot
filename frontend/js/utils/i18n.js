@@ -148,6 +148,17 @@
       yes:              'បាទ/ចាស',
       no:               'ទេ',
 
+      /* --- PWA Install & Push Notifications --- */
+      install_app:         'ដំឡើងកម្មវីធីតុក្កតត',
+      install_app_sub:     'បន្ថែមទៅអេក្រង់ដើម',
+      install:             'ដំឡើង',
+      app_installed:       'កម្មវីធីត្រូវបានដំឡើងរួចរាល់',
+      install_manual:      'ប្រើម៉ឺនុយ Browser → "Add to Home Screen"',
+      tap_to_enable:       'ចុចដើម្បីបើករការជូនដំណឹង',
+      blocked_in_browser:  'ត្រូវបានបិទនៅក្នុង Browser',
+      enabled:             'បើក',
+      disabled:            'បិទ',
+
       // Profile & Settings
       settings_desc:    'គ្រប់គ្រងគណនី និងការកំណត់របស់អ្នក',
       save_changes:     'រក្សាទុកការផ្លាស់ប្តូរ',
@@ -416,6 +427,17 @@
       logout_confirm:   'Are you sure you want to logout?',
       yes:              'Yes',
       no:               'No',
+
+      /* --- PWA Install & Push Notifications --- */
+      install_app:         'Install Tokkatot',
+      install_app_sub:     'Add to your home screen',
+      install:             'Install',
+      app_installed:       'App is installed on your device',
+      install_manual:      'Use your browser menu → "Add to Home Screen"',
+      tap_to_enable:       'Tap toggle to enable',
+      blocked_in_browser:  'Blocked in browser settings',
+      enabled:             'Enabled',
+      disabled:            'Disabled',
 
       /* --- Common / Errors --- */
       loading:          'Loading...',

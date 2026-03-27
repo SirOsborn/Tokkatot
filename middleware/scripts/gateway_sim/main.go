@@ -363,7 +363,10 @@ func logf(format string, args ...interface{}) {
 }
 
 func main() {
-	baseURL := flag.String("base-url", "http://127.0.0.1:3000", "")
+	baseURL := flag.String("base-url", os.Getenv("CLOUD_API_URL"), "Cloud API base URL (defaults to CLOUD_API_URL environment variable)")
+	if *baseURL == "" {
+		*baseURL = "http://127.0.0.1:3000"
+	}
 	email := flag.String("email", "test1@tokkatot.com", "")
 	phone := flag.String("phone", "", "")
 	password := flag.String("password", "TokkatotTest2026!", "")

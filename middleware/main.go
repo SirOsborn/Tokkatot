@@ -110,12 +110,11 @@ func startTelemetryRetentionCleanup(retentionDays int) {
 
 func setupRoutes(app *fiber.App, frontendPath string) {
 	// ===== FRONTEND STATIC ROUTES =====
-	// Serve static files
 	app.Static("/assets", filepath.Join(frontendPath, "assets"))
 	app.Static("/components", filepath.Join(frontendPath, "components"))
 	app.Static("/css", filepath.Join(frontendPath, "css"))
 	app.Static("/js", filepath.Join(frontendPath, "js"))
-	app.Static("/", frontendPath) // Fallback for any other frontend assets (manifest, robots, etc.)
+	app.Static("/", frontendPath) // serves manifest.json, sw.js, robots.txt, etc.
 
 	// Static page routes
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -163,12 +162,24 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	// v1 API Group
 	v1 := app.Group("/v1")
 
+	// Health check (for AWS Load Balancer / Docker health)
+	v1.Get("/health", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status":  "ok",
+			"time":    time.Now().Format(time.RFC3339),
+			"version": "2.0.0",
+		})
+	})
+
 	// Authentication routes (no auth required)
 	auth := v1.Group("/auth")
 	auth.Post("/signup", api.SignupHandler)
 	auth.Post("/login", api.LoginHandler)
 	auth.Post("/refresh", api.RefreshTokenHandler)
 	auth.Post("/logout", api.LogoutHandler)
+
+	// VAPID public key — no auth needed (browser needs it to build the subscription)
+	v1.Get("/users/push-key", api.GetVapidPublicKeyHandler)
 
 	// Protected routes (require authentication)
 	protected := v1.Group("")
@@ -189,6 +200,10 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Get("/users/alert-subscriptions", api.GetAlertSubscriptionsHandler)
 	protected.Put("/users/alert-subscriptions/:subscription_id", api.UpdateAlertSubscriptionHandler)
 	protected.Delete("/users/alert-subscriptions/:subscription_id", api.DeleteAlertSubscriptionHandler)
+
+	// Web Push endpoints
+	protected.Post("/users/push-subscribe", api.SubscribePushHandler)
+	protected.Post("/users/push-unsubscribe", api.UnsubscribePushHandler)
 
 	// Farm management endpoints
 	protected.Get("/farms", api.ListFarmsHandler)
@@ -212,6 +227,11 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Get("/farms/:farm_id/coops/:coop_id/temperature-timeline", api.TemperatureTimelineHandler)
 	protected.Post("/farms/:farm_id/coops/:coop_id/telemetry", api.PostCoopTelemetryHandler)
 	protected.Post("/farms/:farm_id/coops/:coop_id/devices/report", api.ReportCoopDevicesHandler)
+	protected.Post("/farms/:farm_id/claim-gateway", api.ClaimGatewayHandler)
+
+	// Zero-Config Gateway Provisioning (Pi-side - No Auth needed initially)
+	v1.Post("/gateway/provision/request", api.RequestProvisioningHandler)
+	v1.Get("/gateway/provision/status/:code", api.CheckProvisioningStatusHandler)
 
 	// Device management endpoints
 	protected.Get("/farms/:farm_id/devices", api.ListDevicesHandler)
@@ -261,14 +281,14 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Get("/farms/:farm_id/reports/export", api.ExportReportHandler)
 	protected.Get("/farms/:farm_id/events", api.GetFarmEventLogHandler)
 
-
 	// WebSocket for real-time updates (requires authentication)
 	protected.Use("/ws", api.WebSocketUpgradeMiddleware)
 	protected.Get("/ws", websocket.New(api.WebSocketHandler))
 	protected.Get("/ws/stats", api.GetWebSocketStatsHandler)
 
-	// Device heartbeat (for IoT devices - no AuthMiddleware, uses device key)
+	// Device heartbeat (IoT devices - no AuthMiddleware, uses device/gateway key)
 	v1.Post("/devices/:hardware_id/heartbeat", api.UpdateDeviceHeartbeatHandler)
+	v1.Post("/gateway/heartbeat", api.UpdateDeviceHeartbeatHandler) // Support for X-Gateway-Token aware heartbeat
 
 	// ===== ADMIN ROUTES (role="admin" required) =====
 	admin := v1.Group("/admin")
@@ -282,16 +302,14 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	admin.Get("/reg-keys", api.ListRegKeysHandler)
 	admin.Post("/reg-keys", api.RegisterFarmerHandler)
 	admin.Put("/profile", api.UpdateAdminProfileHandler)
-
+	admin.Get("/gateways", api.ListGatewaysHandler)
+	admin.Delete("/gateways/:id", api.RevokeGatewayHandler)
 
 	// 404 Handler
 	app.Use(func(c *fiber.Ctx) error {
-		// If requesting HTML (browser), show 404 page
 		if c.Accepts("text/html") != "" {
 			return c.Status(fiber.StatusNotFound).SendFile(filepath.Join(frontendPath, "pages", "404.html"))
 		}
-
-		// Otherwise return JSON
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"error": fiber.Map{

@@ -18,6 +18,7 @@ var (
 	analyticsService = services.NewAnalyticsService()
 	adminService     = services.NewAdminService()
 	telemetryService = services.NewTelemetryService()
+	webPushService   = services.NewWebPushService()
 )
 
 // checkFarmAccess is a helper to verify farm membership/role

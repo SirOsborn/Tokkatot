@@ -1,340 +1,103 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Monitoring - Tokkatot</title>
-  <link rel="icon" href="/assets/images/tokkatot logo-02.png" type="image/x-icon" />
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#20a39e" />
-  
-  <!-- Tokkatot Design System (Modular) -->
-  <link rel="stylesheet" href="/css/theme.css?v=1.5" />
-  <link rel="stylesheet" href="/css/layout.css?v=1.5" />
-  <link rel="stylesheet" href="/css/monitoring.css?v=1.6" />
-  
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring - Tokkatot</title>
+    
+    <script>
+        (function() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+            }
+        })();
+    </script>
+    
+    <link rel="stylesheet" href="/css/theme.css?v=1.5">
+    <link rel="stylesheet" href="/css/components.css?v=1.5">
+    <link rel="stylesheet" href="/css/layout.css?v=1.5">
+    <link rel="stylesheet" href="/css/monitoring.css?v=1.5">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-warm monitoring-page">
+<body class="monitoring-page">
+    <div id="app" v-cloak>
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="nav-left">
+                <a href="/" class="back-btn">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <h1 data-i18n="monitoring">Monitoring</h1>
+            </div>
+            <div class="nav-right">
+                <div class="farm-picker-mini" @click="showFarmPicker = true">
+                    <span class="material-symbols-outlined">agriculture</span>
+                    <span class="farm-name">{{ currentFarmName }}</span>
+                    <span class="material-symbols-outlined">expand_more</span>
+                </div>
+            </div>
+        </header>
 
-<div id="header-placeholder"></div>
+        <!-- Main Content -->
+        <main class="page-content" style="padding-top: 80px; padding-bottom: 24px;">
+            <div class="monitoring-container">
+                <!-- Selection Header -->
+                <div class="selection-grid">
+                    <div class="tok-card selection-card" @click="showCoopPicker = true">
+                        <div class="selection-label" data-i18n="select_coop">Select Coop</div>
+                        <div class="selection-value">
+                            {{ selectedCoopName || '...' }}
+                            <span class="material-symbols-outlined">expand_more</span>
+                        </div>
+                    </div>
+                </div>
 
-<div class="page-wrap">
+                <!-- Sensor Stats -->
+                <div class="stats-overview">
+                    <div class="tok-card stat-card" :class="getStatusClass('temp')">
+                        <div class="stat-icon">
+                            <span class="material-symbols-outlined">thermostat</span>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label" data-i18n="temperature">Temperature</div>
+                            <div class="stat-value">{{ readings.current.temp || '--' }}°C</div>
+                            <div class="stat-status">{{ getStatusText('temp') }}</div>
+                        </div>
+                    </div>
+                    <div class="tok-card stat-card" :class="getStatusClass('humidity')">
+                        <div class="stat-icon">
+                            <span class="material-symbols-outlined">humidity_percentage</span>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label" data-i18n="humidity">Humidity</div>
+                            <div class="stat-value">{{ readings.current.humidity || '--' }}%</div>
+                            <div class="stat-status">{{ getStatusText('humidity') }}</div>
+                        </div>
+                    </div>
+                </div>
 
-  <!-- Farm + Coop picker -->
-  <div style="display:flex; gap: 12px; margin-bottom: 12px;">
-    <select id="farm-picker" class="tok-input" style="flex:1;"></select>
-    <select id="coop-picker" class="tok-input" style="flex:1;"></select>
-  </div>
-
-  <!-- Loading -->
-  <div id="loading" class="spinner-wrap"><div class="spinner"></div></div>
-
-  <!-- Content (hidden until data loaded) -->
-  <div id="content" style="display:none">
-
-    <!-- Hero -->
-    <div class="hero" id="hero"></div>
-
-    <!-- Hourly strip -->
-    <div class="glass" style="margin-bottom:16px">
-      <div style="padding:14px 16px 0">
-        <div class="section-title" data-i18n="hourly_today">Today — Hourly</div>
-      </div>
-      <div class="hourly-strip" id="hourly-strip"></div>
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <div class="tok-card chart-card">
+                        <div class="chart-header">
+                            <h3 data-i18n="temperature_trend">Temperature Trend</h3>
+                            <div class="chart-period" data-i18n="last_24h">Last 24 Hours</div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="tempChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <!-- Temperature graph -->
-    <div id="svg-wrap" class="glass" style="margin-bottom:16px">
-      <svg id="temp-svg" viewBox="0 0 480 160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="curveGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="rgba(255,255,255,0.45)" />
-            <stop offset="100%" stop-color="rgba(255,255,255,0)" />
-          </linearGradient>
-        </defs>
-        <path id="fill-path" fill="url(#curveGrad)" />
-        <path id="line-path" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round" />
-        <!-- X axis labels -->
-        <text x="0"   y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">12 AM</text>
-        <text x="120" y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">6 AM</text>
-        <text x="240" y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">12 PM</text>
-        <text x="360" y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">6 PM</text>
-        <text x="480" y="155" font-size="10" fill="rgba(255,255,255,0.6)" text-anchor="middle">12 AM</text>
-        <!-- Markers injected by JS -->
-        <g id="high-marker"></g>
-        <g id="low-marker"></g>
-      </svg>
-    </div>
-
-    <!-- Daily history -->
-    <div class="glass" style="padding:16px 18px">
-      <div class="section-title" style="margin-bottom:12px" data-i18n="temperature_history">Daily History</div>
-      <div class="history-list" id="history-list"></div>
-    </div>
-
-  </div><!-- /content -->
-
-  <!-- No sensor -->
-  <div id="no-sensor" class="no-sensor" style="display:none">
-    <h2 data-i18n="no_sensor_found">No Sensor Found</h2>
-    <p data-i18n="no_sensor_msg">This coop does not have an active temperature sensor attached.</p>
-  </div>
-
-</div><!-- /page-wrap -->
-
-<div id="navbar-placeholder"></div>
-
-<script src="/js/utils/i18n.js?v=1.5"></script>
-<script src="/js/utils/api.js?v=1.5"></script>
-<script src="/js/utils/components.js?v=1.5"></script>
-<script>
-  // -- State --
-  let farmId = null;
-  let farms  = [];
-  let coops  = [];
-
-  async function apiFetch(path) {
-    return window.API.get(path);
-  }
-
-  function t(k) {
-    return window.i18n ? window.i18n.t(k) : k;
-  }
-
-  async function init() {
-    if (!window.API.requireAuth()) return;
-    await loadComponents();
-
-    const storedFarm = window.API.getSelectedFarmId();
-    const farmsRes = await apiFetch('/v1/farms');
-    const farmsRaw = (farmsRes && farmsRes.data && farmsRes.data.data) ? farmsRes.data.data
-                   : (farmsRes && farmsRes.data && farmsRes.data.farms) ? farmsRes.data.farms
-                   : (farmsRes && farmsRes.data && Array.isArray(farmsRes.data)) ? farmsRes.data : [];
-    if (!farmsRes || !farmsRes.success || farmsRaw.length === 0) {
-      return showError('No farms found');
-    }
-    farms = farmsRaw;
-    farmId = storedFarm || farms[0].id;
-    window.API.setSelectedFarmId(farmId);
-
-    const farmPicker = document.getElementById('farm-picker');
-    farmPicker.innerHTML = '';
-    farms.forEach(f => {
-      const opt = document.createElement('option');
-      opt.value = f.id;
-      opt.textContent = f.name;
-      if (String(f.id) === String(farmId)) opt.selected = true;
-      farmPicker.appendChild(opt);
-    });
-    farmPicker.addEventListener('change', async () => {
-      farmId = farmPicker.value;
-      window.API.setSelectedFarmId(farmId);
-      await loadCoops();
-    });
-
-    await loadCoops();
-  }
-
-  async function loadCoops() {
-    const coopsRes = await apiFetch(`/v1/farms/${farmId}/coops`);
-    if (!coopsRes || !coopsRes.success) {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('no-sensor').style.display = 'block';
-      return;
-    }
-    const coopsRaw = (coopsRes.data && coopsRes.data.coops) ? coopsRes.data.coops
-                   : Array.isArray(coopsRes.data) ? coopsRes.data : [];
-    if (coopsRaw.length === 0) {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('no-sensor').style.display = 'block';
-      return;
-    }
-    coops = coopsRaw;
-
-    const picker = document.getElementById('coop-picker');
-    picker.innerHTML = '';
-    const storedCoop = window.API.getSelectedCoopId();
-    let coopId = storedCoop && coops.find(c => String(c.id) === storedCoop) ? storedCoop : coops[0].id;
-    coops.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = c.name;
-      if (String(c.id) === String(coopId)) opt.selected = true;
-      picker.appendChild(opt);
-    });
-    window.API.setSelectedCoopId(coopId);
-    picker.addEventListener('change', () => {
-      window.API.setSelectedCoopId(picker.value);
-      loadCoop(picker.value);
-    });
-
-    await loadCoop(coopId);
-  }
-
-  async function loadCoop(coopId) {
-    document.getElementById('loading').style.display  = 'flex';
-    document.getElementById('content').style.display  = 'none';
-    document.getElementById('no-sensor').style.display = 'none';
-
-    const data = await apiFetch(`/v1/farms/${farmId}/coops/${coopId}/temperature-timeline?days=7`);
-    document.getElementById('loading').style.display = 'none';
-
-    if (!data.success) return showError(this.t('error'));
-
-    const d = data.data;
-
-    if (!d.sensor_found) {
-      document.getElementById('no-sensor').style.display = 'block';
-      return;
-    }
-
-    applyBg(d.bg_hint);
-    renderHero(d);
-    renderHourly(d.today && d.today.hourly ? d.today.hourly : []);
-    renderGraph(d.today);
-    renderHistory(d.history || []);
-
-    document.getElementById('content').style.display = 'block';
-  }
-
-  const bgClasses = ['bg-scorching','bg-hot','bg-warm','bg-neutral','bg-cool','bg-cold'];
-  function applyBg(hint) {
-    document.body.classList.remove(...bgClasses);
-    document.body.classList.add('bg-' + hint);
-  }
-
-  function renderHero(d) {
-    const temp  = d.current_temp != null ? d.current_temp.toFixed(1) : '--';
-    const hum   = d.current_humidity != null ? `${Math.round(d.current_humidity)}%` : '--';
-    const high  = d.today && d.today.high ? `${d.today.high.temp}°` : '--';
-    const highT = d.today && d.today.high ? d.today.high.time : '';
-    const low   = d.today && d.today.low  ? `${d.today.low.temp}°` : '--';
-    const lowT  = d.today && d.today.low  ? d.today.low.time : '';
-    document.getElementById('hero').innerHTML = `
-      <p class="coop-label">${escHtml(d.coop_name || 'Coop')}</p>
-      <div class="temp-big">${temp}<sup>°C</sup></div>
-      <div class="hl-row">H: ${high} at ${highT} &nbsp;·&nbsp; L: ${low} at ${lowT}</div>
-      <div class="hl-row">${t('humidity')}: ${hum}</div>
-      <span class="hint-badge">${d.bg_hint}</span>
-    `;
-  }
-
-  function renderHourly(hourly) {
-    const strip = document.getElementById('hourly-strip');
-    if (!hourly.length) {
-      strip.innerHTML = `<div style="padding:8px 16px;opacity:.6;font-size:13px" data-i18n="no_readings">No readings found</div>`;
-      return;
-    }
-    strip.innerHTML = hourly.map(h => `
-      <div class="hour-cell">
-        <div class="h-time">${h.hour}</div>
-        <div class="h-temp">${h.temp}°</div>
-      </div>
-    `).join('');
-  }
-
-  function renderGraph(today) {
-    const linePath = document.getElementById('line-path');
-    const fillPath = document.getElementById('fill-path');
-    const highMark = document.getElementById('high-marker');
-    const lowMark  = document.getElementById('low-marker');
-    highMark.innerHTML = ''; lowMark.innerHTML = '';
-
-    if (!today || !today.hourly || today.hourly.length < 2) {
-      linePath.setAttribute('d', '');
-      fillPath.setAttribute('d', '');
-      return;
-    }
-
-    const svgW = 480, svgH = 130, pad = 10;
-    const plotH = svgH - pad * 2;
-
-    function hourToX(hStr) {
-      const [h, m] = hStr.split(':').map(Number);
-      return ((h + m / 60) / 24) * svgW;
-    }
-
-    const pts = today.hourly.map(h => ({ x: hourToX(h.hour), temp: h.temp }));
-    const temps = pts.map(p => p.temp);
-    const minT = Math.min(...temps);
-    const maxT = Math.max(...temps);
-    const range = maxT - minT || 1;
-
-    function tempToY(t) { return pad + plotH - ((t - minT) / range) * plotH; }
-    const mapped = pts.map(p => ({ x: p.x, y: tempToY(p.temp) }));
-
-    let d = `M ${mapped[0].x} ${mapped[0].y}`;
-    for (let i = 1; i < mapped.length; i++) {
-      const prev = mapped[i - 1], cur = mapped[i];
-      const cpX = (prev.x + cur.x) / 2;
-      d += ` C ${cpX} ${prev.y} ${cpX} ${cur.y} ${cur.x} ${cur.y}`;
-    }
-    linePath.setAttribute('d', d);
-
-    const last = mapped[mapped.length - 1];
-    const fillD = d + ` L ${last.x} ${svgH} L ${mapped[0].x} ${svgH} Z`;
-    fillPath.setAttribute('d', fillD);
-
-    if (today.high && today.high.time) {
-      const hx = hourToX(today.high.time);
-      const hy = tempToY(today.high.temp);
-      highMark.innerHTML = `
-        <circle cx="${hx}" cy="${hy}" r="5" fill="#fff"/>
-        <text x="${hx}" y="${hy - 9}" font-size="10" fill="#fff" text-anchor="middle" font-weight="600">H ${today.high.temp}°</text>
-      `;
-    }
-    if (today.low && today.low.time) {
-      const lx = hourToX(today.low.time);
-      const ly = tempToY(today.low.temp);
-      lowMark.innerHTML = `
-        <circle cx="${lx}" cy="${ly}" r="5" fill="rgba(255,255,255,0.6)"/>
-        <text x="${lx}" y="${ly + 18}" font-size="10" fill="rgba(255,255,255,0.8)" text-anchor="middle">L ${today.low.temp}°</text>
-      `;
-    }
-  }
-
-  function renderHistory(history) {
-    const list = document.getElementById('history-list');
-    if (!history.length) {
-      list.innerHTML = '<p style="opacity:.6;font-size:13px">No historical data available</p>';
-      return;
-    }
-    const allHighs = history.map(d => d.high.temp);
-    const allLows  = history.map(d => d.low.temp);
-    const rangeMin = Math.min(...allLows);
-    const rangeMax = Math.max(...allHighs);
-    const rangeSpan = rangeMax - rangeMin || 1;
-
-    list.innerHTML = history.map(d => {
-      const left  = ((d.low.temp  - rangeMin) / rangeSpan * 100).toFixed(1);
-      const right = ((d.high.temp - rangeMin) / rangeSpan * 100).toFixed(1);
-      const width = (right - left).toFixed(1);
-      return `
-        <div class="day-card glass">
-          <span class="day-label">${escHtml(d.label)}</span>
-          <div class="day-bar-wrap">
-            <div class="day-bar" style="left:${left}%;width:${width}%"></div>
-          </div>
-          <div class="day-hl">
-            <span class="dh">H ${d.high.temp}°</span>
-            <span class="dl">L ${d.low.temp}°</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  function escHtml(str) {
-    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-  function showError(msg) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('no-sensor').style.display = 'block';
-    document.getElementById('no-sensor').querySelector('p').textContent = msg;
-  }
-
-  init().catch(err => { console.error(err); showError('Unexpected error — ' + err.message); });
-</script>
+    <!-- Scripts -->
+    <script src="/js/utils/i18n.js?v=1.5"></script>
+    <script src="/js/utils/api.js?v=1.5"></script>
+    <script src="/js/monitoring.js?v=1.5"></script>
 </body>
 </html>
