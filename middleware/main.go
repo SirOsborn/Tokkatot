@@ -162,6 +162,15 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	// v1 API Group
 	v1 := app.Group("/v1")
 
+	// Health check (for AWS Load Balancer / Docker health)
+	v1.Get("/health", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status":  "ok",
+			"time":    time.Now().Format(time.RFC3339),
+			"version": "2.0.0",
+		})
+	})
+
 	// Authentication routes (no auth required)
 	auth := v1.Group("/auth")
 	auth.Post("/signup", api.SignupHandler)
