@@ -1,0 +1,103 @@
+name: Deploy — Staging
+
+on:
+  push:
+    branches: [dev, stage, main]
+  pull_request:
+    branches: [dev, stage, main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Build multi-arch image and push to GHCR with :stage tag
+  # ──────────────────────────────────────────────────────────────
+  build:
+    name: Build & Push Staging Image
+    runs-on: ubuntu-latest
+    outputs:
+      repo_lc: ${{ steps.prep.outputs.repo_lc }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare image name (lowercase)
+        id: prep
+        run: echo "repo_lc=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build & Push Middleware (:stage tag)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./middleware/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ steps.prep.outputs.repo_lc }}/middleware:stage
+
+  # ──────────────────────────────────────────────────────────────
+  # Deploy to staging environment on the server
+  # Uses GitHub Environment "staging" for isolated secrets
+  # ──────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Staging
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: SSH Deploy to Staging Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            # Ensure the shared proxy network exists (idempotent)
+            docker network create tokkatot-proxy-net 2>/dev/null || true
+
+            # Clone staging repo if this is the first deploy
+            if [ ! -d ~/tokkatot-staging ]; then
+              git clone https://github.com/${{ github.repository }} ~/tokkatot-staging
+            fi
+
+            cd ~/tokkatot-staging
+            git fetch origin stage
+            git checkout stage
+            git pull origin stage
+
+            # Copy the production .env.staging if it exists, or use .env
+            # The staging .env should be pre-populated on the server
+            if [ ! -f .env ]; then
+              echo "ERROR: ~/tokkatot-staging/.env not found. Please create it from .env.example" && exit 1
+            fi
+
+            # Login to GHCR on the server
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest image and restart the staging stack
+            COMPOSE_PROJECT_NAME=tokkatot-staging \
+            IMAGE_TAG=stage \
+            docker-compose -f docker-compose.staging.yml up -d --pull always
+
+            # Reload production nginx so it picks up any config changes
+            docker exec tokkatot-nginx nginx -s reload 2>/dev/null || true
+
+            # Show status
+            echo "=== Staging Stack Status ==="
+            COMPOSE_PROJECT_NAME=tokkatot-staging \
+            docker-compose -f docker-compose.staging.yml ps

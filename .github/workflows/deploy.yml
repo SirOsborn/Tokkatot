@@ -1,61 +1,8 @@
-name: Deploy Tokkatot
-
-on:
-  push:
-    branches: [ main, stage, dev ]
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Prepare image names (lowercase for GHCR)
-        id: prep
-        shell: bash
-        run: |
-          echo "repo_lc=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
-
-      - name: Build and Push Middleware
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./middleware/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ steps.prep.outputs.repo_lc }}/middleware:${{ github.ref_name }}
-            ghcr.io/${{ steps.prep.outputs.repo_lc }}/middleware:latest
-
-      - name: Deploy to Server via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/tokkatot
-            # Update the appropriate branch
-            git fetch origin ${{ github.ref_name }}
-            git checkout ${{ github.ref_name }}
-            git pull origin ${{ github.ref_name }}
-            
-            # Login to GHCR on the server
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # Pull and Restart with branch-specific images
-            IMAGE_TAG=${{ github.ref_name }} docker-compose up -d --pull always
+# ⚠️  DEPRECATED — This file has been replaced by three focused workflows:
+#
+#   ci.yml              — Build & test on every push/PR
+#   deploy-staging.yml  — Deploy to staging on push to `stage`
+#   deploy-prod.yml     — Deploy to production on push to `main` (with approval gate)
+#
+# This file is kept temporarily for reference only.
+# It will be deleted in a future commit.
