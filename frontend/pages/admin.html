@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal - Tokkatot</title>
     
+    <script>
+        (function() {
+            const token = localStorage.getItem('access_token');
+            const role = localStorage.getItem('user_role');
+            if (!token || role !== 'admin') {
+                window.location.href = '/login';
+            }
+        })();
+    </script>
+    
     <!-- Tokkatot Design System (Modular) -->
     <link rel="stylesheet" href="/css/theme.css?v=1.5">
     <link rel="stylesheet" href="/css/components.css?v=1.5">

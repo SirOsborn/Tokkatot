@@ -8,6 +8,15 @@
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#00897B" />
   
+  <script>
+    (function() {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      }
+    })();
+  </script>
+  
   <!-- Tokkatot Design System (Modular) -->
   <link rel="stylesheet" href="/css/theme.css?v=1.5" />
   <link rel="stylesheet" href="/css/components.css?v=1.5" />
