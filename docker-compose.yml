@@ -4,7 +4,7 @@ services:
   # Handles HTTPS termination. Required for PWA + Web Push.
   # ──────────────────────────────────────────────────────────
   nginx:
-    image: nginx:alpine
+    image: nginx:1.25-alpine
     container_name: tokkatot-nginx
     restart: always
     ports:
@@ -18,7 +18,7 @@ services:
     depends_on:
       - middleware
     networks:
-      - public_net
+      - tokkatot-net
 
   # ──────────────────────────────────────────────────────────
   # CERTBOT — Renews Let's Encrypt SSL certs automatically
@@ -26,6 +26,7 @@ services:
   certbot:
     image: certbot/certbot
     container_name: tokkatot-certbot
+    restart: always
     volumes:
       - certbot-webroot:/var/www/certbot
       - letsencrypt-certs:/etc/letsencrypt
@@ -37,18 +38,19 @@ services:
   # Isolated on internal network; NOT exposed to public internet.
   # ──────────────────────────────────────────────────────────
   database:
-    image: ankane/pgvector:latest
-    container_name: tokkatot-db
+    image: postgres:15-alpine
+    container_name: tokkatot-database
     restart: always
     environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-tokkatot}
+      POSTGRES_USER: tokkatot
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tokkatot_secure}
+      POSTGRES_DB: tokkatot
     # NO ports: mapping — database is only reachable inside the internal_net
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U tokkatot"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -61,8 +63,8 @@ services:
   # ──────────────────────────────────────────────────────────
   middleware:
     build:
-      context: .
-      dockerfile: middleware/Dockerfile
+      context: ./middleware
+      dockerfile: Dockerfile
     container_name: tokkatot-middleware
     restart: always
     depends_on:
@@ -108,6 +110,27 @@ services:
     environment:
       PORT: 8000
       HOST: 0.0.0.0
+    networks:
+      - internal_net
+
+  # ──────────────────────────────────────────────────────────
+  # GATEWAY SIMULATOR — periodic telemetry generator
+  # ──────────────────────────────────────────────────────────
+  gateway-sim:
+    image: golang:1.23-alpine
+    container_name: tokkatot-gateway-sim
+    restart: always
+    environment:
+      CLOUD_API_URL: http://tokkatot-middleware:3000
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD}
+    working_dir: /app
+    volumes:
+      - ./middleware:/app
+    command: ["go", "run", "./scripts/gateway_sim/main.go", "--once", "--interval", "30", "--poll-schedules", "--email", "${INITIAL_ADMIN_EMAIL}", "--password", "${INITIAL_ADMIN_PASSWORD}", "--create-farm", "--create-coop"]
+    depends_on:
+      middleware:
+        condition: service_started
     networks:
       - internal_net
 
