@@ -1,8 +1,0 @@
-# ⚠️  DEPRECATED — This file has been replaced by three focused workflows:
-#
-#   ci.yml              — Build & test on every push/PR
-#   deploy-staging.yml  — Deploy to staging on push to `stage`
-#   deploy-prod.yml     — Deploy to production on push to `main` (with approval gate)
-#
-# This file is kept temporarily for reference only.
-# It will be deleted in a future commit.

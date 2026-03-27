@@ -56,20 +56,34 @@
 
 /* Coming Soon Overlay */
 .coming-soon-overlay {
-    position: fixed; 
-    inset: 0; 
-    z-index: 9999;
-    background: var(--tok-bg);
-    display: flex; 
-    flex-direction: column;
-    align-items: center; 
-    justify-content: center;
-    padding: 40px 32px; 
-    text-align: center;
+    display: none; /* Hide full overlay so page content is always visible */
 }
 
+/* If you want a banner instead of hidden, comment above display:none and use the styles below:
+.coming-soon-overlay {
+    position: relative;
+    width: 100%;
+    background: var(--tok-teal);
+    color: white;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 24px;
+    border-radius: var(--border-radius-lg);
+}
+
+.coming-soon-overlay h2 {
+    color: white;
+    margin: 0 0 16px 0;
+}
+
+.coming-soon-overlay p {
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 0 24px 0;
+}
+*/
+
 .coming-soon-badge {
-    background: var(--tok-teal); 
+    background: rgba(255, 255, 255, 0.2); 
     color: #fff;
     font-size: 11px; 
     font-weight: 700; 
