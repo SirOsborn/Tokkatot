@@ -26,8 +26,7 @@ RUN apk --no-cache add ca-certificates tzdata \
 # Copy the compiled binary
 COPY --from=builder /app/tokkatot .
 
-# Copy frontend and certs (mounted as volumes in production, baked in for dev)
-COPY certs ./certs
+# Copy frontend (mounted as volumes in production, baked in for dev)
 COPY frontend ./frontend
 
 # Expose app port
