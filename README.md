@@ -2,72 +2,77 @@
 
 ![Tokkatot Logo](frontend/assets/images/tokkatot%20logo-02.png)
 
-**IoT-Based Poultry Automation with Coop-Level Monitoring**
+**Digitalizing Cambodian Poultry Farming with IoT Automation & Cloud Intelligence**
 
-Tokkatot is a comprehensive smart poultry management system designed for Cambodian farmers. It combines IoT sensor technology, coop-level automation, and (later) AI-powered disease detection to improve poultry health monitoring and farm productivity.
+Tokkatot is a production-ready smart poultry management platform. It combines IoT sensor technology, coop-level automation, and a robust cloud backend to improve farm productivity while ensuring 24/7 poultry health monitoring.
 
 ---
 
-## 🚀 Quick Start (Local Setup)
+## 🚀 Quick Start (Production Setup)
 
-### Prerequisites
-- **Go 1.23+**: [Install Go](https://go.dev/doc/install)
-- **PostgreSQL 17+**: [Install PostgreSQL](https://www.postgresql.org/download/)
-- **Python 3.12+**: [Install Python](https://www.python.org/downloads/) (for AI Service)
+The fastest way to launch Tokkatot is using **Docker Compose**.
 
-### Installation
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/SirOsbornOjr/tokkatot.git
-    cd tokkatot
-    ```
-2.  **Backend Setup**:
-    ```bash
-    cd middleware
-    cp .env.example .env  # Configure your DATABASE_URL
-    go mod download
-    go run main.go
-    ```
-3.  **Frontend**:
-    The frontend is served directly by the Go backend at `http://localhost:3000`.
+### 1. Prerequisites
+- **Docker & Docker Compose**: [Install Docker](https://docs.docker.com/get-docker/)
+- **Go 1.23+**: (Only required if running outside Docker)
+
+### 2. Configuration
+```bash
+# Clone the repository
+git clone https://github.com/SirOsbornOjr/tokkatot.git
+cd tokkatot
+
+# Populate your .env (Use the provided generator for VAPID keys)
+cp .env.example .env
+go run middleware/scripts/generate_vapid/main.go
+```
+
+### 3. Launch
+```bash
+docker-compose up -d
+```
+The app will be available at `https://app.tokkatot.com` (if SSL is configured) or `http://localhost:3000` (locally).
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Component | Technology | Description |
+| Layer | Technology | Description |
 |---|---|---|
+| **Infrastructure** | Docker / Nginx / Certbot | Containerized stack with SSL automation |
 | **Backend** | Go 1.23 / Fiber v2 | High-performance REST API with JWT Auth |
-| **Database** | PostgreSQL 17 | Unified schema for Users, Farms, and Devices |
+| **CI/CD** | GitHub Actions / GHCR | Automated build/push/deploy pipeline |
+| **Database** | PostgreSQL 15 | Persistent storage with named volumes |
 | **Frontend** | Vue.js 3 / PWA | Mobile-first, Khmer-language, zero-build PWA |
-| **AI Service** | FastAPI / PyTorch | Planned, not integrated yet |
-| **IoT/Embedded** | ESP32 / ESP-IDF + Raspberry Pi | Local HTTPS control, Pi gateway posts telemetry |
+| **IoT/Embedded** | ESP32-IDF / RPi 4B | Local HTTPS control & Telemetry ingestion |
 
 ---
 
-## 📂 Project Structure
+## 🔄 CI/CD Pipeline
 
-- `middleware/`: Go backend source code and database migrations.
-- `frontend/`: Vue.js 3 PWA (HTML/JS/CSS templates).
-- `ai-service/`: Python-based disease detection service.
-- `embedded/`: ESP32 firmware and hardware configuration.
-- `docs/`: Technical architectural details and user guides.
+Tokkatot features a professional 3-tier deployment pipeline via **GitHub Actions**:
 
----
-
-## 📖 Documentation
-
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Technical deep dive into the system design.
-- **[CONTRIBUTING.md](CONTRIBUTING.md)**: Development guidelines and AI Agent instructions.
-- **[USER_GUIDE.md](docs/USER_GUIDE.md)**: Guide for farm owners and workers (in progress).
+1.  **Dev**: Pushes to `dev` branch build and deploy to the development server.
+2.  **Stage**: Pushes to `stage` are for final cloud validation.
+3.  **Prod**: Pushes to `main` trigger a production rebuild and deployment to `app.tokkatot.com`.
 
 ---
 
 ## 🔐 Security & Compliance
 
-Tokkatot uses **JWT-based authentication** and a **Registration Key system** to ensure zero SMS costs for farmers while maintaining high security. Coop-level automation is the primary control unit.
+- **Pre-render Auth**: Blocking scripts prevent unauthorized UI access.
+- **Docker Lockdown**: Middleware is isolated from the public internet; all traffic must pass through the Nginx gateway.
+- **Registration Keys**: Enforced signup flow requiring physical keys or admin invites.
+- **Health Monitoring**: Standardized `/v1/health` probes for cloud uptime.
 
 ---
 
+## 📖 Documentation
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md)**: Step-by-step guide for AWS EC2 & SSL setup.
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Technical system design and API surface.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)**: Developer guidelines and AI Agent instructions.
+
+---
 **Proprietary Software - Tokkatot Startup**
-*For internal use only. Unauthorized copying or distribution is prohibited.*
+*Designed for reliability, accessibility, and high impact in Cambodian agriculture.*
