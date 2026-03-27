@@ -31,7 +31,7 @@ services:
       - certbot-webroot:/var/www/certbot
       - letsencrypt-certs:/etc/letsencrypt
     # Renew every 12 hours; certbot only acts when cert is < 30 days from expiry
-    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $!; done"
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $$!; done"
 
   # ──────────────────────────────────────────────────────────
   # DATABASE — PostgreSQL with pgvector
