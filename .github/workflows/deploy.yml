@@ -21,14 +21,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare image names (lowercase for GHCR)
+        id: prep
+        shell: bash
+        run: |
+          echo "repo_lc=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: Build and Push Middleware
         uses: docker/build-push-action@v5
         with:
           context: ./middleware
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/middleware:${{ github.ref_name }}
-            ghcr.io/${{ github.repository }}/middleware:latest
+            ghcr.io/${{ steps.prep.outputs.repo_lc }}/middleware:${{ github.ref_name }}
+            ghcr.io/${{ steps.prep.outputs.repo_lc }}/middleware:latest
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3

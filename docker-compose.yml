@@ -62,6 +62,7 @@ services:
   # Only accessible via the internal network and nginx proxy.
   # ──────────────────────────────────────────────────────────
   middleware:
+    image: ghcr.io/sirosborn/tokkatot/middleware:${IMAGE_TAG:-latest}
     build:
       context: ./middleware
       dockerfile: Dockerfile
