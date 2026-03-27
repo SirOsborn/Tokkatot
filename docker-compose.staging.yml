@@ -1,0 +1,99 @@
+# ================================================================
+# TOKKATOT STAGING COMPOSE
+# Runs as an isolated project alongside production on the same server.
+# Usage: COMPOSE_PROJECT_NAME=tokkatot-staging IMAGE_TAG=stage docker-compose -f docker-compose.staging.yml up -d
+#
+# Networking: middleware joins the external `tokkatot-proxy-net` so the
+# production nginx container can route staging.tokkatot.com to it.
+# ================================================================
+
+services:
+  # ──────────────────────────────────────────────────────────────
+  # DATABASE — Staging Postgres (isolated, never exposed publicly)
+  # ──────────────────────────────────────────────────────────────
+  database:
+    image: postgres:15-alpine
+    container_name: tokkatot-staging-database
+    restart: always
+    environment:
+      POSTGRES_USER: tokkatot
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tokkatot_staging_secure}
+      POSTGRES_DB: tokkatot
+    volumes:
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - staging_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tokkatot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - staging-internal
+
+  # ──────────────────────────────────────────────────────────────
+  # MIDDLEWARE — Staging Go backend
+  # Joins the shared proxy-net so production nginx can route to it.
+  # ──────────────────────────────────────────────────────────────
+  middleware:
+    image: ghcr.io/sirosborn/tokkatot/middleware:${IMAGE_TAG:-stage}
+    container_name: tokkatot-staging-middleware
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+    expose:
+      - "3000"
+    environment:
+      DB_HOST: tokkatot-staging-database
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-tokkatot}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-tokkatot}
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@tokkatot.com}
+      ENVIRONMENT: staging
+      SERVER_PORT: 3000
+      SERVER_HOST: 0.0.0.0
+    volumes:
+      - ./frontend:/app/frontend:ro
+    networks:
+      - staging-internal
+      - proxy-net  # Reachable by production nginx
+
+  # ──────────────────────────────────────────────────────────────
+  # GATEWAY SIMULATOR — Staging telemetry (optional)
+  # ──────────────────────────────────────────────────────────────
+  gateway-sim:
+    image: golang:1.23-alpine
+    container_name: tokkatot-staging-gateway-sim
+    restart: always
+    environment:
+      CLOUD_API_URL: http://tokkatot-staging-middleware:3000
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD}
+    working_dir: /app
+    volumes:
+      - ./middleware:/app
+    command: ["go", "run", "./scripts/gateway_sim/main.go", "--once", "--interval", "30", "--poll-schedules", "--email", "${INITIAL_ADMIN_EMAIL}", "--password", "${INITIAL_ADMIN_PASSWORD}", "--create-farm", "--create-coop"]
+    depends_on:
+      middleware:
+        condition: service_started
+    networks:
+      - staging-internal
+
+networks:
+  staging-internal:
+    driver: bridge
+    internal: true  # Staging DB never reachable from outside
+  proxy-net:
+    external: true
+    name: tokkatot-proxy-net  # Shared with production nginx
+
+volumes:
+  staging_postgres_data:

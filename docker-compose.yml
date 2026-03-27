@@ -19,6 +19,7 @@ services:
       - middleware
     networks:
       - public_net
+      - proxy-net  # Reaches tokkatot-staging-middleware for staging.tokkatot.com
 
   # ──────────────────────────────────────────────────────────
   # CERTBOT — Renews Let's Encrypt SSL certs automatically
@@ -147,6 +148,9 @@ networks:
   internal_net:
     driver: bridge
     internal: true   # Blocks all external traffic to this network
+  proxy-net:
+    external: true
+    name: tokkatot-proxy-net  # Shared with staging compose project
 
 # ──────────────────────────────────────────────────────────
 # VOLUMES

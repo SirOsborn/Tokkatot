@@ -1,0 +1,55 @@
+name: CI — Build & Test
+
+on:
+  push:
+    branches: [dev, stage, main]
+  pull_request:
+    branches: [dev, stage, main]
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Go build + vet — catches compile errors and common bugs fast
+  # ──────────────────────────────────────────────────────────────
+  test:
+    name: Go Build & Vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: middleware/go.sum
+
+      - name: Build Middleware
+        working-directory: middleware
+        run: go build ./...
+
+      - name: Vet Middleware
+        working-directory: middleware
+        run: go vet ./...
+
+  # ──────────────────────────────────────────────────────────────
+  # Docker build check — validates Dockerfile without pushing
+  # Catches broken builds before they reach staging/prod
+  # ──────────────────────────────────────────────────────────────
+  docker-build-check:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Middleware Image (validate only, no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./middleware/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
