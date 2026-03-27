@@ -192,7 +192,7 @@ func SeedTestData() error {
 		}
 		_, err = DB.Exec(`
 			INSERT INTO users (id, name, email, phone, password_hash, is_active, full_name)
-			VALUES ($1, 'Test Farmer', $2, 'N/A', $3, true, 'Test Farmer Account')
+			VALUES ($1, 'Test Farmer', $2, '+10000000000', $3, true, 'Test Farmer Account')
 			ON CONFLICT DO NOTHING
 		`, testFarmerID, cfg.TestFarmerEmail, string(hash))
 		if err != nil {
@@ -202,6 +202,14 @@ func SeedTestData() error {
 	} else {
 		log.Printf("ℹ️  Test farmer already exists (%s), skipping user seed", cfg.TestFarmerEmail)
 	}
+
+	// Retrieve the actual user ID (in case they already existed with a random UUID)
+	var actualFarmerID string
+	if err := DB.QueryRow("SELECT id FROM users WHERE email = $1", cfg.TestFarmerEmail).Scan(&actualFarmerID); err != nil {
+		return fmt.Errorf("failed to fetch actual test farmer ID: %w", err)
+	}
+	testFarmerID = actualFarmerID // Safely use the real UUID for all relationships
+
 
 	// ── 2. Seed demo farm owned by the test farmer ──────────────────────────
 	demoFarmID := "00000000-0000-0000-0000-000000000010"
