@@ -159,45 +159,87 @@ func SeedInitialAdmin() error {
 	return nil
 }
 
-// SeedTestData seeds a test farmer user for development/staging validation.
+// SeedTestData seeds a test farmer user, demo farm, and demo coop for staging validation.
+// Only runs when TEST_FARMER_EMAIL and TEST_FARMER_PASSWORD are set in the environment.
+// This function is intentionally NOT called in production — guard is in main.go.
 // Idempotent — safe to call on every startup.
 func SeedTestData() error {
 	if DB == nil {
 		return fmt.Errorf("database not initialized")
 	}
 
-	// Only seed test data in non-production environments
-	// (in production the gateway-sim provides live data)
+	cfg := config.AppConfig
+
+	// Skip if credentials are not configured (production .env will not have these)
+	if cfg.TestFarmerEmail == "" || cfg.TestFarmerPassword == "" {
+		log.Println("ℹ️  Skipping test data seeding (TEST_FARMER_EMAIL or TEST_FARMER_PASSWORD not set)")
+		return nil
+	}
+
+	// ── 1. Seed test farmer user ────────────────────────────────────────────
 	testFarmerID := "00000000-0000-0000-0000-000000000002"
 
-	// Check if test farmer already exists
 	var count int
 	if err := DB.QueryRow("SELECT COUNT(*) FROM users WHERE id = $1", testFarmerID).Scan(&count); err != nil {
 		return fmt.Errorf("failed to check test farmer: %w", err)
 	}
-	if count > 0 {
-		return nil // Already seeded
+
+	if count == 0 {
+		log.Println("🌱 Seeding test farmer user...")
+		hash, err := bcrypt.GenerateFromPassword([]byte(cfg.TestFarmerPassword), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("failed to hash test farmer password: %w", err)
+		}
+		_, err = DB.Exec(`
+			INSERT INTO users (id, name, email, phone, password_hash, is_active, full_name)
+			VALUES ($1, 'Test Farmer', $2, 'N/A', $3, true, 'Test Farmer Account')
+			ON CONFLICT DO NOTHING
+		`, testFarmerID, cfg.TestFarmerEmail, string(hash))
+		if err != nil {
+			return fmt.Errorf("failed to seed test farmer user: %w", err)
+		}
+		log.Printf("✅ Test farmer seeded: %s", cfg.TestFarmerEmail)
+	} else {
+		log.Printf("ℹ️  Test farmer already exists (%s), skipping user seed", cfg.TestFarmerEmail)
 	}
 
-	log.Println("🌱 Seeding test farmer user...")
+	// ── 2. Seed demo farm owned by the test farmer ──────────────────────────
+	demoFarmID := "00000000-0000-0000-0000-000000000010"
+	farmName := cfg.DemoFarmName
 
-	hash, err := bcrypt.GenerateFromPassword([]byte("Test@Farmer123!"), bcrypt.DefaultCost)
+	_, err := DB.Exec(`
+		INSERT INTO farms (id, owner_id, name, location, province, is_active)
+		VALUES ($1, $2, $3, 'Demo Location', 'Phnom Penh', true)
+		ON CONFLICT DO NOTHING
+	`, demoFarmID, testFarmerID, farmName)
 	if err != nil {
-		return fmt.Errorf("failed to hash test farmer password: %w", err)
+		return fmt.Errorf("failed to seed demo farm: %w", err)
 	}
+
+	// ── 3. Add test farmer as a 'farmer' member of the demo farm ───────────
+	farmMemberID := "00000000-0000-0000-0000-000000000012"
+	_, err = DB.Exec(`
+		INSERT INTO farm_users (id, farm_id, user_id, role, invited_by, is_active)
+		VALUES ($1, $2, $3, 'farmer', $3, true)
+		ON CONFLICT DO NOTHING
+	`, farmMemberID, demoFarmID, testFarmerID)
+	if err != nil {
+		return fmt.Errorf("failed to seed farm_users membership: %w", err)
+	}
+
+	// ── 4. Seed demo coop under the demo farm ──────────────────────────────
+	demoCoopID := "00000000-0000-0000-0000-000000000011"
+	coopName := cfg.DemoCoopName
 
 	_, err = DB.Exec(`
-		INSERT INTO users (id, name, email, phone, password_hash, is_active, full_name)
-		VALUES ($1, 'Test Farmer', 'farmer@tokkatot.com', 'N/A', $2, true, 'Test Farmer Account')
-		ON CONFLICT (email) DO UPDATE SET 
-			password_hash = EXCLUDED.password_hash,
-			name = EXCLUDED.name,
-			full_name = EXCLUDED.full_name
-	`, testFarmerID, string(hash))
+		INSERT INTO coops (id, farm_id, number, name, capacity, current_count, chicken_type, temp_min, temp_max, is_active)
+		VALUES ($1, $2, 1, $3, 500, 450, 'broiler', 28.0, 34.0, true)
+		ON CONFLICT DO NOTHING
+	`, demoCoopID, demoFarmID, coopName)
 	if err != nil {
-		return fmt.Errorf("failed to sync test farmer: %w", err)
+		return fmt.Errorf("failed to seed demo coop: %w", err)
 	}
 
-	log.Println("✅ Test farmer synced: farmer@tokkatot.com / Test@Farmer123!")
+	log.Printf("✅ Test seed complete — farm=%s coop=%s farmer=%s", farmName, coopName, cfg.TestFarmerEmail)
 	return nil
 }

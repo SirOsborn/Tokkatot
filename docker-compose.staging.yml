@@ -72,15 +72,23 @@ services:
   gateway-sim:
     image: golang:1.23-alpine
     container_name: tokkatot-staging-gateway-sim
-    restart: always
+    restart: on-failure
     environment:
       CLOUD_API_URL: http://tokkatot-staging-middleware:3000
-      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL}
-      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD}
+      TEST_FARMER_EMAIL: ${TEST_FARMER_EMAIL}
+      TEST_FARMER_PASSWORD: ${TEST_FARMER_PASSWORD}
+      DEMO_FARM_NAME: ${DEMO_FARM_NAME:-Demo Farm}
+      DEMO_COOP_NAME: ${DEMO_COOP_NAME:-Coop 1}
     working_dir: /app
     volumes:
       - ./middleware:/app
-    command: ["go", "run", "./scripts/gateway_sim/main.go", "--once", "--interval", "30", "--poll-schedules", "--email", "${INITIAL_ADMIN_EMAIL}", "--password", "${INITIAL_ADMIN_PASSWORD}", "--create-farm", "--create-coop"]
+    # Sleep 20s so middleware has time to fully bind port 3000 after healthcheck passes
+    command: >
+      sh -c "sleep 20 && go run ./scripts/gateway_sim/main.go
+      --once --interval 30 --poll-schedules
+      --email $$TEST_FARMER_EMAIL --password $$TEST_FARMER_PASSWORD
+      --farm-name \"$$DEMO_FARM_NAME\" --coop-name \"$$DEMO_COOP_NAME\"
+      --create-farm --create-coop"
     depends_on:
       middleware:
         condition: service_started
