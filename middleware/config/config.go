@@ -43,6 +43,10 @@ type Config struct {
 
 var AppConfig *Config
 
+func init() {
+	LoadConfig()
+}
+
 func LoadConfig() *Config {
 	// Load .env file (Overload forces .env values to override system environment variables)
 	if err := godotenv.Overload(); err != nil {
