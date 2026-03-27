@@ -196,7 +196,7 @@ func SeedTestData() error {
 		}
 		_, err = DB.Exec(`
 			INSERT INTO users (id, name, email, phone, password_hash, is_active, full_name)
-			VALUES ($1, 'Test Farmer', $2, 'N/A', $3, true, 'Test Farmer Account')
+			VALUES ($1, 'Test Farmer', $2, '+10000000000', $3, true, 'Test Farmer Account')
 			ON CONFLICT DO NOTHING
 		`, testFarmerID, cfg.TestFarmerEmail, string(hash))
 		if err != nil {
