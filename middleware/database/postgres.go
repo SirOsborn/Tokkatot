@@ -193,12 +193,15 @@ func SeedTestData() error {
 	_, err = DB.Exec(`
 		INSERT INTO users (id, name, email, phone, password_hash, is_active, full_name)
 		VALUES ($1, 'Test Farmer', 'farmer@tokkatot.com', 'N/A', $2, true, 'Test Farmer Account')
-		ON CONFLICT DO NOTHING
+		ON CONFLICT (email) DO UPDATE SET 
+			password_hash = EXCLUDED.password_hash,
+			name = EXCLUDED.name,
+			full_name = EXCLUDED.full_name
 	`, testFarmerID, string(hash))
 	if err != nil {
-		return fmt.Errorf("failed to seed test farmer: %w", err)
+		return fmt.Errorf("failed to sync test farmer: %w", err)
 	}
 
-	log.Println("✅ Test farmer seeded: farmer@tokkatot.com / Test@Farmer123!")
+	log.Println("✅ Test farmer synced: farmer@tokkatot.com / Test@Farmer123!")
 	return nil
 }
