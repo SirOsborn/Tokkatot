@@ -151,6 +151,6 @@ networks:
 # VOLUMES
 # ──────────────────────────────────────────────────────────
 volumes:
-  pgdata:
+  postgres_data:
   certbot-webroot:
   letsencrypt-certs:
