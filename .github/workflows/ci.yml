@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [dev, stage, main]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   # ──────────────────────────────────────────────────────────────
   # Go build + vet — catches compile errors and common bugs fast
