@@ -44,9 +44,10 @@ func (s *DeviceService) ListDevices(userID, farmID uuid.UUID, coopID *uuid.UUID,
 		nextArg++
 	}
 
-	if filter == "online" {
+	switch filter {
+case "online":
 		query += " AND is_online = true"
-	} else if filter == "offline" {
+	case "offline":
 		query += " AND is_online = false"
 	}
 
