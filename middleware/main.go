@@ -48,6 +48,11 @@ func main() {
 		log.Printf("⚠️  Admin seeding warning: %v", err)
 	}
 
+	// Seed test data if needed
+	if err := database.SeedTestData(); err != nil {
+		log.Printf("⚠️  Test data seeding warning: %v", err)
+	}
+
 	// Create Fiber app with optimized settings
 	app := fiber.New(fiber.Config{
 		Prefork:       false,

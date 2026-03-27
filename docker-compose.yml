@@ -94,7 +94,6 @@ services:
       SERVER_HOST: 0.0.0.0
     volumes:
       - ./frontend:/app/frontend:ro
-      - ./certs:/app/certs:ro
     networks:
       - internal_net
       - public_net

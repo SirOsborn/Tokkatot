@@ -162,3 +162,43 @@ func SeedInitialAdmin() error {
 	log.Printf("✅ Initial admin created: %s", cfg.InitialAdminEmail)
 	return nil
 }
+
+// SeedTestData seeds a test farmer user for development/staging validation.
+// Idempotent — safe to call on every startup.
+func SeedTestData() error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
+	// Only seed test data in non-production environments
+	// (in production the gateway-sim provides live data)
+	testFarmerID := "00000000-0000-0000-0000-000000000002"
+
+	// Check if test farmer already exists
+	var count int
+	if err := DB.QueryRow("SELECT COUNT(*) FROM users WHERE id = $1", testFarmerID).Scan(&count); err != nil {
+		return fmt.Errorf("failed to check test farmer: %w", err)
+	}
+	if count > 0 {
+		return nil // Already seeded
+	}
+
+	log.Println("🌱 Seeding test farmer user...")
+
+	hash, err := bcrypt.GenerateFromPassword([]byte("Test@Farmer123!"), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash test farmer password: %w", err)
+	}
+
+	_, err = DB.Exec(`
+		INSERT INTO users (id, name, email, phone, password_hash, is_active, full_name)
+		VALUES ($1, 'Test Farmer', 'farmer@tokkatot.com', 'N/A', $2, true, 'Test Farmer Account')
+		ON CONFLICT DO NOTHING
+	`, testFarmerID, string(hash))
+	if err != nil {
+		return fmt.Errorf("failed to seed test farmer: %w", err)
+	}
+
+	log.Println("✅ Test farmer seeded: farmer@tokkatot.com / Test@Farmer123!")
+	return nil
+}
