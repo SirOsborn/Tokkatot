@@ -64,8 +64,8 @@ services:
   middleware:
     image: ghcr.io/sirosborn/tokkatot/middleware:${IMAGE_TAG:-latest}
     build:
-      context: ./middleware
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: middleware/Dockerfile
     container_name: tokkatot-middleware
     restart: always
     depends_on:
