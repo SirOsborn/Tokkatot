@@ -29,6 +29,12 @@ type Config struct {
 	InitialAdminEmail    string
 	InitialAdminPassword string
 
+	// Test/Staging Farmer (seeded in staging only)
+	TestFarmerEmail    string
+	TestFarmerPassword string
+	DemoFarmName       string
+	DemoCoopName       string
+
 	// Environment
 	Environment string
 
@@ -72,6 +78,12 @@ func LoadConfig() *Config {
 		// Initial Admin (Must be set in .env)
 		InitialAdminEmail:    getEnv("INITIAL_ADMIN_EMAIL", ""),
 		InitialAdminPassword: getEnv("INITIAL_ADMIN_PASSWORD", ""),
+
+		// Test/Staging Farmer (never set in production .env)
+		TestFarmerEmail:    getEnv("TEST_FARMER_EMAIL", ""),
+		TestFarmerPassword: getEnv("TEST_FARMER_PASSWORD", ""),
+		DemoFarmName:       getEnv("DEMO_FARM_NAME", "Demo Farm"),
+		DemoCoopName:       getEnv("DEMO_COOP_NAME", "Coop 1"),
 
 		// Environment
 		Environment: getEnv("ENVIRONMENT", "development"),

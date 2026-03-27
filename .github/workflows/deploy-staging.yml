@@ -2,9 +2,9 @@ name: Deploy — Staging
 
 on:
   push:
-    branches: [dev, stage, main]
-  pull_request:
-    branches: [dev, stage, main]
+    # Only deploy staging when code is merged/pushed to the `stage` branch.
+    # Flow: dev → (merge PR) → stage → (this workflow fires) → test → (merge PR) → main → (deploy-prod fires)
+    branches: [stage]
 
 permissions:
   contents: read
