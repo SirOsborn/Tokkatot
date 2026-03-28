@@ -138,10 +138,15 @@ func AssignGatewayHandler(c *fiber.Ctx) error {
 		return utils.BadRequest(c, "missing_fields", "Hardware ID and Farm ID are required")
 	}
 
-	err := deviceService.AssignGateway(req.HardwareID, req.FarmID, req.CoopID, req.Name)
+	token, resolvedCoopID, err := deviceService.AssignGateway(req.HardwareID, req.FarmID, req.CoopID, req.Name)
 	if err != nil {
 		return utils.InternalError(c, "Failed to assign gateway: "+err.Error())
 	}
 
-	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Gateway assigned successfully")
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+		"gateway_token": token,
+		"farm_id":       req.FarmID,
+		"coop_id":       resolvedCoopID,
+		"hardware_id":   req.HardwareID,
+	}, "Gateway assigned successfully")
 }

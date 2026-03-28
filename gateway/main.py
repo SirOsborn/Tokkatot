@@ -21,6 +21,7 @@ GATEWAY_TOKEN = os.getenv("GATEWAY_TOKEN", "")
 FARM_ID = os.getenv("FARM_ID", "")
 COOP_ID = os.getenv("COOP_ID", "")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "5"))
+DEVICE_REPORT_INTERVAL = int(os.getenv("DEVICE_REPORT_INTERVAL", "600"))  # seconds
 
 def get_unique_hardware_id():
     """Generates a unique hardware ID from CPU serial or MAC address."""
@@ -74,6 +75,28 @@ def fetch_esp32_data():
         print(f"[{datetime.now()}] Connection failed to ESP32: {e}")
     return None
 
+def format_telemetry_payload(esp32_data):
+    """
+    Map ESP32 payload keys to the cloud TelemetryRequest schema.
+    ESP32 returns: temperature, humidity, water_level (plus timestamp).
+    Cloud expects: sensors.temperature_c, sensors.humidity_pct, sensors.water_level_raw.
+    """
+    if not isinstance(esp32_data, dict):
+        return None
+
+    sensors = {}
+    if "temperature" in esp32_data and esp32_data["temperature"] is not None:
+        sensors["temperature_c"] = esp32_data["temperature"]
+    if "humidity" in esp32_data and esp32_data["humidity"] is not None:
+        sensors["humidity_pct"] = esp32_data["humidity"]
+    if "water_level" in esp32_data and esp32_data["water_level"] is not None:
+        sensors["water_level_raw"] = esp32_data["water_level"]
+
+    if not sensors:
+        return None
+
+    return {"hardware_id": HARDWARE_ID, "sensors": sensors}
+
 def push_to_cloud(payload):
     """Pushes formatted telemetry data to the cloud."""
     if not GATEWAY_TOKEN or not FARM_ID or not COOP_ID:
@@ -90,6 +113,35 @@ def push_to_cloud(payload):
     except Exception as e:
         print(f"[{datetime.now()}] Cloud push error: {e}")
     return False
+
+def report_devices_to_cloud():
+    """Registers known ESP32 devices so the app can show them (schedules, controls)."""
+    if not GATEWAY_TOKEN or not FARM_ID or not COOP_ID:
+        return False
+
+    url = f"{CLOUD_API_URL}/v1/farms/{FARM_ID}/coops/{COOP_ID}/devices/report"
+    headers = {
+        "X-Gateway-Token": GATEWAY_TOKEN,
+        "Content-Type": "application/json"
+    }
+
+    # ESP32 API is stable and fixed; treat these as the "device inventory".
+    devices = [
+        {"type": "sensor", "model": "temp_humidity", "name": "Temp/Humidity Sensor"},
+        {"type": "sensor", "model": "water_level", "name": "Water Level Sensor"},
+        {"type": "relay", "model": "fan", "name": "Fan Relay"},
+        {"type": "relay", "model": "heater", "name": "Heater Relay"},
+        {"type": "relay", "model": "feeder_motor", "name": "Feeder Motor Relay"},
+        {"type": "relay", "model": "conveyor_belt", "name": "Conveyor Belt Relay"},
+    ]
+
+    payload = {"hardware_id": HARDWARE_ID, "devices": devices}
+    try:
+        res = requests.post(url, headers=headers, json=payload, timeout=8)
+        return res.status_code in [200, 201]
+    except Exception as e:
+        print(f"[{datetime.now()}] Device report error: {e}")
+        return False
 
 def send_heartbeat():
     """Reports gateway health status for Discovery or Active tracking."""
@@ -186,6 +238,7 @@ def main():
     print(f"Tokkatot Gateway Started | ID: {HARDWARE_ID}")
     conn = init_db()
     last_heartbeat = 0
+    last_device_report = 0
     
     try:
         while True:
@@ -195,11 +248,18 @@ def main():
                 last_heartbeat = time.time()
 
             if GATEWAY_TOKEN:
+                # Report device inventory periodically (helps UI show devices even before readings)
+                if time.time() - last_device_report > DEVICE_REPORT_INTERVAL:
+                    if report_devices_to_cloud():
+                        print(f"[{datetime.now()}] Device inventory reported.")
+                    last_device_report = time.time()
+
                 data = fetch_esp32_data()
                 if data:
-                    payload = {"hardware_id": HARDWARE_ID, "sensors": data}
-                    if not push_to_cloud(payload):
-                        queue_locally(conn, payload)
+                    payload = format_telemetry_payload(data)
+                    if payload:
+                        if not push_to_cloud(payload):
+                            queue_locally(conn, payload)
                 process_queue(conn)
                 process_commands()
             

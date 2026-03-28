@@ -3,11 +3,12 @@ package services
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"middleware/database"
 	"middleware/models"
 	"middleware/schemas"
+	"middleware/utils"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -573,29 +574,85 @@ func (s *DeviceService) GetUnassignedGateways() ([]map[string]interface{}, error
 }
 
 // AssignGateway links a hardware ID to a farm and coop
-func (s *DeviceService) AssignGateway(hardwareID string, farmID uuid.UUID, coopID *uuid.UUID, name string) error {
-	// First, check if it's already assigned
-	var exists bool
-	_ = database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM devices WHERE hardware_id = $1)", hardwareID).Scan(&exists)
-	if exists {
-		return fmt.Errorf("gateway already assigned to a farm")
+func (s *DeviceService) AssignGateway(hardwareID string, farmID uuid.UUID, coopID *uuid.UUID, name string) (string, *uuid.UUID, error) {
+	// If caller didn't provide a coop, default to the first active coop of the farm.
+	// This makes the gateway visible in coop-scoped UIs and aligns with telemetry routes.
+	if coopID == nil || *coopID == uuid.Nil {
+		var firstCoopID uuid.UUID
+		if err := database.DB.QueryRow(`
+			SELECT id
+			FROM coops
+			WHERE farm_id = $1 AND is_active = true
+			ORDER BY number ASC, created_at ASC
+			LIMIT 1
+		`, farmID).Scan(&firstCoopID); err == nil && firstCoopID != uuid.Nil {
+			coopID = &firstCoopID
+		}
 	}
 
-	// Create the device record
-	// NOTE: Gateway acts as a 'sensor' or 'relay' container but we usually register the RPi as the main controller.
-	newID := uuid.New()
-	_, err := database.DB.Exec(`
-		INSERT INTO devices (id, farm_id, coop_id, device_id, hardware_id, name, type, firmware_version, is_main_controller)
-		VALUES ($1, $2, $3, $4, $5, $6, 'sensor', '1.0.0', true)
-	`, newID, farmID, coopID, hardwareID, hardwareID, name)
-	if err != nil {
-		return err
+	// Check if a gateway device row already exists for this hardware_id.
+	var existingDeviceID uuid.UUID
+	var exists bool
+	_ = database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM devices WHERE hardware_id = $1)", hardwareID).Scan(&exists)
+
+	deviceID := uuid.New()
+	if exists {
+		// Re-assignment / re-tokenization path: keep the same device id.
+		_ = database.DB.QueryRow("SELECT id FROM devices WHERE hardware_id = $1 LIMIT 1", hardwareID).Scan(&existingDeviceID)
+		if existingDeviceID != uuid.Nil {
+			deviceID = existingDeviceID
+		}
+
+		_, err := database.DB.Exec(`
+			UPDATE devices
+			SET farm_id = $1,
+				coop_id = $2,
+				name = $3,
+				is_active = true,
+				is_main_controller = true,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE id = $4
+		`, farmID, coopID, name, deviceID)
+		if err != nil {
+			return "", nil, err
+		}
+	} else {
+		// Create the device record
+		// NOTE: Gateway acts as a 'sensor' or 'relay' container but we usually register the RPi as the main controller.
+		_, err := database.DB.Exec(`
+			INSERT INTO devices (id, farm_id, coop_id, device_id, hardware_id, name, type, firmware_version, is_main_controller)
+			VALUES ($1, $2, $3, $4, $5, $6, 'sensor', '1.0.0', true)
+		`, deviceID, farmID, coopID, hardwareID, hardwareID, name)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
 	// Remove from unassigned
 	_, _ = database.DB.Exec("DELETE FROM unassigned_gateways WHERE hardware_id = $1", hardwareID)
 
-	return nil
+	// Create (or rotate) a gateway token so the Pi can authenticate with `X-Gateway-Token`.
+	// Token is returned once to the caller to be put on the Pi.
+	var ownerID uuid.UUID
+	if err := database.DB.QueryRow("SELECT owner_id FROM farms WHERE id = $1", farmID).Scan(&ownerID); err != nil {
+		return "", nil, err
+	}
+
+	// Deactivate any existing tokens for this device (token rotation).
+	_, _ = database.DB.Exec(`UPDATE gateway_tokens SET is_active = false WHERE device_id = $1`, deviceID)
+
+	rawToken := strings.ReplaceAll(uuid.New().String(), "-", "")
+	tokenHash := utils.HashToken(rawToken)
+
+	_, err := database.DB.Exec(`
+		INSERT INTO gateway_tokens (farm_id, device_id, user_id, token_hash, name, is_active)
+		VALUES ($1, $2, $3, $4, $5, true)
+	`, farmID, deviceID, ownerID, tokenHash, "Gateway ("+hardwareID+")")
+	if err != nil {
+		return "", nil, err
+	}
+
+	return rawToken, coopID, nil
 }
 
 // GetDeviceCommands returns last commands for a device

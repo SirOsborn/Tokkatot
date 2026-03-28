@@ -53,7 +53,9 @@ var allowedDeviceTypes = map[string]bool{
 }
 
 func (s *TelemetryService) ReportCoopDevices(userID, farmID, coopID uuid.UUID, req schemas.DeviceReportRequest) ([]models.Device, error) {
-	if err := s.farmService.CheckAccess(userID, farmID, "farmer"); err != nil {
+	// Gateways authenticate via `X-Gateway-Token` and are granted "worker" scope.
+	// Farmers also pass this check due to role hierarchy.
+	if err := s.farmService.CheckAccess(userID, farmID, "worker"); err != nil {
 		return nil, err
 	}
 	if _, err := s.coopService.GetCoop(userID, farmID, coopID); err != nil {
