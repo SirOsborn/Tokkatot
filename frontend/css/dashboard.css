@@ -5,8 +5,8 @@
 
 /* Farm Banner */
 .farm-banner {
-    background: linear-gradient(135deg, var(--tok-teal), var(--tok-teal-dark));
-    color: white;
+    background: linear-gradient(135deg, #a7f3d0, #4ade80, #22c55e);
+    color: #ffffff;
     padding: var(--space-lg);
     border-radius: var(--border-radius-lg);
     margin-bottom: var(--space-xl);
@@ -150,9 +150,9 @@
 }
 
 .coop-pill.active { 
-    border-color: var(--tok-teal); 
-    background: var(--tok-teal); 
+    border-color: #34d399; 
+    background: linear-gradient(135deg, #4ade80, #22c55e); 
     color: #fff; 
-    box-shadow: 0 8px 16px rgba(0, 137, 123, 0.2);
+    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
     transform: translateY(-2px);
 }
