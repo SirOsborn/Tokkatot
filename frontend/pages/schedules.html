@@ -51,8 +51,12 @@
   </div>
 
   <!-- Create / Edit modal -->
-  <div v-if="showForm" class="modal-overlay" @click.self="closeForm">
-    <div class="modal-content" style="border-radius: 24px 24px 0 0; position: fixed; bottom: 0; max-height: 92vh; overflow-y: auto;">
+  <div v-if="showForm" class="modal-overlay" @click.self="closeForm" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
+    <div class="modal-content" id="schedule-modal" style="border-radius: 24px 24px 0 0; position: fixed; bottom: 0; max-height: 92vh; overflow-y: auto;" :style="{ transform: swipeTransform }">
+      <!-- Drag Handle for Swipe to Dismiss -->
+      <div class="drag-handle" @click="closeForm" title="Swipe down to close">
+        <div class="drag-handle-bar"></div>
+      </div>
       <h3 style="margin-bottom: 24px; font-weight: 700;">{{ editingId ? t('edit_schedule') : t('add_schedule') }}</h3>
 
       <div v-if="formError" class="tok-badge tok-badge-alert" style="margin-bottom: 16px; width: 100%;">
@@ -311,6 +315,9 @@ const DURATION_PRESETS = [
   { value: 'custom', seconds: null, key: 'duration_custom' },
 ];
 
+// Swipe threshold to close modal (in pixels)
+const SWIPE_CLOSE_THRESHOLD = 100;
+
 createApp({
   data() {
     return {
@@ -332,9 +339,18 @@ createApp({
       durationPreset: 0,
       customDurationMinutes: 15,
       showAdvanced: false,
+      // Swipe to dismiss
+      touchStartY: 0,
+      currentSwipeY: 0,
+      isSwiping: false,
     };
   },
   computed: {
+    swipeTransform() {
+      if (!this.isSwiping || this.currentSwipeY <= 0) return '';
+      const offset = Math.min(this.currentSwipeY, 200);
+      return `translateY(${offset}px)`;
+    },
     repeatLabel() {
       if (!this.formRepeat || this.formDays.length === 7) return this.t('every_day');
       const L = this.t('days_short');
@@ -365,6 +381,31 @@ createApp({
   },
   methods: {
     t(k) { return window.i18n ? window.i18n.t(k) : k; },
+    // Swipe to dismiss handlers
+    onTouchStart(e) {
+      const touch = e.touches ? e.touches[0] : e;
+      const modal = document.getElementById('schedule-modal');
+      if (modal && touch.target.closest('.drag-handle')) {
+        this.touchStartY = touch.clientY;
+        this.isSwiping = true;
+      }
+    },
+    onTouchMove(e) {
+      if (!this.isSwiping) return;
+      const touch = e.touches ? e.touches[0] : e;
+      const deltaY = touch.clientY - this.touchStartY;
+      if (deltaY > 0) {
+        this.currentSwipeY = deltaY;
+      }
+    },
+    onTouchEnd(e) {
+      if (!this.isSwiping) return;
+      if (this.currentSwipeY > SWIPE_CLOSE_THRESHOLD) {
+        this.closeForm();
+      }
+      this.currentSwipeY = 0;
+      this.isSwiping = false;
+    },
     getFarmId() { return this.selectedFarmId || window.API.getSelectedFarmId(); },
     deviceName(id) {
       const d = this.devices.find(x => x.id === id);
@@ -508,6 +549,10 @@ createApp({
       return `${dayStr} ${timeStr}`;
     },
     openCreate() {
+      // Reset swipe state
+      this.touchStartY = 0;
+      this.currentSwipeY = 0;
+      this.isSwiping = false;
       this.editingId = null;
       this.form = JSON.parse(JSON.stringify(EMPTY_FORM));
       this.form.device_id = this.devices[0] ? this.devices[0].id : '';
@@ -521,6 +566,10 @@ createApp({
       this.$nextTick(() => this.scrollDrums());
     },
     openEdit(s) {
+      // Reset swipe state
+      this.touchStartY = 0;
+      this.currentSwipeY = 0;
+      this.isSwiping = false;
       this.editingId = s.id;
       this.form = {
         name: s.name, device_id: s.device_id,
