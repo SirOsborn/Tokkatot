@@ -64,6 +64,7 @@ const app = createApp({
             this.loading = true;
             try {
                 await this.fetchStats();
+                await this.fetchUnassigned();
                 if (this.currentTab === 'keys') {
                     await this.fetchKeys();
                 } else if (this.currentTab === 'farmers') {

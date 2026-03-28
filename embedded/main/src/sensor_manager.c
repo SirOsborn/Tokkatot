@@ -25,6 +25,7 @@ void sensor_manager_init(void)
     // Set initial state and wait for sensor to stabilize
     gpio_reset_pin(DHT22_PIN);
     gpio_set_direction(DHT22_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_pull_mode(DHT22_PIN, GPIO_PULLUP_ONLY);
     gpio_set_level(DHT22_PIN, 1);
     vTaskDelay(pdMS_TO_TICKS(2000));  // 2 second delay for power stabilization
 
