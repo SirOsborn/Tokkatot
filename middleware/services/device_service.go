@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"middleware/database"
 	"middleware/models"
 	"middleware/schemas"
