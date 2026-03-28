@@ -161,7 +161,7 @@ func SeedInitialAdmin() error {
 	return nil
 }
 
-// SeedTestData seeds a test farmer user, demo farm, and demo coop for staging validation.
+// SeedTestData seeds a test farmer user, demo farm, and demo coop for development and local validation.
 // Only runs when TEST_FARMER_EMAIL and TEST_FARMER_PASSWORD are set in the environment.
 // This function is intentionally NOT called in production — guard is in main.go.
 // Idempotent — safe to call on every startup.

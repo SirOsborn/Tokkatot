@@ -52,7 +52,7 @@ The system is fully containerized for reliability:
 
 ### GitHub Actions Pipeline
 Automated build and deployment flow:
--   **Branches**: `main` (Production), `stage` (Staging), `dev` (Development).
+-   **Branches**: `main` (Production), `dev` (Development).
 -   **Registry**: Images are built and stored in **GitHub Container Registry (GHCR)**.
 -   **Deployment**: Automated via SSH to the target server using `docker-compose.yml`.
 

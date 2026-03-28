@@ -4,7 +4,7 @@
 [![Shield: mDNS](https://img.shields.io/badge/Discovery-Zero--Config-brightgreen.svg)](#zero-config-discovery)
 [![Cloud: AWS](https://img.shields.io/badge/Cloud-AWS-orange.svg)](#cloud-infrastructure)
 
-**Tokkatot** (Toggle + Tot) is a premium, 3-tier IoT platform designed for modern poultry farming. It bridges the gap between local sensor data and cloud-based management, allowing farmers to monitor and control their environment from anywhere in the world.
+**Tokkatot** (Toggle + Tot) is a premium IoT platform designed for modern poultry farming. It bridges the gap between local sensor data and cloud-based management, allowing farmers to monitor and control their environment from anywhere in the world.
 
 ---
 
