@@ -58,8 +58,8 @@
                             <span>•</span>
                             <span>Lowest: -- at --</span>
                         </div>
-                        <div class="weather-hero-humidity" id="humidityValue">Humidity: --%</div>
-                        <div class="weather-hero-state" id="weatherState">Loading…</div>
+                        <div class="weather-hero-humidity" id="humidityValue" data-i18n="humidity_label">Humidity: --%</div>
+                        <div class="weather-hero-state" id="weatherState" data-i18n="loading">Loading…</div>
                     </div>
 
                     <!-- ── Today Hourly ── -->
@@ -78,7 +78,7 @@
                             <h3 data-i18n="temperature_history">Temperature History</h3>
                         </div>
                         <div class="history-list" id="historyList">
-                            <div class="no-data-msg">No historical data available</div>
+                            <div class="no-data-msg" data-i18n="no_historical_data">No historical data available</div>
                         </div>
                     </div>
 
@@ -99,6 +99,7 @@
     /* ── State ── */
     let allCoops     = [];
     let activeCoopId = null;
+    let lastCoopData = {}; // Store last loaded coop data for language refresh
 
     /* ── Dropdown open/close ── */
     const btnEl = document.getElementById('coopSelectorBtn');
@@ -121,10 +122,10 @@
             ? coops.map(c =>
                 `<div class="coop-dropdown-item${c.id === selectedId ? ' active' : ''}"
                       data-id="${c.id}">
-                    ${escHtml(c.name || 'Coop')}
+                     ${escHtml(c.name || (window.i18n?.t('coop') || 'Coop'))}
                  </div>`
               ).join('')
-            : '<div class="coop-dropdown-item" style="color:#9ca3af;cursor:default;">No coops</div>';
+            : '<div class="coop-dropdown-item" style="color:#9ca3af;cursor:default;" data-i18n="no_coops">' + (window.i18n?.t('no_coops') || 'No coops') + '</div>';
 
         ddEl.querySelectorAll('.coop-dropdown-item[data-id]').forEach(el => {
             el.addEventListener('click', function(e) {
@@ -164,7 +165,7 @@
         const strip = document.getElementById('hourlyStrip');
         if (!strip) return;
         if (!entries || !entries.length) {
-            strip.innerHTML = '<div class="no-data-msg">No readings yet today</div>';
+            strip.innerHTML = '<div class="no-data-msg" data-i18n="no_readings_today">' + (window.i18n?.t('no_readings_today') || 'No readings yet today') + '</div>';
             return;
         }
         strip.innerHTML = entries.slice(0, 12).map((item, i) => {
@@ -179,27 +180,32 @@
 
     /* ── Set hero values ── */
     function setHero(data) {
+        // Store data for language refresh
+        lastCoopData = { ...data };
+        
         const numEl  = document.getElementById('temperatureNum');
         const hEl    = document.getElementById('humidityValue');
         const sEl    = document.getElementById('weatherState');
         const cEl    = document.getElementById('coopLabel');
         const lineEl = document.getElementById('hlLine');
 
-        const name = data.name || 'Coop';
+        const name = data.name || (window.i18n?.t('coop') || 'Coop');
         if (cEl) cEl.textContent = name;
 
         const temp = data.temperature ?? null;
         const hum  = data.humidity   ?? null;
 
         if (numEl) numEl.textContent = temp != null ? Number(temp).toFixed(1) : '--';
-        if (hEl)   hEl.textContent   = 'Humidity: ' + (hum != null ? Math.round(hum) + '%' : '--%');
+        
+        const humLabel = window.i18n?.t('humidity_label') || 'Humidity';
+        if (hEl)   hEl.textContent   = humLabel + ': ' + (hum != null ? Math.round(hum) + '%' : '--%');
 
         let state = '--';
         if (temp != null) {
-            if      (temp >= 35) state = 'Hot';
-            else if (temp >= 30) state = 'Warm';
-            else if (temp >= 24) state = 'Neutral';
-            else                 state = 'Cool';
+            if      (temp >= 35) state = window.i18n?.t('hot') || 'Hot';
+            else if (temp >= 30) state = window.i18n?.t('warm') || 'Warm';
+            else if (temp >= 24) state = window.i18n?.t('neutral') || 'Neutral';
+            else                 state = window.i18n?.t('cool') || 'Cool';
         }
         if (sEl) sEl.textContent = state;
 
@@ -209,7 +215,10 @@
             const hTime = data.high_at ? new Date(data.high_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
             const lTime = data.low_at  ? new Date(data.low_at ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
             const fmt   = v => v != null ? Number(v).toFixed(1) + '°' : '--°';
-            lineEl.innerHTML = `<span>Highest: ${fmt(high)} at ${hTime}</span><span>•</span><span>Lowest: ${fmt(low)} at ${lTime}</span>`;
+            const highestLabel = window.i18n?.t('highest') || 'Highest';
+            const lowestLabel = window.i18n?.t('lowest') || 'Lowest';
+            const atLabel = window.i18n?.t('at') || 'at';
+            lineEl.innerHTML = `<span>${highestLabel}: ${fmt(high)} ${atLabel} ${hTime}</span><span>•</span><span>${lowestLabel}: ${fmt(low)} ${atLabel} ${lTime}</span>`;
         }
     }
 
@@ -234,6 +243,18 @@
         if (!window.API?.requireAuth?.()) return;
         await window.loadComponents?.();
         window.i18n?.applyAll?.();
+        
+        // Listen for language changes to refresh dynamic content
+        const originalApplyAll = window.i18n?.applyAll;
+        if (window.i18n) {
+            window.i18n.applyAll = function() {
+                if (originalApplyAll) originalApplyAll.apply(this, arguments);
+                // Re-render dynamic content with new language
+                if (Object.keys(lastCoopData).length > 0) {
+                    setHero(lastCoopData);
+                }
+            };
+        }
 
         /* Resolve farm */
         let farmId = window.API.getSelectedFarmId?.();
@@ -245,7 +266,7 @@
             } catch(e) {}
         }
 
-        if (!farmId) { setHero({ name: 'No Farm' }); return; }
+        if (!farmId) { setHero({ name: window.i18n?.t('no_farm') || 'No Farm' }); return; }
 
         /* Load coops */
         try {
@@ -264,11 +285,11 @@
 
         /* Set selector button label */
         const active = allCoops.find(c => c.id === coopId);
-        if (active) document.getElementById('selectedCoopName').textContent = active.name || 'Coop';
+        if (active) document.getElementById('selectedCoopName').textContent = active.name || (window.i18n?.t('coop') || 'Coop');
 
         /* Load data */
         if (coopId) await loadCoopData(coopId);
-        else        setHero({ name: 'No coop' });
+        else        setHero({ name: window.i18n?.t('no_coop') || 'No coop' });
     }
 
     init();
