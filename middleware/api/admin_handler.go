@@ -118,7 +118,9 @@ func GetUnassignedGatewaysHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.InternalError(c, "Failed to fetch unassigned gateways")
 	}
-	return utils.SuccessResponse(c, fiber.StatusOK, gateways, "Unassigned gateways retrieved")
+	return utils.SuccessResponse(c, fiber.StatusOK, fiber.Map{
+		"unassigned": gateways,
+	}, "Unassigned gateways retrieved")
 }
 
 func AssignGatewayHandler(c *fiber.Ctx) error {

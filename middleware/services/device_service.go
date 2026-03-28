@@ -555,7 +555,7 @@ func (s *DeviceService) GetUnassignedGateways() ([]map[string]interface{}, error
 	}
 	defer rows.Close()
 
-	var result []map[string]interface{}
+	result := []map[string]interface{}{}
 	for rows.Next() {
 		var hID, ip string
 		var lastSeen, createdAt time.Time
