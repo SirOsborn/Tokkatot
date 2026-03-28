@@ -99,12 +99,14 @@ CREATE TABLE IF NOT EXISTS devices (
     is_main_controller BOOLEAN DEFAULT false,
     firmware_version VARCHAR(20) NOT NULL,
     hardware_id TEXT NOT NULL,
+    response TEXT,
     location TEXT,
     is_active BOOLEAN DEFAULT true,
     is_online BOOLEAN DEFAULT false,
     last_heartbeat TIMESTAMP,
     last_command_status VARCHAR(50),
     last_command_at TIMESTAMP,
+    response TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

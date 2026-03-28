@@ -609,6 +609,7 @@ func UpdateDeviceHeartbeatHandler(c *fiber.Ctx) error {
 		if err == services.ErrDeviceNotFound {
 			return utils.NotFound(c, "Device not found")
 		}
+		println("HEARTBEAT ERROR:", err.Error())
 		return utils.InternalError(c, "Failed to record heartbeat")
 	}
 

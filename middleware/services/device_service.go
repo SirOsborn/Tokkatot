@@ -520,9 +520,9 @@ func (s *DeviceService) UpdateHeartbeat(hardwareID string, status string, respon
 		UPDATE devices
 		SET is_online = true,
 			last_heartbeat = CURRENT_TIMESTAMP,
-			last_command_status = COALESCE($1, last_command_status),
-			last_command_at = CASE WHEN $2 IS NULL THEN last_command_at ELSE CURRENT_TIMESTAMP END,
-			updated_at = CURRENT_TIMESTAMP
+			last_command_status = $1,
+			last_command_at = CASE WHEN $1 IS NOT NULL THEN CURRENT_TIMESTAMP ELSE last_command_at END,
+			response = $2::TEXT
 		WHERE hardware_id = $3
 	`, status, response, hardwareID)
 	if err != nil {
