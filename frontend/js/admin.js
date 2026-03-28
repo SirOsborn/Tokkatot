@@ -25,6 +25,13 @@ const app = createApp({
                 active_keys: 0,
                 active_gateways: 0
             },
+            unassigned: [],
+            showAssignModal: false,
+            selectedHardware: {},
+            assignment: {
+                farmer_id: '',
+                name: ''
+            },
             provinces: window.i18n ? window.i18n.provinces() : [],
             toast: { show: false, message: '', type: 'success' }
         };
@@ -96,6 +103,54 @@ const app = createApp({
                 this.gateways = Array.isArray(response.data) ? response.data : [];
             } else {
                 this.gateways = [];
+            }
+            await this.fetchUnassigned();
+        },
+        async fetchUnassigned() {
+            const response = await this.apiCall('/v1/admin/unassigned-gateways');
+            if (response.success) {
+                this.unassigned = Array.isArray(response.data) ? response.data : [];
+            }
+        },
+        openAssignModal(ug) {
+            this.selectedHardware = ug;
+            this.assignment = {
+                farmer_id: '',
+                name: 'Main Farm Gateway'
+            };
+            this.showAssignModal = true;
+            // Ensure farmers are loaded for the dropdown
+            this.fetchFarmers();
+        },
+        async assignGateway() {
+            const farmer = this.farmers.find(f => f.id === this.assignment.farmer_id);
+            if (!farmer || !farmer.farm_id) {
+                this.showToast('Selected farmer has no farm associated', 'error');
+                return;
+            }
+
+            this.loading = true;
+            try {
+                const response = await this.apiCall('/v1/admin/assign-gateway', 'POST', {
+                    hardware_id: this.selectedHardware.hardware_id,
+                    farm_id: farmer.farm_id,
+                    name: this.assignment.name
+                });
+                if (response.success) {
+                    this.showToast('Gateway assigned successfully!');
+                    this.showAssignModal = false;
+                    await this.fetchGateways();
+                } else {
+                    this.showToast(response.message || 'Assignment failed', 'error');
+                }
+            } finally {
+                this.loading = false;
+            }
+        },
+        onFarmerSelect() {
+            const farmer = this.farmers.find(f => f.id === this.assignment.farmer_id);
+            if (farmer && farmer.farm_name) {
+                this.assignment.name = `${farmer.farm_name} Gateway`;
             }
         },
         async revokeGateway(gw) {

@@ -315,6 +315,8 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	admin.Put("/profile", api.UpdateAdminProfileHandler)
 	admin.Get("/gateways", api.ListGatewaysHandler)
 	admin.Delete("/gateways/:id", api.RevokeGatewayHandler)
+	admin.Get("/unassigned-gateways", api.GetUnassignedGatewaysHandler)
+	admin.Post("/assign-gateway", api.AssignGatewayHandler)
 
 	// 404 Handler
 	app.Use(func(c *fiber.Ctx) error {

@@ -605,7 +605,7 @@ func UpdateDeviceHeartbeatHandler(c *fiber.Ctx) error {
 	if req.Status != nil {
 		status = *req.Status
 	}
-	if err := deviceService.UpdateHeartbeat(hardwareID, status, req.Response); err != nil {
+	if err := deviceService.UpdateHeartbeat(hardwareID, status, req.Response, c.IP()); err != nil {
 		if err == services.ErrDeviceNotFound {
 			return utils.NotFound(c, "Device not found")
 		}

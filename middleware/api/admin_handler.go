@@ -112,3 +112,34 @@ func RevokeGatewayHandler(c *fiber.Ctx) error {
 	}
 	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Gateway access revoked")
 }
+
+func GetUnassignedGatewaysHandler(c *fiber.Ctx) error {
+	gateways, err := deviceService.GetUnassignedGateways()
+	if err != nil {
+		return utils.InternalError(c, "Failed to fetch unassigned gateways")
+	}
+	return utils.SuccessResponse(c, fiber.StatusOK, gateways, "Unassigned gateways retrieved")
+}
+
+func AssignGatewayHandler(c *fiber.Ctx) error {
+	var req struct {
+		HardwareID string    `json:"hardware_id"`
+		FarmID     uuid.UUID `json:"farm_id"`
+		CoopID     *uuid.UUID `json:"coop_id,omitempty"`
+		Name       string    `json:"name"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_request", "Invalid request body")
+	}
+
+	if req.HardwareID == "" || req.FarmID == uuid.Nil {
+		return utils.BadRequest(c, "missing_fields", "Hardware ID and Farm ID are required")
+	}
+
+	err := deviceService.AssignGateway(req.HardwareID, req.FarmID, req.CoopID, req.Name)
+	if err != nil {
+		return utils.InternalError(c, "Failed to assign gateway: "+err.Error())
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Gateway assigned successfully")
+}

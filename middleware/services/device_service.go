@@ -3,6 +3,8 @@ package services
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"middleware/database"
 	"middleware/models"
 	"middleware/schemas"
@@ -514,7 +516,7 @@ func (s *DeviceService) EmergencyStop(userID, farmID uuid.UUID) (int, error) {
 }
 
 // UpdateHeartbeat updates a device heartbeat by hardware_id
-func (s *DeviceService) UpdateHeartbeat(hardwareID string, status string, response *string) error {
+func (s *DeviceService) UpdateHeartbeat(hardwareID string, status string, response *string, ipAddress string) error {
 	res, err := database.DB.Exec(`
 		UPDATE devices
 		SET is_online = true,
@@ -529,8 +531,71 @@ func (s *DeviceService) UpdateHeartbeat(hardwareID string, status string, respon
 	}
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		return ErrDeviceNotFound
+		// Device not assigned to any farm yet. Register as unassigned for discovery.
+		_, err = database.DB.Exec(`
+			INSERT INTO unassigned_gateways (hardware_id, ip_address, last_seen)
+			VALUES ($1, $2, CURRENT_TIMESTAMP)
+			ON CONFLICT (hardware_id) DO UPDATE 
+			SET ip_address = $2, last_seen = CURRENT_TIMESTAMP
+		`, hardwareID, ipAddress)
+		return err
 	}
+	return nil
+}
+
+// GetUnassignedGateways returns a list of gateways that have checked in but aren't assigned
+func (s *DeviceService) GetUnassignedGateways() ([]map[string]interface{}, error) {
+	rows, err := database.DB.Query(`
+		SELECT hardware_id, ip_address, last_seen, created_at
+		FROM unassigned_gateways
+		WHERE hardware_id NOT IN (SELECT hardware_id FROM devices)
+		ORDER BY last_seen DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []map[string]interface{}
+	for rows.Next() {
+		var hID, ip string
+		var lastSeen, createdAt time.Time
+		if err := rows.Scan(&hID, &ip, &lastSeen, &createdAt); err != nil {
+			continue
+		}
+		result = append(result, map[string]interface{}{
+			"hardware_id": hID,
+			"ip_address":  ip,
+			"last_seen":   lastSeen,
+			"created_at":  createdAt,
+		})
+	}
+	return result, nil
+}
+
+// AssignGateway links a hardware ID to a farm and coop
+func (s *DeviceService) AssignGateway(hardwareID string, farmID uuid.UUID, coopID *uuid.UUID, name string) error {
+	// First, check if it's already assigned
+	var exists bool
+	_ = database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM devices WHERE hardware_id = $1)", hardwareID).Scan(&exists)
+	if exists {
+		return fmt.Errorf("gateway already assigned to a farm")
+	}
+
+	// Create the device record
+	// NOTE: Gateway acts as a 'sensor' or 'relay' container but we usually register the RPi as the main controller.
+	newID := uuid.New()
+	_, err := database.DB.Exec(`
+		INSERT INTO devices (id, farm_id, coop_id, device_id, hardware_id, name, type, firmware_version, is_main_controller)
+		VALUES ($1, $2, $3, $4, $5, $6, 'sensor', '1.0.0', true)
+	`, newID, farmID, coopID, hardwareID, hardwareID, name)
+	if err != nil {
+		return err
+	}
+
+	// Remove from unassigned
+	_, _ = database.DB.Exec("DELETE FROM unassigned_gateways WHERE hardware_id = $1", hardwareID)
+
 	return nil
 }
 

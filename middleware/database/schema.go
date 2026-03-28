@@ -309,6 +309,14 @@ CREATE TABLE IF NOT EXISTS gateway_provisions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Unassigned Heartbeats (for Admin discovery)
+CREATE TABLE IF NOT EXISTS unassigned_gateways (
+    hardware_id TEXT PRIMARY KEY,
+    ip_address VARCHAR(45),
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ===== PERFORMANCE INDEXES =====
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
