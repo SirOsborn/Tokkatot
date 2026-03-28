@@ -67,8 +67,9 @@ jobs:
             cd ~/tokkatot
 
             git fetch origin main
-            git checkout main
-            git pull origin main
+            # Production deploy must be reproducible; discard any server-side edits.
+            git checkout -f main
+            git reset --hard origin/main
 
             # Ensure the shared proxy network exists (idempotent)
             docker network create tokkatot-proxy-net 2>/dev/null || true
