@@ -48,7 +48,7 @@ func main() {
 		log.Printf("⚠️  Admin seeding warning: %v", err)
 	}
 
-	// Seed test data (staging/development only — skipped in production)
+	// Seed test data (development only — skipped in production)
 	if cfg.Environment != "production" {
 		if err := database.SeedTestData(); err != nil {
 			log.Printf("⚠️  Test data seeding warning: %v", err)

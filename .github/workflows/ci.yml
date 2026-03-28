@@ -36,7 +36,7 @@ jobs:
 
   # ──────────────────────────────────────────────────────────────
   # Docker build check — validates Dockerfile without pushing
-  # Catches broken builds before they reach staging/prod
+  # Catches broken builds before they reach production
   # ──────────────────────────────────────────────────────────────
   docker-build-check:
     name: Docker Build Check
