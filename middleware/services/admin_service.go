@@ -106,12 +106,39 @@ func (s *AdminService) ListRegistrationKeys() ([]models.RegistrationKey, error) 
 // ListAllFarmers returns all users with farmer role
 func (s *AdminService) ListAllFarmers() ([]models.User, error) {
 	rows, err := database.DB.Query(`
-		SELECT u.id, u.email, u.phone, u.name, u.is_active, u.created_at, u.last_login,
-		       u.national_id_number, u.sex, u.province, u.full_name
+		SELECT
+			u.id,
+			u.email,
+			u.phone,
+			u.name,
+			u.is_active,
+			u.created_at,
+			u.updated_at,
+			u.last_login,
+			u.national_id_number,
+			u.sex,
+			u.province,
+			u.full_name,
+			picked.farm_id,
+			picked.farm_name,
+			picked.role
 		FROM users u
-		JOIN farm_users fu ON u.id = fu.user_id
-		WHERE fu.role = 'farmer'
-		GROUP BY u.id
+		JOIN LATERAL (
+			SELECT
+				fu.farm_id,
+				f.name AS farm_name,
+				fu.role
+			FROM farm_users fu
+			JOIN farms f ON f.id = fu.farm_id
+			WHERE fu.user_id = u.id
+			  AND fu.role = 'farmer'
+			  AND fu.is_active = true
+			  AND f.is_active = true
+			ORDER BY
+				CASE WHEN f.owner_id = u.id THEN 0 ELSE 1 END,
+				f.created_at DESC
+			LIMIT 1
+		) AS picked ON true
 		ORDER BY u.created_at DESC
 	`)
 	if err != nil {
@@ -124,7 +151,25 @@ func (s *AdminService) ListAllFarmers() ([]models.User, error) {
 		var u models.User
 		var lastLogin sql.NullTime
 		var nationalID, sex, province, fullName sql.NullString
-		err := rows.Scan(&u.ID, &u.Email, &u.Phone, &u.Name, &u.IsActive, &u.CreatedAt, &lastLogin, &nationalID, &sex, &province, &fullName)
+		var farmName sql.NullString
+		var farmID sql.NullString
+		err := rows.Scan(
+			&u.ID,
+			&u.Email,
+			&u.Phone,
+			&u.Name,
+			&u.IsActive,
+			&u.CreatedAt,
+			&u.UpdatedAt,
+			&lastLogin,
+			&nationalID,
+			&sex,
+			&province,
+			&fullName,
+			&farmID,
+			&farmName,
+			&u.Role,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -135,6 +180,13 @@ func (s *AdminService) ListAllFarmers() ([]models.User, error) {
 		if sex.Valid { u.Sex = &sex.String }
 		if province.Valid { u.Province = &province.String }
 		if fullName.Valid { u.FullName = &fullName.String }
+		if farmID.Valid {
+			parsed, perr := uuid.Parse(farmID.String)
+			if perr == nil {
+				u.FarmID = &parsed
+			}
+		}
+		if farmName.Valid { u.FarmName = &farmName.String }
 		
 		users = append(users, u)
 	}

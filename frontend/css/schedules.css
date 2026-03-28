@@ -241,3 +241,32 @@
     cursor: pointer; 
     flex-shrink: 0; 
 }
+
+/* Drag Handle for Swipe to Dismiss Modal */
+.drag-handle {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 8px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y;
+    user-select: none;
+}
+
+.drag-handle:hover .drag-handle-bar,
+.drag-handle:active .drag-handle-bar {
+    background: var(--tok-text-secondary);
+}
+
+.drag-handle-bar {
+    width: 40px;
+    height: 4px;
+    background: var(--tok-border, #d1d5db);
+    border-radius: 2px;
+    transition: background 0.2s ease;
+}
+
+/* Modal swipe animation */
+.modal-content {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

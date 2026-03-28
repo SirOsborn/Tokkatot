@@ -109,8 +109,10 @@ const app = createApp({
         },
         async fetchUnassigned() {
             const response = await this.apiCall('/v1/admin/unassigned-gateways');
-            if (response.success) {
-                this.unassigned = Array.isArray(response.data) ? response.data : [];
+            if (response.success && response.data) {
+                this.unassigned = Array.isArray(response.data.unassigned) ? response.data.unassigned : [];
+            } else {
+                this.unassigned = [];
             }
         },
         openAssignModal(ug) {

@@ -105,7 +105,6 @@ CREATE TABLE IF NOT EXISTS devices (
     is_online BOOLEAN DEFAULT false,
     last_heartbeat TIMESTAMP,
     last_command_status VARCHAR(50),
-    last_command_at TIMESTAMP,
     response TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
