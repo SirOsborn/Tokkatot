@@ -100,17 +100,27 @@ func (s *ProvisioningService) CheckProvisioningStatus(code string) (bool, *uuid.
 	tokenHash := utils.HashToken(token)
 
 	// Create a Device entry if it doesn't exist (linked to the main controller)
-	_, _ = database.DB.Exec(`
+	var deviceID uuid.UUID
+	_ = database.DB.QueryRow(`
 		INSERT INTO devices (id, farm_id, coop_id, device_id, name, type, firmware_version, hardware_id, is_active, is_online)
 		VALUES ($1, $2, $3, $4, 'Main Gateway', 'sensor', '1.0', $5, true, true)
-		ON CONFLICT (device_id) DO UPDATE SET coop_id = $3, hardware_id = $5, updated_at = CURRENT_TIMESTAMP
-	`, uuid.New(), fID, cID, "GATEWAY_"+hardwareID, hardwareID)
+		ON CONFLICT (device_id) DO UPDATE SET
+			coop_id = $3,
+			hardware_id = $5,
+			is_active = true,
+			is_online = true,
+			updated_at = CURRENT_TIMESTAMP
+		RETURNING id
+	`, uuid.New(), fID, cID, hardwareID, hardwareID).Scan(&deviceID)
 
 	// Save token to database
+	if deviceID != uuid.Nil {
+		_, _ = database.DB.Exec(`UPDATE gateway_tokens SET is_active = false WHERE device_id = $1`, deviceID)
+	}
 	_, err = database.DB.Exec(`
-		INSERT INTO gateway_tokens (farm_id, user_id, token_hash, name, is_active)
-		VALUES ($1, $2, $3, $4, true)
-	`, fID, ownerID, tokenHash, "Gateway ("+hardwareID+")")
+		INSERT INTO gateway_tokens (farm_id, device_id, user_id, token_hash, name, is_active)
+		VALUES ($1, $2, $3, $4, $5, true)
+	`, fID, deviceID, ownerID, tokenHash, "Gateway ("+hardwareID+")")
 
 	if err != nil {
 		return true, &fID, &cID, nil, err

@@ -10,6 +10,7 @@ const app = createApp({
             showKeyModal: false,
             loading: true,
             generatedKey: null,
+            generatedGateway: null,
             newKey: {
                 farm_name: '',
                 customer_phone: '',
@@ -50,6 +51,25 @@ const app = createApp({
             this.toast.type = type;
             this.toast.show = true;
             setTimeout(() => { this.toast.show = false; }, 3000);
+        },
+        buildGatewayEnv(g) {
+            if (!g || !g.gateway_token || !g.farm_id || !g.coop_id || !g.hardware_id) return '';
+            const apiUrl = window.location ? window.location.origin : '';
+            return [
+                `CLOUD_API_URL=${apiUrl}`,
+                `GATEWAY_TOKEN=${g.gateway_token}`,
+                `FARM_ID=${g.farm_id}`,
+                `COOP_ID=${g.coop_id}`,
+                `HARDWARE_ID=${g.hardware_id}`,
+            ].join('\n');
+        },
+        async copyText(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                this.showToast('Copied to clipboard');
+            } catch {
+                this.showToast('Copy failed — please copy manually', 'error');
+            }
         },
         checkAuth() {
             const token = localStorage.getItem('access_token');
@@ -142,6 +162,9 @@ const app = createApp({
                 if (response.success) {
                     this.showToast('Gateway assigned successfully!');
                     this.showAssignModal = false;
+                    if (response.data && response.data.gateway_token) {
+                        this.generatedGateway = response.data;
+                    }
                     await this.fetchGateways();
                 } else {
                     this.showToast(response.message || 'Assignment failed', 'error');
