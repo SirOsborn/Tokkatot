@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"middleware/database"
 	"middleware/models"
 	"middleware/schemas"
@@ -362,7 +363,7 @@ func (s *DeviceService) CalibrateDevice(userID, farmID, deviceID uuid.UUID, name
 }
 
 // IssueCommand sends a command to a device
-func (s *DeviceService) IssueCommand(userID, farmID, deviceID uuid.UUID, commandType string, commandValue *string) (*models.DeviceCommand, error) {
+func (s *DeviceService) IssueCommand(userID, farmID, deviceID uuid.UUID, commandType string, commandValue *string, actionDuration *int) (*models.DeviceCommand, error) {
 	if err := s.farmService.CheckAccess(userID, farmID, "worker"); err != nil {
 		return nil, err
 	}
@@ -370,21 +371,22 @@ func (s *DeviceService) IssueCommand(userID, farmID, deviceID uuid.UUID, command
 	cmdID := uuid.New()
 	now := time.Now()
 	cmd := &models.DeviceCommand{
-		ID:           cmdID,
+		ID:             cmdID,
 		FarmID:       farmID,
 		DeviceID:     deviceID,
 		IssuedBy:     userID,
 		CommandType:  commandType,
 		CommandValue: commandValue,
+		ActionDuration: actionDuration,
 		Status:       "pending",
 		IssuedAt:     now,
 		CreatedAt:    now,
 	}
 
 	_, err := database.DB.Exec(`
-		INSERT INTO device_commands (id, farm_id, device_id, issued_by, command_type, command_value, status, issued_at, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, cmd.ID, cmd.FarmID, cmd.DeviceID, cmd.IssuedBy, cmd.CommandType, cmd.CommandValue, cmd.Status, cmd.IssuedAt, cmd.CreatedAt)
+		INSERT INTO device_commands (id, farm_id, device_id, issued_by, command_type, command_value, action_duration, status, issued_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`, cmd.ID, cmd.FarmID, cmd.DeviceID, cmd.IssuedBy, cmd.CommandType, cmd.CommandValue, cmd.ActionDuration, cmd.Status, cmd.IssuedAt, cmd.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -405,10 +407,10 @@ func (s *DeviceService) GetCommandStatus(userID, farmID, commandID uuid.UUID) (*
 
 	var c models.DeviceCommand
 	err := database.DB.QueryRow(`
-		SELECT id, device_id, farm_id, coop_id, issued_by, command_type, command_value, status, response, issued_at, executed_at, created_at
+		SELECT id, device_id, farm_id, coop_id, issued_by, command_type, command_value, action_duration, status, response, issued_at, executed_at, created_at
 		FROM device_commands
 		WHERE id = $1 AND farm_id = $2
-	`, commandID, farmID).Scan(&c.ID, &c.DeviceID, &c.FarmID, &c.CoopID, &c.IssuedBy, &c.CommandType, &c.CommandValue, &c.Status, &c.Response, &c.IssuedAt, &c.ExecutedAt, &c.CreatedAt)
+	`, commandID, farmID).Scan(&c.ID, &c.DeviceID, &c.FarmID, &c.CoopID, &c.IssuedBy, &c.CommandType, &c.CommandValue, &c.ActionDuration, &c.Status, &c.Response, &c.IssuedAt, &c.ExecutedAt, &c.CreatedAt)
 	if err == sql.ErrNoRows {
 		return nil, ErrCommandNotFound
 	}
@@ -476,7 +478,7 @@ func (s *DeviceService) BatchCommands(userID, farmID uuid.UUID, req schemas.Batc
 
 	var results []schemas.BatchResult
 	for _, dID := range req.DeviceIDs {
-		cmd, err := s.IssueCommand(userID, farmID, dID, req.CommandType, req.Parameters)
+		cmd, err := s.IssueCommand(userID, farmID, dID, req.CommandType, req.Parameters, req.ActionDuration)
 		if err != nil {
 			results = append(results, schemas.BatchResult{CommandID: uuid.Nil, DeviceID: dID, Status: "failed"})
 			continue
@@ -506,14 +508,14 @@ func (s *DeviceService) EmergencyStop(userID, farmID uuid.UUID) (int, error) {
 		if err := rows.Scan(&dID); err != nil {
 			continue
 		}
-		_, _ = s.IssueCommand(userID, farmID, dID, "off", nil)
+		_, _ = s.IssueCommand(userID, farmID, dID, "off", nil, nil)
 		count++
 	}
 	return count, nil
 }
 
 // UpdateHeartbeat updates a device heartbeat by hardware_id
-func (s *DeviceService) UpdateHeartbeat(hardwareID string, status string, response *string) error {
+func (s *DeviceService) UpdateHeartbeat(hardwareID string, status string, response *string, ipAddress string) error {
 	res, err := database.DB.Exec(`
 		UPDATE devices
 		SET is_online = true,
@@ -528,8 +530,71 @@ func (s *DeviceService) UpdateHeartbeat(hardwareID string, status string, respon
 	}
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		return ErrDeviceNotFound
+		// Device not assigned to any farm yet. Register as unassigned for discovery.
+		_, err = database.DB.Exec(`
+			INSERT INTO unassigned_gateways (hardware_id, ip_address, last_seen)
+			VALUES ($1, $2, CURRENT_TIMESTAMP)
+			ON CONFLICT (hardware_id) DO UPDATE 
+			SET ip_address = $2, last_seen = CURRENT_TIMESTAMP
+		`, hardwareID, ipAddress)
+		return err
 	}
+	return nil
+}
+
+// GetUnassignedGateways returns a list of gateways that have checked in but aren't assigned
+func (s *DeviceService) GetUnassignedGateways() ([]map[string]interface{}, error) {
+	rows, err := database.DB.Query(`
+		SELECT hardware_id, ip_address, last_seen, created_at
+		FROM unassigned_gateways
+		WHERE hardware_id NOT IN (SELECT hardware_id FROM devices)
+		ORDER BY last_seen DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []map[string]interface{}
+	for rows.Next() {
+		var hID, ip string
+		var lastSeen, createdAt time.Time
+		if err := rows.Scan(&hID, &ip, &lastSeen, &createdAt); err != nil {
+			continue
+		}
+		result = append(result, map[string]interface{}{
+			"hardware_id": hID,
+			"ip_address":  ip,
+			"last_seen":   lastSeen,
+			"created_at":  createdAt,
+		})
+	}
+	return result, nil
+}
+
+// AssignGateway links a hardware ID to a farm and coop
+func (s *DeviceService) AssignGateway(hardwareID string, farmID uuid.UUID, coopID *uuid.UUID, name string) error {
+	// First, check if it's already assigned
+	var exists bool
+	_ = database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM devices WHERE hardware_id = $1)", hardwareID).Scan(&exists)
+	if exists {
+		return fmt.Errorf("gateway already assigned to a farm")
+	}
+
+	// Create the device record
+	// NOTE: Gateway acts as a 'sensor' or 'relay' container but we usually register the RPi as the main controller.
+	newID := uuid.New()
+	_, err := database.DB.Exec(`
+		INSERT INTO devices (id, farm_id, coop_id, device_id, hardware_id, name, type, firmware_version, is_main_controller)
+		VALUES ($1, $2, $3, $4, $5, $6, 'sensor', '1.0.0', true)
+	`, newID, farmID, coopID, hardwareID, hardwareID, name)
+	if err != nil {
+		return err
+	}
+
+	// Remove from unassigned
+	_, _ = database.DB.Exec("DELETE FROM unassigned_gateways WHERE hardware_id = $1", hardwareID)
+
 	return nil
 }
 
@@ -540,7 +605,7 @@ func (s *DeviceService) GetDeviceCommands(userID, farmID, deviceID uuid.UUID, li
 	}
 
 	rows, err := database.DB.Query(`
-		SELECT id, farm_id, device_id, issued_by, command_type, command_value, status, response, issued_at, executed_at, created_at
+		SELECT id, farm_id, device_id, issued_by, command_type, command_value, action_duration, status, response, issued_at, executed_at, created_at
 		FROM device_commands
 		WHERE device_id = $1 AND farm_id = $2
 		ORDER BY created_at DESC
@@ -554,10 +619,63 @@ func (s *DeviceService) GetDeviceCommands(userID, farmID, deviceID uuid.UUID, li
 	var commands []models.DeviceCommand
 	for rows.Next() {
 		var c models.DeviceCommand
-		if err := rows.Scan(&c.ID, &c.FarmID, &c.DeviceID, &c.IssuedBy, &c.CommandType, &c.CommandValue, &c.Status, &c.Response, &c.IssuedAt, &c.ExecutedAt, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.FarmID, &c.DeviceID, &c.IssuedBy, &c.CommandType, &c.CommandValue, &c.ActionDuration, &c.Status, &c.Response, &c.IssuedAt, &c.ExecutedAt, &c.CreatedAt); err != nil {
 			continue
 		}
 		commands = append(commands, c)
 	}
 	return commands, nil
+}
+// GetPendingCommands returns all pending commands for a specific gateway/hardware
+func (s *DeviceService) GetPendingCommands(hardwareID string) ([]models.DeviceCommand, error) {
+	rows, err := database.DB.Query(`
+		SELECT dc.id, dc.device_id, dc.farm_id, dc.coop_id, dc.issued_by, dc.command_type, dc.command_value, dc.action_duration, dc.status, dc.response, dc.issued_at, dc.executed_at, dc.created_at
+		FROM device_commands dc
+		JOIN devices d ON dc.device_id = d.id
+		WHERE d.hardware_id = $1 AND dc.status = 'pending'
+		ORDER BY dc.created_at ASC
+	`, hardwareID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var commands []models.DeviceCommand
+	for rows.Next() {
+		var c models.DeviceCommand
+		if err := rows.Scan(&c.ID, &c.DeviceID, &c.FarmID, &c.CoopID, &c.IssuedBy, &c.CommandType, &c.CommandValue, &c.ActionDuration, &c.Status, &c.Response, &c.IssuedAt, &c.ExecutedAt, &c.CreatedAt); err != nil {
+			continue
+		}
+		commands = append(commands, c)
+	}
+	return commands, nil
+}
+
+// UpdateCommandStatus updates the status and response of a command
+func (s *DeviceService) UpdateCommandStatus(commandID uuid.UUID, status, response string) error {
+	now := time.Now()
+	res, err := database.DB.Exec(`
+		UPDATE device_commands
+		SET status = $1, response = $2, executed_at = $3, updated_at = $3
+		WHERE id = $4
+	`, status, response, now, commandID)
+	if err != nil {
+		return err
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return ErrCommandNotFound
+	}
+
+	// Also update the device's last command status for quick status checks
+	var deviceID uuid.UUID
+	_ = database.DB.QueryRow("SELECT device_id FROM device_commands WHERE id = $1", commandID).Scan(&deviceID)
+	if deviceID != uuid.Nil {
+		_, _ = database.DB.Exec(`
+			UPDATE devices SET last_command_status = $1, last_command_at = $2, updated_at = $2
+			WHERE id = $3
+		`, status, now, deviceID)
+	}
+
+	return nil
 }

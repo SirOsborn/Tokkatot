@@ -4,9 +4,10 @@ import requests
 import sqlite3
 import urllib3
 import json
+import uuid
+import socket
 from datetime import datetime
 from dotenv import load_dotenv
-import provisioning
 
 # Suppress insecure HTTPS warning for local ESP32 self-signed certs
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -14,13 +15,37 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Load environment configuration
 load_dotenv()
 
-ESP32_IP = os.getenv("ESP32_IP", "192.168.1.100")
+ESP32_IP = os.getenv("ESP32_IP", "tokkatot-sensor.local")
 CLOUD_API_URL = os.getenv("CLOUD_API_URL", "http://localhost:3000")
 GATEWAY_TOKEN = os.getenv("GATEWAY_TOKEN", "")
 FARM_ID = os.getenv("FARM_ID", "")
 COOP_ID = os.getenv("COOP_ID", "")
-HARDWARE_ID = os.getenv("HARDWARE_ID", "PI_GATEWAY_001")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "5"))
+
+def get_unique_hardware_id():
+    """Generates a unique hardware ID from CPU serial or MAC address."""
+    serial = "UNKNOWN"
+    try:
+        # Try to get Raspberry Pi serial number
+        if os.path.exists('/proc/cpuinfo'):
+            with open('/proc/cpuinfo', 'r') as f:
+                for line in f:
+                    if line.startswith('Serial'):
+                        serial = line.split(':')[1].strip()
+                        return f"PI_{serial}"
+    except:
+        pass
+    
+    # Fallback to MAC address
+    mac = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff) for ele in range(0,8*6,8)][::-1])
+    return f"HW_{mac.replace(':', '').upper()}"
+
+HARDWARE_ID = os.getenv("HARDWARE_ID", get_unique_hardware_id())
+
+# Warning for localhost on Pi
+if "localhost" in CLOUD_API_URL and os.path.exists('/proc/cpuinfo'):
+    print(f"[!] WARNING: Using localhost for CLOUD_API_URL on a Raspberry Pi.")
+    print(f"    Your Pi cannot reach the Middleware at localhost. Update your .env!")
 
 DB_FILE = "telemetry_queue.db"
 
@@ -42,17 +67,18 @@ def fetch_esp32_data():
     """Polls the local ESP32 for current sensor readings."""
     url = f"https://{ESP32_IP}/get-current-data"
     try:
-        # verify=False is required for ESP32 self-signed certs
         response = requests.get(url, verify=False, timeout=3)
         if response.status_code == 200:
             return response.json()
-        print(f"[{datetime.now()}] Warning: ESP32 returned status {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        print(f"[{datetime.now()}] Error connecting to ESP32: {e}")
+    except Exception as e:
+        print(f"[{datetime.now()}] Connection failed to ESP32: {e}")
     return None
 
 def push_to_cloud(payload):
-    """Pushes formatted telemetry data to the cloud via persistent gateway token."""
+    """Pushes formatted telemetry data to the cloud."""
+    if not GATEWAY_TOKEN or not FARM_ID or not COOP_ID:
+        return False
+
     url = f"{CLOUD_API_URL}/v1/farms/{FARM_ID}/coops/{COOP_ID}/telemetry"
     headers = {
         "X-Gateway-Token": GATEWAY_TOKEN,
@@ -60,112 +86,126 @@ def push_to_cloud(payload):
     }
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=5)
-        if response.status_code in [200, 201]:
-            return True
-        else:
-            print(f"[{datetime.now()}] Cloud push failed. Status {response.status_code}: {response.text}")
-    except requests.exceptions.RequestException as e:
-        print(f"[{datetime.now()}] Network error pushing to cloud: {e}")
+        return response.status_code in [200, 201]
+    except Exception as e:
+        print(f"[{datetime.now()}] Cloud push error: {e}")
     return False
 
 def send_heartbeat():
-    """Reports gateway health status to the cloud."""
+    """Reports gateway health status for Discovery or Active tracking."""
+    if not GATEWAY_TOKEN:
+        # DISCOVERY MODE: Check-in with hardware ID so Admin can see us
+        url = f"{CLOUD_API_URL}/v1/devices/{HARDWARE_ID}/heartbeat"
+        payload = {"status": "online", "response": "Discovery Mode (Unassigned)"}
+        try:
+            res = requests.post(url, json=payload, timeout=5)
+            if res.status_code == 200:
+                print(f"[{datetime.now()}] Discovery Check-in: {HARDWARE_ID} (Waiting for Admin)")
+        except:
+            pass
+        return
+
+    # ACTIVE MODE: Normal heartbeat with token
     url = f"{CLOUD_API_URL}/v1/gateway/heartbeat"
     headers = {"X-Gateway-Token": GATEWAY_TOKEN}
+    payload = {"status": "online"}
     try:
-        requests.post(url, headers=headers, timeout=3)
+        requests.post(url, headers=headers, json=payload, timeout=5)
+        print(f"[{datetime.now()}] Heartbeat sent.")
+    except Exception as e:
+        print(f"[{datetime.now()}] Heartbeat error: {e}")
+
+def fetch_cloud_commands():
+    if not GATEWAY_TOKEN: return []
+    url = f"{CLOUD_API_URL}/v1/gateway/commands/{HARDWARE_ID}"
+    headers = {"X-Gateway-Token": GATEWAY_TOKEN}
+    try:
+        res = requests.get(url, headers=headers, timeout=5)
+        if res.status_code == 200:
+            return res.json().get("data", [])
+    except:
+        pass
+    return []
+
+def update_command_status(command_id, status, response_text):
+    if not GATEWAY_TOKEN: return
+    url = f"{CLOUD_API_URL}/v1/gateway/commands/{command_id}/status"
+    headers = {"X-Gateway-Token": GATEWAY_TOKEN, "Content-Type": "application/json"}
+    payload = {"status": status, "response": response_text}
+    try:
+        requests.post(url, headers=headers, json=payload, timeout=5)
     except:
         pass
 
-def queue_locally(conn, payload):
-    """Saves telemetry payload to the local database for later retry."""
+def relay_to_esp32(command):
+    cmd_type = command.get("command_type")
+    mapping = {
+        "fan_on": ("fan", True), "fan_off": ("fan", False),
+        "heater_on": ("heater", True), "heater_off": ("heater", False),
+        "feeder_on": ("feeder_motor", True), "feeder_off": ("feeder_motor", False),
+        "conveyor_on": ("conveyor_belt", True), "conveyor_off": ("conveyor_belt", False)
+    }
+    if cmd_type not in mapping: return False, "Unknown command"
+    
+    endpoint, state = mapping[cmd_type]
+    url = f"https://{ESP32_IP}/actuators/{endpoint}"
+    payload = {"state": state, "duration": command.get("action_duration")}
+    
     try:
-        c = conn.cursor()
-        c.execute('INSERT INTO telemetry_queue (payload) VALUES (?)', (json.dumps(payload),))
-        conn.commit()
+        res = requests.post(url, json=payload, verify=False, timeout=5)
+        return res.status_code == 200, res.text if res.status_code == 200 else "ESP32 Error"
     except Exception as e:
-        print(f"[{datetime.now()}] DB Sync error: {e}")
+        return False, str(e)
+
+def process_commands():
+    cmds = fetch_cloud_commands()
+    for cmd in cmds:
+        print(f"[{datetime.now()}] Executing: {cmd.get('command_type')}")
+        success, msg = relay_to_esp32(cmd)
+        update_command_status(cmd.get("id"), "executed" if success else "failed", msg)
+
+def queue_locally(conn, payload):
+    try:
+        conn.execute('INSERT INTO telemetry_queue (payload) VALUES (?)', (json.dumps(payload),))
+        conn.commit()
+    except:
+        pass
 
 def process_queue(conn):
-    """Attempts to push queued telemetry data if cloud is reachable."""
-    try:
-        c = conn.cursor()
-        # Fetch the oldest 50 records
-        c.execute('SELECT id, payload FROM telemetry_queue ORDER BY id ASC LIMIT 50')
-        rows = c.fetchall()
-        
-        for row in rows:
-            record_id, payload_str = row
-            payload = json.loads(payload_str)
-            
-            if push_to_cloud(payload):
-                # Successfully pushed, remove from queue
-                c.execute('DELETE FROM telemetry_queue WHERE id = ?', (record_id,))
-                conn.commit()
-            else:
-                # Still failing, stop processing queue until next cycle
-                break
-    except Exception as e:
-        print(f"[{datetime.now()}] Queue process error: {e}")
+    if not GATEWAY_TOKEN: return
+    c = conn.cursor()
+    c.execute('SELECT id, payload FROM telemetry_queue LIMIT 10')
+    for row in c.fetchall():
+        if push_to_cloud(json.loads(row[1])):
+            conn.execute('DELETE FROM telemetry_queue WHERE id = ?', (row[0],))
+            conn.commit()
+        else:
+            break
 
 def main():
-    global GATEWAY_TOKEN, FARM_ID, COOP_ID
-    
-    # 1. Check if provisioning is needed
-    if not GATEWAY_TOKEN or not FARM_ID or not COOP_ID:
-        print("Starting Zero-Config Setup...")
-        if not provisioning.run_setup_flow(CLOUD_API_URL):
-            print("Setup failed. Please check network and try again.")
-            return
-        
-        # Reload env after setup
-        load_dotenv()
-        GATEWAY_TOKEN = os.getenv("GATEWAY_TOKEN")
-        FARM_ID = os.getenv("FARM_ID")
-        COOP_ID = os.getenv("COOP_ID")
-
-    print(f"[{datetime.now()}] Tokkatot Gateway started.")
-    print(f"Farm: {FARM_ID} | Coop: {COOP_ID} | Interval: {POLL_INTERVAL}s")
-    
+    print(f"Tokkatot Gateway Started | ID: {HARDWARE_ID}")
     conn = init_db()
     last_heartbeat = 0
     
     try:
         while True:
-            cycle_start = time.time()
-            
-            # 2. Send heartbeat every 60 seconds
-            if time.time() - last_heartbeat > 60:
+            # Heartbeat every 30s
+            if time.time() - last_heartbeat > 30:
                 send_heartbeat()
                 last_heartbeat = time.time()
 
-            # 3. Poll local ESP32
-            raw_data = fetch_esp32_data()
-            if raw_data:
-                # Format payload for Tokkatot Cloud
-                payload = {
-                    "hardware_id": HARDWARE_ID,
-                    "sensors": {
-                        "temperature_c": float(raw_data.get("temperature", 0)),
-                        "humidity_pct": float(raw_data.get("humidity", 0)),
-                        "water_level_raw": float(raw_data.get("water_level", 0))
-                    }
-                }
-                
-                # Try to push directly, otherwise queue
-                if not push_to_cloud(payload):
-                    queue_locally(conn, payload)
-                
-                # Attempt to clear queue if cloud is back up
+            if GATEWAY_TOKEN:
+                data = fetch_esp32_data()
+                if data:
+                    payload = {"hardware_id": HARDWARE_ID, "sensors": data}
+                    if not push_to_cloud(payload):
+                        queue_locally(conn, payload)
                 process_queue(conn)
+                process_commands()
             
-            # Maintain stable loop interval
-            elapsed = time.time() - cycle_start
-            sleep_time = max(0.0, POLL_INTERVAL - elapsed)
-            time.sleep(sleep_time)
-
+            time.sleep(POLL_INTERVAL)
     except KeyboardInterrupt:
-        print("\nGateway shutting down.")
+        print("Shutting down...")
     finally:
         conn.close()
 

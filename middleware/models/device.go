@@ -37,6 +37,7 @@ type DeviceCommand struct {
 	IssuedBy     uuid.UUID  `json:"issued_by"`
 	CommandType  string     `json:"command_type"`
 	CommandValue *string    `json:"command_value,omitempty"`
+	ActionDuration *int    `json:"action_duration,omitempty"`
 	Status       string     `json:"status"`
 	Response     *string    `json:"response,omitempty"`
 	IssuedAt     time.Time  `json:"issued_at"`

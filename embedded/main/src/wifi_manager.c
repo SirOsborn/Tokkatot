@@ -2,24 +2,23 @@
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "esp_netif.h"
+#include "mdns.h"
 #include <string.h>
 
 static const char *TAG = "wifi_manager";
 
-static esp_err_t set_static_ip(esp_netif_t *netif)
+static void initialize_mdns(void)
 {
-    esp_netif_ip_info_t ip_info;
-    memset(&ip_info, 0, sizeof(esp_netif_ip_info_t));
+    // Initialize mDNS
+    ESP_ERROR_CHECK(mdns_init());
+    // Set mDNS hostname (will be tokkatot-sensor.local)
+    ESP_ERROR_CHECK(mdns_hostname_set("tokkatot-sensor"));
+    // Set default instance name
+    ESP_ERROR_CHECK(mdns_instance_name_set("Tokkatot Sensor Node"));
 
-    // Convert string IPs to proper format
-    ESP_ERROR_CHECK(esp_netif_str_to_ip4(WIFI_STATIC_IP, &ip_info.ip));
-    ESP_ERROR_CHECK(esp_netif_str_to_ip4(WIFI_GATEWAY, &ip_info.gw));
-    ESP_ERROR_CHECK(esp_netif_str_to_ip4(WIFI_NETMASK, &ip_info.netmask));
-
-    ESP_ERROR_CHECK(esp_netif_dhcpc_stop(netif));
-    ESP_ERROR_CHECK(esp_netif_set_ip_info(netif, &ip_info));
-
-    return ESP_OK;
+    // Add HTTP service
+    mdns_service_add("tokkatot-sensor", "_http", "_tcp", 80, NULL, 0);
+    ESP_LOGI(TAG, "mDNS initialized: tokkatot-sensor.local");
 }
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
@@ -67,7 +66,8 @@ esp_err_t wifi_init_sta(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    set_static_ip(sta_netif);
+    // Initialize discovery
+    initialize_mdns();
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
     return ESP_OK;

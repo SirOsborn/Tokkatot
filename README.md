@@ -1,78 +1,86 @@
-# 🐔 Tokkatot - Smart Poultry Farm Management System
+# 🐔 Tokkatot: Smart Agri-Tech Platform
 
-![Tokkatot Logo](frontend/assets/images/tokkatot%20logo-02.png)
+[![Tokkatot Layer](https://img.shields.io/badge/Architecture-3--Tier-blue.svg)](https://tokkatot.com)
+[![Shield: mDNS](https://img.shields.io/badge/Discovery-Zero--Config-brightgreen.svg)](#zero-config-discovery)
+[![Cloud: AWS](https://img.shields.io/badge/Cloud-AWS-orange.svg)](#cloud-infrastructure)
 
-**Digitalizing Cambodian Poultry Farming with IoT Automation & Cloud Intelligence**
-
-Tokkatot is a production-ready smart poultry management platform. It combines IoT sensor technology, coop-level automation, and a robust cloud backend to improve farm productivity while ensuring 24/7 poultry health monitoring.
+**Tokkatot** (Toggle + Tot) is a premium, 3-tier IoT platform designed for modern poultry farming. It bridges the gap between local sensor data and cloud-based management, allowing farmers to monitor and control their environment from anywhere in the world.
 
 ---
 
-## 🚀 Quick Start (Production Setup)
+## 🏗️ System Architecture
 
-The fastest way to launch Tokkatot is using **Docker Compose**.
+Tokkatot operates on a distributed "Cloud-to-Edge" architecture:
 
-### 1. Prerequisites
-- **Docker & Docker Compose**: [Install Docker](https://docs.docker.com/get-docker/)
-- **Go 1.23+**: (Only required if running outside Docker)
+```mermaid
+graph TD
+    subgraph "Cloud (AWS / Cloud Hosting)"
+        Dashboard["Frontend (PWA)"]
+        Middleware["Go Middleware (API)"]
+        DB[(PostgreSQL)]
+    end
 
-### 2. Configuration
-```bash
-# Clone the repository
-git clone https://github.com/SirOsbornOjr/tokkatot.git
-cd tokkatot
+    subgraph "The Bridge (Regional Hub)"
+        Pi["RPi Gateway (Python)"]
+    end
 
-# Populate your .env (Use the provided generator for VAPID keys)
-cp .env.example .env
-go run middleware/scripts/generate_vapid/main.go
+    subgraph "The Edge (Hardware Nodes)"
+        ESP32["ESP32 Sensor Node"]
+        Fans["Fans / Actuators"]
+    end
+
+    Dashboard -- "Issue Commands" --> Middleware
+    Middleware -- "Store State" --> DB
+    Pi -- "Poll Commands" --> Middleware
+    Pi -- "Relay (mDNS)" --> ESP32
+    ESP32 -- "Actuate" --> Fans
+    ESP32 -- "HTTPS Telemetry" --> Pi
+    Pi -- "Push" --> Middleware
 ```
 
-### 3. Launch
+---
+
+## 🚀 Key Features
+
+### 1. Zero-Config Discovery
+No more hardcoded IP addresses. Using **mDNS**, the Raspberry Pi gateway automatically discovers sensors on the local network as `tokkatot-sensor.local`. You can move your hardware to any WiFi router, and it will "just work."
+
+### 2. Full-Stack Control Loop
+Toggle fans, heaters, or feeders directly from your phone. Our **bi-directional relay** ensures that commands issued in the cloud are executed at the edge in near real-time.
+
+### 3. Offline Resilience
+The Gateway includes a **SQLite Telemetry Queue**. If your internet goes down, the Pi will store all sensor data locally and automatically sync it to the cloud as soon as the connection is restored.
+
+---
+
+## 📂 Repository Structure
+
+- [**`middleware/`**](file:///c:/Users/PureGoat/tokkatot/middleware): The high-performance Go API. Handles authentication, telemetry ingestion, and command queuing.
+- [**`frontend/`**](file:///c:/Users/PureGoat/tokkatot/frontend): A modern, responsive PWA for monitoring farm health.
+- [**`gateway/`**](file:///c:/Users/PureGoat/tokkatot/gateway): Python-based software for the Raspberry Pi. Acts as the bridge between local sensors and the cloud.
+- [**`embedded/`**](file:///c:/Users/PureGoat/tokkatot/embedded): ESP-IDF firmware for the ESP32. Handles sensors (DHT11, Water Level) and actuator control via HTTPS.
+
+---
+
+## 🛠️ Getting Started
+
+### 1. Provision the Gateway
+Flash Ubuntu Server to your Raspberry Pi and run the installer:
 ```bash
-docker-compose up -d
+curl -sSf https://raw.githubusercontent.com/SirOsborn/tokkatot/main/gateway/scripts/pi_setup.sh | bash
 ```
-The app will be available at `https://app.tokkatot.com` (if SSL is configured) or `http://localhost:3000` (locally).
+
+### 2. Flash the Sensors
+Use ESP-IDF to flash the firmware. The sensor will automatically connect to your home WiFi and broadcast itself as `tokkatot-sensor.local`.
+
+### 3. Connect to the Cloud
+Log in to [app.tokkatot.com](https://app.tokkatot.com), create a Coop, and "Claim" your Gateway using the 10-digit pairing code shown on your dashboard.
 
 ---
 
-## 🛠️ Technology Stack
+## 🧪 Development & Testing
 
-| Layer | Technology | Description |
-|---|---|---|
-| **Infrastructure** | Docker / Nginx / Certbot | Containerized stack with SSL automation |
-| **Backend** | Go 1.23 / Fiber v2 | High-performance REST API with JWT Auth |
-| **CI/CD** | GitHub Actions / GHCR | Automated build/push/deploy pipeline |
-| **Database** | PostgreSQL 15 | Persistent storage with named volumes |
-| **Frontend** | Vue.js 3 / PWA | Mobile-first, Khmer-language, zero-build PWA |
-| **IoT/Embedded** | ESP32-IDF / RPi 4B | Local HTTPS control & Telemetry ingestion |
+For detailed instructions on running tests and setting up local environments, see our [Setup Guide](file:///c:/Users/PureGoat/tokkatot/docs/SETUP_GUIDE.md).
 
 ---
-
-## 🔄 CI/CD Pipeline
-
-Tokkatot features a professional 3-tier deployment pipeline via **GitHub Actions**:
-
-1.  **Dev**: Pushes to `dev` branch build and deploy to the development server.
-2.  **Stage**: Pushes to `stage` are for final cloud validation.
-3.  **Prod**: Pushes to `main` trigger a production rebuild and deployment to `app.tokkatot.com`.
-
----
-
-## 🔐 Security & Compliance
-
-- **Pre-render Auth**: Blocking scripts prevent unauthorized UI access.
-- **Docker Lockdown**: Middleware is isolated from the public internet; all traffic must pass through the Nginx gateway.
-- **Registration Keys**: Enforced signup flow requiring physical keys or admin invites.
-- **Health Monitoring**: Standardized `/v1/health` probes for cloud uptime.
-
----
-
-## 📖 Documentation
-
-- **[DEPLOYMENT.md](DEPLOYMENT.md)**: Step-by-step guide for AWS EC2 & SSL setup.
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Technical system design and API surface.
-- **[CONTRIBUTING.md](CONTRIBUTING.md)**: Developer guidelines and AI Agent instructions.
-
----
-**Proprietary Software - Tokkatot Startup**
-*Designed for reliability, accessibility, and high impact in Cambodian agriculture.*
+© 2026 Tokkatot Agri-Tech. Built with ❤️ for the future of farming.

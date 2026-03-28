@@ -8,8 +8,9 @@ import (
 
 // DeviceCommandRequest represents a command sent to a device
 type DeviceCommandRequest struct {
-	CommandType  string  `json:"command_type" example:"on"`
-	CommandValue *string `json:"command_value,omitempty" example:"100"`
+	CommandType    string  `json:"command_type" example:"on"`
+	CommandValue   *string `json:"command_value,omitempty" example:"100"`
+	ActionDuration *int    `json:"action_duration,omitempty" example:"300"`
 }
 
 // AddDeviceRequest represents the request to add a new device
@@ -44,14 +45,15 @@ type DeviceStatusResponse struct {
 
 // CommandEntry represents a single command record in history
 type CommandEntry struct {
-	ID          uuid.UUID  `json:"command_id"`
-	DeviceID    uuid.UUID  `json:"device_id"`
-	DeviceName  string     `json:"device_name"`
-	CommandType string     `json:"command_type"`
-	Status      string     `json:"status"`
-	IssuedBy    uuid.UUID  `json:"issued_by"`
-	IssuedAt    time.Time  `json:"issued_at"`
-	ExecutedAt  *time.Time `json:"executed_at,omitempty"`
+	ID             uuid.UUID  `json:"command_id"`
+	DeviceID       uuid.UUID  `json:"device_id"`
+	DeviceName     string     `json:"device_name"`
+	CommandType    string     `json:"command_type"`
+	ActionDuration *int       `json:"action_duration,omitempty"`
+	Status         string     `json:"status"`
+	IssuedBy       uuid.UUID  `json:"issued_by"`
+	IssuedAt       time.Time  `json:"issued_at"`
+	ExecutedAt     *time.Time `json:"executed_at,omitempty"`
 }
 
 // BatchResult represents the result of a single command in a batch
@@ -63,7 +65,8 @@ type BatchResult struct {
 
 // BatchCommandRequest represents a request to issue commands to multiple devices
 type BatchCommandRequest struct {
-	DeviceIDs   []uuid.UUID `json:"device_ids"`
-	CommandType string      `json:"command_type"`
-	Parameters  *string     `json:"parameters,omitempty"`
+	DeviceIDs      []uuid.UUID `json:"device_ids"`
+	CommandType    string      `json:"command_type"`
+	Parameters     *string     `json:"parameters,omitempty"`
+	ActionDuration *int        `json:"action_duration,omitempty" example:"300"`
 }

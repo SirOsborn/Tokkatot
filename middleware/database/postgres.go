@@ -66,6 +66,8 @@ func CreateSchema() error {
 		`ALTER TABLE farm_users DROP CONSTRAINT IF EXISTS farm_users_role_check`,
 		`ALTER TABLE farm_users ADD CONSTRAINT farm_users_role_check CHECK (role IN ('farmer', 'viewer'))`,
 		`UPDATE farm_users SET role = 'farmer' WHERE role IN ('owner', 'manager')`,
+		// Add missing created_at to unassigned_gateways
+		`ALTER TABLE unassigned_gateways ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
 	}
 	for _, m := range migrations {
 		if _, merr := DB.Exec(m); merr != nil {

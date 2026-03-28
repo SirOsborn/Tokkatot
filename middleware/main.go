@@ -298,6 +298,8 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	// Device heartbeat (IoT devices - no AuthMiddleware, uses device/gateway key)
 	v1.Post("/devices/:hardware_id/heartbeat", api.UpdateDeviceHeartbeatHandler)
 	v1.Post("/gateway/heartbeat", api.UpdateDeviceHeartbeatHandler) // Support for X-Gateway-Token aware heartbeat
+	v1.Get("/gateway/commands/:hardware_id", api.GetGatewayCommandsHandler)
+	v1.Post("/gateway/commands/:command_id/status", api.UpdateGatewayCommandStatusHandler)
 
 	// ===== ADMIN ROUTES (role="admin" required) =====
 	admin := v1.Group("/admin")
@@ -313,6 +315,8 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	admin.Put("/profile", api.UpdateAdminProfileHandler)
 	admin.Get("/gateways", api.ListGatewaysHandler)
 	admin.Delete("/gateways/:id", api.RevokeGatewayHandler)
+	admin.Get("/unassigned-gateways", api.GetUnassignedGatewaysHandler)
+	admin.Post("/assign-gateway", api.AssignGatewayHandler)
 
 	// 404 Handler
 	app.Use(func(c *fiber.Ctx) error {

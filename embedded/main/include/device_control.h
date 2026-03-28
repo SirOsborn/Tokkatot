@@ -25,6 +25,7 @@ typedef struct {
 void device_control_init(void);
 void toggle_device(gpio_num_t pin, bool *state);
 void set_device(gpio_num_t pin, bool *state, bool on);
+void set_device_timed(gpio_num_t pin, bool *state, bool on, uint32_t duration_sec);
 void update_device_state(device_state_t *state);
 
 #endif // DEVICE_CONTROL_H

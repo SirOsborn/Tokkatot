@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS device_commands (
     issued_by UUID NOT NULL REFERENCES users(id),
     command_type VARCHAR(50) NOT NULL,
     command_value TEXT,
+    action_duration INTEGER,
     status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'success', 'failed', 'timeout')),
     response TEXT,
     issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -305,6 +306,14 @@ CREATE TABLE IF NOT EXISTS gateway_provisions (
     coop_id UUID REFERENCES coops(id) ON DELETE CASCADE,
     is_claimed BOOLEAN DEFAULT false,
     expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Unassigned Heartbeats (for Admin discovery)
+CREATE TABLE IF NOT EXISTS unassigned_gateways (
+    hardware_id TEXT PRIMARY KEY,
+    ip_address VARCHAR(45),
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
