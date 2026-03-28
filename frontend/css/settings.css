@@ -62,9 +62,10 @@
     padding: 16px 16px 6px; 
 }
 
-.logout-btn { 
-    width: calc(100% - 32px); 
-    margin: 32px 16px; 
+/* ✅ FIXED: match left/right spacing with settings-group */
+.logout-btn {
+    width: calc(100% - 32px);
+    margin: 32px auto;
 }
 
 .profile-form { 

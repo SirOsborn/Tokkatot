@@ -1,0 +1,206 @@
+/**
+ * Alerts Page Styles
+ * Tokkatot Design System
+ */
+
+/* Page Container */
+.alerts-page {
+  padding: 16px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Alert List Container */
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Individual Alert Item */
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--tok-surface, #ffffff);
+  border: 1px solid var(--tok-border, #e5e7eb);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.alert-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.alert-item.unread {
+  background: var(--tok-surface-elevated, #f8fafc);
+  border-color: var(--tok-teal);
+  border-left: 4px solid var(--tok-teal);
+}
+
+/* Alert Icon Wrapper */
+.alert-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.alert-icon-wrap.critical {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.alert-icon-wrap.warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.alert-icon-wrap.info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+/* Alert Content */
+.alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-message {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--tok-text-primary, #1f2937);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.alert-time {
+  font-size: 12px;
+  color: var(--tok-text-secondary, #6b7280);
+}
+
+.alert-acknowledged {
+  color: #10b981;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.alert-acknowledged .material-symbols-outlined {
+  font-size: 14px;
+}
+
+/* Alert Actions */
+.alert-action {
+  flex-shrink: 0;
+}
+
+/* Badge Count */
+.tok-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--tok-teal);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+/* Empty State */
+.alerts-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.alerts-empty .material-symbols-outlined {
+  font-size: 64px;
+  opacity: 0.3;
+  color: var(--tok-text-secondary, #6b7280);
+}
+
+.alerts-empty p {
+  margin-top: 16px;
+  color: var(--tok-text-secondary, #6b7280);
+  font-size: 16px;
+}
+
+/* Filter Controls */
+.alerts-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.alerts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.alerts-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tok-text-primary, #1f2937);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Filter Select */
+.tok-select {
+  padding: 10px 14px;
+  border: 1px solid var(--tok-border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--tok-surface, #ffffff);
+  color: var(--tok-text-primary, #1f2937);
+  font-size: 14px;
+  min-width: 180px;
+}
+
+.tok-select:focus {
+  outline: none;
+  border-color: var(--tok-teal);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 640px) {
+  .alert-item {
+    flex-wrap: wrap;
+  }
+  
+  .alert-action {
+    width: 100%;
+    margin-top: 12px;
+  }
+  
+  .alert-action .tok-btn {
+    width: 100%;
+  }
+  
+  .alerts-title {
+    font-size: 20px;
+  }
+  
+  .tok-select {
+    width: 100%;
+  }
+}
