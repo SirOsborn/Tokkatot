@@ -398,9 +398,10 @@ func SendDeviceCommandHandler(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		CommandType  string  `json:"command_type"`
-		CommandValue *string `json:"command_value,omitempty"`
-		Parameters   *string `json:"parameters,omitempty"`
+		CommandType    string  `json:"command_type"`
+		CommandValue   *string `json:"command_value,omitempty"`
+		Parameters     *string `json:"parameters,omitempty"`
+		ActionDuration *int    `json:"action_duration,omitempty"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return utils.BadRequest(c, "invalid_body", "Invalid request body")
@@ -411,7 +412,7 @@ func SendDeviceCommandHandler(c *fiber.Ctx) error {
 		value = req.Parameters
 	}
 
-	cmd, err := deviceService.IssueCommand(userID, farmID, deviceID, req.CommandType, value)
+	cmd, err := deviceService.IssueCommand(userID, farmID, deviceID, req.CommandType, value, req.ActionDuration)
 	if err != nil {
 		return utils.InternalError(c, "Failed to issue command")
 	}
@@ -612,4 +613,44 @@ func UpdateDeviceHeartbeatHandler(c *fiber.Ctx) error {
 	}
 
 	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Heartbeat recorded")
+}
+// GetGatewayCommandsHandler returns pending commands for a specific hardware_id
+func GetGatewayCommandsHandler(c *fiber.Ctx) error {
+	hardwareID := c.Params("hardware_id")
+	if strings.TrimSpace(hardwareID) == "" {
+		return utils.BadRequest(c, "invalid_id", "Invalid hardware ID")
+	}
+
+	commands, err := deviceService.GetPendingCommands(hardwareID)
+	if err != nil {
+		log.Printf("Get gateway commands error: %v", err)
+		return utils.InternalError(c, "Failed to fetch gateway commands")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, commands, "Gateway commands retrieved")
+}
+
+// UpdateGatewayCommandStatusHandler updates the status of a specific command
+func UpdateGatewayCommandStatusHandler(c *fiber.Ctx) error {
+	commandID, err := uuid.Parse(c.Params("command_id"))
+	if err != nil {
+		return utils.BadRequest(c, "invalid_id", "Invalid command ID")
+	}
+
+	var req struct {
+		Status   string `json:"status"`
+		Response string `json:"response"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequest(c, "invalid_body", "Invalid request body")
+	}
+
+	if err := deviceService.UpdateCommandStatus(commandID, req.Status, req.Response); err != nil {
+		if err == services.ErrCommandNotFound {
+			return utils.NotFound(c, "Command not found")
+		}
+		return utils.InternalError(c, "Failed to update command status")
+	}
+
+	return utils.SuccessResponse(c, fiber.StatusOK, nil, "Command status updated")
 }

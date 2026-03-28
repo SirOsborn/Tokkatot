@@ -129,7 +129,7 @@ static esp_err_t toggle_feeder_motor_handler(httpd_req_t *req)
     return send_text_response(req, device_state.feeder_motor ? "true" : "false");
 }
 
-static esp_err_t parse_state_body(httpd_req_t *req, bool *state_out)
+static esp_err_t parse_state_body(httpd_req_t *req, bool *state_out, uint32_t *duration_out)
 {
     int len = req->content_len;
     if (len <= 0 || len > 256) {
@@ -155,6 +155,15 @@ static esp_err_t parse_state_body(httpd_req_t *req, bool *state_out)
     }
 
     *state_out = cJSON_IsTrue(state);
+    
+    // Optional duration parsing
+    cJSON *duration = cJSON_GetObjectItem(root, "duration");
+    if (cJSON_IsNumber(duration)) {
+        *duration_out = (uint32_t)duration->valuedouble;
+    } else {
+        *duration_out = 0;
+    }
+
     cJSON_Delete(root);
     return ESP_OK;
 }
@@ -162,11 +171,12 @@ static esp_err_t parse_state_body(httpd_req_t *req, bool *state_out)
 static esp_err_t set_fan_handler(httpd_req_t *req)
 {
     bool on = false;
-    if (parse_state_body(req, &on) != ESP_OK) {
+    uint32_t duration = 0;
+    if (parse_state_body(req, &on, &duration) != ESP_OK) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid body");
         return ESP_FAIL;
     }
-    set_device(FAN_PIN, &device_state.fan, on);
+    set_device_timed(FAN_PIN, &device_state.fan, on, duration);
     update_device_state(&device_state);
     return send_text_response(req, device_state.fan ? "true" : "false");
 }
@@ -174,11 +184,12 @@ static esp_err_t set_fan_handler(httpd_req_t *req)
 static esp_err_t set_heater_handler(httpd_req_t *req)
 {
     bool on = false;
-    if (parse_state_body(req, &on) != ESP_OK) {
+    uint32_t duration = 0;
+    if (parse_state_body(req, &on, &duration) != ESP_OK) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid body");
         return ESP_FAIL;
     }
-    set_device(HEATER_PIN, &device_state.heater, on);
+    set_device_timed(HEATER_PIN, &device_state.heater, on, duration);
     update_device_state(&device_state);
     return send_text_response(req, device_state.heater ? "true" : "false");
 }
@@ -186,11 +197,12 @@ static esp_err_t set_heater_handler(httpd_req_t *req)
 static esp_err_t set_feeder_motor_handler(httpd_req_t *req)
 {
     bool on = false;
-    if (parse_state_body(req, &on) != ESP_OK) {
+    uint32_t duration = 0;
+    if (parse_state_body(req, &on, &duration) != ESP_OK) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid body");
         return ESP_FAIL;
     }
-    set_device(FEEDER_MOTOR_PIN, &device_state.feeder_motor, on);
+    set_device_timed(FEEDER_MOTOR_PIN, &device_state.feeder_motor, on, duration);
     update_device_state(&device_state);
     return send_text_response(req, device_state.feeder_motor ? "true" : "false");
 }
@@ -198,11 +210,12 @@ static esp_err_t set_feeder_motor_handler(httpd_req_t *req)
 static esp_err_t set_conveyer_handler(httpd_req_t *req)
 {
     bool on = false;
-    if (parse_state_body(req, &on) != ESP_OK) {
+    uint32_t duration = 0;
+    if (parse_state_body(req, &on, &duration) != ESP_OK) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid body");
         return ESP_FAIL;
     }
-    set_device(CONVEYER_PIN, &device_state.conveyer, on);
+    set_device_timed(CONVEYER_PIN, &device_state.conveyer, on, duration);
     update_device_state(&device_state);
     return send_text_response(req, device_state.conveyer ? "true" : "false");
 }

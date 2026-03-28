@@ -250,7 +250,7 @@ func (s *ScheduleService) ExecuteScheduleNow(userID, farmID, scheduleID uuid.UUI
 
 	commandType := sc.Action
 	commandValue := sc.ActionValue
-	cmd, err := NewDeviceService().IssueCommand(userID, farmID, sc.DeviceID, commandType, commandValue)
+	cmd, err := NewDeviceService().IssueCommand(userID, farmID, sc.DeviceID, commandType, commandValue, sc.ActionDuration)
 	if err != nil {
 		return nil, err
 	}

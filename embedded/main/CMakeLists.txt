@@ -17,6 +17,7 @@ idf_component_register(
         "json"
         "esp_adc"
         "dht"
+        "mdns"
     EMBED_TXTFILES  "../../certs/cert.pem"
                     "../../certs/key.pem"
 )

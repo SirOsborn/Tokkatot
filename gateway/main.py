@@ -14,7 +14,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Load environment configuration
 load_dotenv()
 
-ESP32_IP = os.getenv("ESP32_IP", "192.168.1.100")
+ESP32_IP = os.getenv("ESP32_IP", "tokkatot-sensor.local")
 CLOUD_API_URL = os.getenv("CLOUD_API_URL", "http://localhost:3000")
 GATEWAY_TOKEN = os.getenv("GATEWAY_TOKEN", "")
 FARM_ID = os.getenv("FARM_ID", "")
@@ -76,6 +76,84 @@ def send_heartbeat():
         requests.post(url, headers=headers, timeout=3)
     except:
         pass
+
+def fetch_cloud_commands():
+    """Checks for any pending actuator commands from the cloud."""
+    url = f"{CLOUD_API_URL}/v1/gateway/commands/{HARDWARE_ID}"
+    headers = {"X-Gateway-Token": GATEWAY_TOKEN}
+    try:
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code == 200:
+            return response.json().get("data", [])
+    except Exception as e:
+        print(f"[{datetime.now()}] Command fetch error: {e}")
+    return []
+
+def update_command_status(command_id, status, response_text):
+    """Reports the outcome of a command execution back to the cloud."""
+    url = f"{CLOUD_API_URL}/v1/gateway/commands/{command_id}/status"
+    headers = {
+        "X-Gateway-Token": GATEWAY_TOKEN,
+        "Content-Type": "application/json"
+    }
+    payload = {"status": status, "response": response_text}
+    try:
+        requests.post(url, headers=headers, json=payload, timeout=5)
+    except Exception as e:
+        print(f"[{datetime.now()}] Status update error: {e}")
+
+def relay_to_esp32(command):
+    """Translates cloud commands to local ESP32 actuator actions."""
+    cmd_type = command.get("command_type")
+    
+    # Mapping cloud command types to ESP32 endpoints
+    # Format: type -> (endpoint, state_boolean)
+    mapping = {
+        "fan_on": ("fan", True),
+        "fan_off": ("fan", False),
+        "heater_on": ("heater", True),
+        "heater_off": ("heater", False),
+        "feeder_on": ("feeder_motor", True),
+        "feeder_off": ("feeder_motor", False),
+        "conveyor_on": ("conveyor_belt", True),
+        "conveyor_off": ("conveyor_belt", False)
+    }
+    
+    if cmd_type not in mapping:
+        return False, f"Unknown command type: {cmd_type}"
+    
+    endpoint, state = mapping[cmd_type]
+    url = f"https://{ESP32_IP}/actuators/{endpoint}"
+    
+    # Extract duration (if any) to pass to ESP32
+    duration = command.get("action_duration")
+    payload = {"state": state}
+    if duration:
+        payload["duration"] = duration
+
+    try:
+        res = requests.post(url, json=payload, verify=False, timeout=5)
+        if res.status_code == 200:
+            return True, "Executed successfully"
+        return False, f"ESP32 rejected with status {res.status_code}"
+    except Exception as e:
+        return False, f"Connection failed: {str(e)}"
+
+def process_commands():
+    """Main sub-routine for handling cloud-to-device relay."""
+    pending = fetch_cloud_commands()
+    for cmd in pending:
+        cmd_id = cmd.get("id")
+        print(f"[{datetime.now()}] Processing Cloud Command: {cmd.get('command_type')}")
+        
+        success, message = relay_to_esp32(cmd)
+        status = "executed" if success else "failed"
+        update_command_status(cmd_id, status, message)
+        
+        if success:
+            print(f"[{datetime.now()}] Command {cmd_id} execution successful.")
+        else:
+            print(f"[{datetime.now()}] Command {cmd_id} failed: {message}")
 
 def queue_locally(conn, payload):
     """Saves telemetry payload to the local database for later retry."""
@@ -148,7 +226,7 @@ def main():
                     "sensors": {
                         "temperature_c": float(raw_data.get("temperature", 0)),
                         "humidity_pct": float(raw_data.get("humidity", 0)),
-                        "water_level_raw": float(raw_data.get("water_level", 0))
+                        "water_level": float(raw_data.get("water_level", 0))
                     }
                 }
                 
@@ -158,6 +236,9 @@ def main():
                 
                 # Attempt to clear queue if cloud is back up
                 process_queue(conn)
+            
+            # 4. Check for Cloud Commands
+            process_commands()
             
             # Maintain stable loop interval
             elapsed = time.time() - cycle_start
