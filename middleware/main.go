@@ -48,13 +48,13 @@ func main() {
 		log.Printf("⚠️  Admin seeding warning: %v", err)
 	}
 
-	// Seed test data (development only — skipped in production)
-	if cfg.Environment != "production" {
+	// Seed test data (always seed if TEST_FARMER_EMAIL is provided, even in production)
+	if cfg.TestFarmerEmail != "" || cfg.Environment != "production" {
 		if err := database.SeedTestData(); err != nil {
 			log.Printf("⚠️  Test data seeding warning: %v", err)
 		}
 	} else {
-		log.Println("ℹ️  Production environment — skipping test data seeding")
+		log.Println("ℹ️  Production environment — skipping test data seeding (no test farmer email)")
 	}
 
 	// Create Fiber app with optimized settings
