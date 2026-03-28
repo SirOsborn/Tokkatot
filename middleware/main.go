@@ -190,6 +190,16 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	// VAPID public key — no auth needed (browser needs it to build the subscription)
 	v1.Get("/users/push-key", api.GetVapidPublicKeyHandler)
 
+	// Zero-Config Gateway Provisioning (Pi-side - No Auth needed initially)
+	v1.Post("/gateway/provision/request", api.RequestProvisioningHandler)
+	v1.Get("/gateway/provision/status/:code", api.CheckProvisioningStatusHandler)
+
+	// Device heartbeat (IoT devices - no AuthMiddleware, uses device/gateway key)
+	v1.Post("/devices/:hardware_id/heartbeat", api.UpdateDeviceHeartbeatHandler)
+	v1.Post("/gateway/heartbeat", api.UpdateDeviceHeartbeatHandler) // Support for X-Gateway-Token aware heartbeat
+	v1.Get("/gateway/commands/:hardware_id", api.GetGatewayCommandsHandler)
+	v1.Post("/gateway/commands/:command_id/status", api.UpdateGatewayCommandStatusHandler)
+
 	// Protected routes (require authentication)
 	protected := v1.Group("")
 	protected.Use(api.AuthMiddleware)
@@ -238,9 +248,6 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Post("/farms/:farm_id/coops/:coop_id/devices/report", api.ReportCoopDevicesHandler)
 	protected.Post("/farms/:farm_id/claim-gateway", api.ClaimGatewayHandler)
 
-	// Zero-Config Gateway Provisioning (Pi-side - No Auth needed initially)
-	v1.Post("/gateway/provision/request", api.RequestProvisioningHandler)
-	v1.Get("/gateway/provision/status/:code", api.CheckProvisioningStatusHandler)
 
 	// Device management endpoints
 	protected.Get("/farms/:farm_id/devices", api.ListDevicesHandler)
@@ -295,11 +302,6 @@ func setupRoutes(app *fiber.App, frontendPath string) {
 	protected.Get("/ws", websocket.New(api.WebSocketHandler))
 	protected.Get("/ws/stats", api.GetWebSocketStatsHandler)
 
-	// Device heartbeat (IoT devices - no AuthMiddleware, uses device/gateway key)
-	v1.Post("/devices/:hardware_id/heartbeat", api.UpdateDeviceHeartbeatHandler)
-	v1.Post("/gateway/heartbeat", api.UpdateDeviceHeartbeatHandler) // Support for X-Gateway-Token aware heartbeat
-	v1.Get("/gateway/commands/:hardware_id", api.GetGatewayCommandsHandler)
-	v1.Post("/gateway/commands/:command_id/status", api.UpdateGatewayCommandStatusHandler)
 
 	// ===== ADMIN ROUTES (role="admin" required) =====
 	admin := v1.Group("/admin")
