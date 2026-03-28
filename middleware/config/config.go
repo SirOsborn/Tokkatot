@@ -29,7 +29,7 @@ type Config struct {
 	InitialAdminEmail    string
 	InitialAdminPassword string
 
-	// Test/Staging Farmer (seeded in staging only)
+	// Test/Local Farmer (seeded in development only)
 	TestFarmerEmail    string
 	TestFarmerPassword string
 	DemoFarmName       string
