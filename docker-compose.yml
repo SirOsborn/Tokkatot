@@ -5,7 +5,7 @@ services:
   # ──────────────────────────────────────────────────────────
   nginx:
     image: nginx:1.25-alpine
-    container_name: tokkatot-nginx
+    container_name: tokkatot-nginx-prod
     restart: always
     ports:
       - "80:80"
@@ -26,7 +26,7 @@ services:
   # ──────────────────────────────────────────────────────────
   certbot:
     image: certbot/certbot
-    container_name: tokkatot-certbot
+    container_name: tokkatot-certbot-prod
     restart: always
     volumes:
       - certbot-webroot:/var/www/certbot
@@ -40,7 +40,7 @@ services:
   # ──────────────────────────────────────────────────────────
   database:
     image: postgres:15-alpine
-    container_name: tokkatot-database
+    container_name: tokkatot-database-prod
     restart: always
     environment:
       POSTGRES_USER: tokkatot
@@ -68,7 +68,7 @@ services:
     build:
       context: .
       dockerfile: middleware/Dockerfile
-    container_name: tokkatot-middleware
+    container_name: tokkatot-middleware-prod
     restart: always
     depends_on:
       database:
@@ -108,7 +108,7 @@ services:
   ai-service:
     build:
       context: ./ai-service
-    container_name: tokkatot-ai
+    container_name: tokkatot-ai-prod
     profiles:
       - future_phase
     expose:
@@ -124,7 +124,7 @@ services:
   # ──────────────────────────────────────────────────────────
   gateway-sim:
     image: golang:1.23-alpine
-    container_name: tokkatot-gateway-sim
+    container_name: tokkatot-gateway-sim-prod
     restart: on-failure
     environment:
       CLOUD_API_URL: http://tokkatot-middleware:3000
