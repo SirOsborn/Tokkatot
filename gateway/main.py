@@ -160,13 +160,20 @@ def send_heartbeat():
             print(f"[{datetime.now()}] Discovery Check-in error: {e}")
         return
 
-    # ACTIVE MODE: Normal heartbeat with token
-    url = f"{CLOUD_API_URL}/v1/gateway/heartbeat"
-    headers = {"X-Gateway-Token": GATEWAY_TOKEN}
+    # ACTIVE MODE: Normal heartbeat (must include hardware_id)
+    # Note: `/v1/gateway/heartbeat` is currently routed to a handler that expects `:hardware_id`.
+    # Use the stable heartbeat endpoint with an explicit hardware id.
+    url = f"{CLOUD_API_URL}/v1/devices/{HARDWARE_ID}/heartbeat"
+    headers = {"Content-Type": "application/json"}
+    if GATEWAY_TOKEN:
+        headers["X-Gateway-Token"] = GATEWAY_TOKEN
     payload = {"status": "online"}
     try:
-        requests.post(url, headers=headers, json=payload, timeout=5)
-        print(f"[{datetime.now()}] Heartbeat sent.")
+        res = requests.post(url, headers=headers, json=payload, timeout=5)
+        if res.status_code in [200, 201]:
+            print(f"[{datetime.now()}] Heartbeat sent.")
+        else:
+            print(f"[{datetime.now()}] Heartbeat failed: HTTP {res.status_code}")
     except Exception as e:
         print(f"[{datetime.now()}] Heartbeat error: {e}")
 
@@ -207,9 +214,26 @@ def relay_to_esp32(command):
         "feeder_on": ("feeder_motor", True), "feeder_off": ("feeder_motor", False),
         "conveyor_on": ("conveyor_belt", True), "conveyor_off": ("conveyor_belt", False)
     }
-    if cmd_type not in mapping: return False, "Unknown command"
-    
-    endpoint, state = mapping[cmd_type]
+
+    # Newer UI issues generic commands (`turn_on` / `turn_off`) per-device.
+    # When available, use `device_model` to map to the ESP32 actuator endpoint.
+    if cmd_type in ("turn_on", "turn_off"):
+        model = (command.get("device_model") or "").strip().lower()
+        model_to_endpoint = {
+            "fan": "fan",
+            "heater": "heater",
+            "feeder_motor": "feeder_motor",
+            "conveyor_belt": "conveyor_belt",
+        }
+        endpoint = model_to_endpoint.get(model)
+        if not endpoint:
+            return False, f"Unknown device model for {cmd_type}: {model or 'missing'}"
+        state = cmd_type == "turn_on"
+    else:
+        if cmd_type not in mapping:
+            return False, "Unknown command"
+        endpoint, state = mapping[cmd_type]
+
     url = f"https://{ESP32_IP}/actuators/{endpoint}"
     payload = {"state": state, "duration": command.get("action_duration")}
     

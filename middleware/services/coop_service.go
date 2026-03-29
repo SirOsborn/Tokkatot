@@ -26,6 +26,57 @@ func NewCoopService() *CoopService {
 	}
 }
 
+func (s *CoopService) attachLatestTelemetry(coopID uuid.UUID, c *schemas.CoopWithDevices) {
+	if c == nil || coopID == uuid.Nil {
+		return
+	}
+
+	var (
+		tempVal sql.NullFloat64
+		tempTs  sql.NullTime
+		humVal  sql.NullFloat64
+		humTs   sql.NullTime
+	)
+
+	_ = database.DB.QueryRow(`
+		SELECT dr.value, dr.timestamp
+		FROM device_readings dr
+		JOIN devices d ON dr.device_id = d.id
+		WHERE d.coop_id = $1 AND dr.sensor_type = 'temperature'
+		ORDER BY dr.timestamp DESC
+		LIMIT 1
+	`, coopID).Scan(&tempVal, &tempTs)
+
+	_ = database.DB.QueryRow(`
+		SELECT dr.value, dr.timestamp
+		FROM device_readings dr
+		JOIN devices d ON dr.device_id = d.id
+		WHERE d.coop_id = $1 AND dr.sensor_type = 'humidity'
+		ORDER BY dr.timestamp DESC
+		LIMIT 1
+	`, coopID).Scan(&humVal, &humTs)
+
+	if tempVal.Valid {
+		v := tempVal.Float64
+		c.Temperature = &v
+	}
+	if humVal.Valid {
+		v := humVal.Float64
+		c.Humidity = &v
+	}
+
+	var latest time.Time
+	if tempTs.Valid && tempTs.Time.After(latest) {
+		latest = tempTs.Time
+	}
+	if humTs.Valid && humTs.Time.After(latest) {
+		latest = humTs.Time
+	}
+	if !latest.IsZero() {
+		c.LastUpdated = &latest
+	}
+}
+
 // ListCoops returns all coops for a farm
 func (s *CoopService) ListCoops(userID, farmID uuid.UUID) ([]schemas.CoopWithDevices, error) {
 	if err := s.farmService.CheckAccess(userID, farmID, "viewer"); err != nil {
@@ -52,6 +103,7 @@ func (s *CoopService) ListCoops(userID, farmID uuid.UUID) ([]schemas.CoopWithDev
 			&c.MainDeviceID, &c.TempMin, &c.TempMax, &c.WaterLevelHalfThreshold, &c.Description, &c.IsActive, &c.CreatedAt, &c.DeviceCount); err != nil {
 			continue
 		}
+		s.attachLatestTelemetry(c.ID, &c)
 		coops = append(coops, c)
 	}
 	return coops, nil
@@ -75,6 +127,9 @@ func (s *CoopService) GetCoop(userID, farmID, coopID uuid.UUID) (schemas.CoopWit
 
 	if err == sql.ErrNoRows {
 		return c, ErrCoopNotFound
+	}
+	if err == nil {
+		s.attachLatestTelemetry(c.ID, &c)
 	}
 	return c, err
 }

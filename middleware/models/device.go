@@ -43,6 +43,7 @@ type DeviceCommand struct {
 	IssuedAt     time.Time  `json:"issued_at"`
 	ExecutedAt   *time.Time `json:"executed_at,omitempty"`
 	CreatedAt    time.Time  `json:"created_at"`
+	DeviceModel  *string    `json:"device_model,omitempty"`
 }
 
 // DeviceConfiguration represents a device parameter setting
