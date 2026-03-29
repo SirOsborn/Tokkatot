@@ -209,12 +209,12 @@
         <div v-if="devices.length > 0">
           <div class="device-row" v-for="d in devices.slice(0, 6)" :key="d.id">
             <div style="width:44px;height:44px;border-radius:12px;background:rgba(0,137,123,0.1);display:flex;align-items:center;justify-content:center;color:var(--tok-teal);">
-              <!-- Pass full device object to deviceIcon -->
-              <span class="material-symbols-outlined">{{ deviceIcon(d) }}</span>
+              <!-- Pass full device object to deviceIcon (fallback-safe) -->
+              <span class="material-symbols-outlined">{{ deviceIcon ? deviceIcon(d) : 'devices' }}</span>
             </div>
             <div class="device-info" style="margin-left:12px;">
-              <!-- Translated device name via getDeviceName() -->
-              <div class="device-name">{{ getDeviceName(d) }}</div>
+              <!-- Translated device name via getDeviceName() (fallback-safe) -->
+              <div class="device-name">{{ getDeviceName ? getDeviceName(d) : (d.name || d.model || d.type || '—') }}</div>
               <div class="device-status" :class="d.status === 'online' ? 'online' : 'offline'">
                 {{ d.status === 'online' ? t('online') : t('offline') }}
               </div>
@@ -347,7 +347,7 @@
 <script src="/js/utils/api.js?v=1.5"></script>
 <script src="/js/utils/components.js?v=1.5"></script>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="/js/index.js?v=1.5"></script>
+  <script src="/js/index.js?v=1.6"></script>
 
 </body>
 </html>
