@@ -171,15 +171,22 @@ def send_heartbeat():
         print(f"[{datetime.now()}] Heartbeat error: {e}")
 
 def fetch_cloud_commands():
-    if not GATEWAY_TOKEN: return []
+    if not GATEWAY_TOKEN:
+        return []
     url = f"{CLOUD_API_URL}/v1/gateway/commands/{HARDWARE_ID}"
     headers = {"X-Gateway-Token": GATEWAY_TOKEN}
     try:
         res = requests.get(url, headers=headers, timeout=5)
         if res.status_code == 200:
-            return res.json().get("data", [])
-    except:
-        pass
+            body = res.json()
+            if isinstance(body, list):
+                return body
+            if isinstance(body, dict):
+                data = body.get("data", [])
+                return data if isinstance(data, list) else []
+            return []
+    except Exception:
+        return []
     return []
 
 def update_command_status(command_id, status, response_text):
@@ -213,7 +220,7 @@ def relay_to_esp32(command):
         return False, str(e)
 
 def process_commands():
-    cmds = fetch_cloud_commands()
+    cmds = fetch_cloud_commands() or []
     for cmd in cmds:
         print(f"[{datetime.now()}] Executing: {cmd.get('command_type')}")
         success, msg = relay_to_esp32(cmd)
