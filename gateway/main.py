@@ -47,6 +47,7 @@ HARDWARE_ID = os.getenv("HARDWARE_ID", get_unique_hardware_id())
 if "localhost" in CLOUD_API_URL and os.path.exists('/proc/cpuinfo'):
     print(f"[!] WARNING: Using localhost for CLOUD_API_URL on a Raspberry Pi.")
     print(f"    Your Pi cannot reach the Middleware at localhost. Update your .env!")
+print(f"[i] CLOUD_API_URL={CLOUD_API_URL}")
 
 DB_FILE = "telemetry_queue.db"
 
@@ -153,8 +154,10 @@ def send_heartbeat():
             res = requests.post(url, json=payload, timeout=5)
             if res.status_code == 200:
                 print(f"[{datetime.now()}] Discovery Check-in: {HARDWARE_ID} (Waiting for Admin)")
-        except:
-            pass
+            else:
+                print(f"[{datetime.now()}] Discovery Check-in failed: HTTP {res.status_code}")
+        except Exception as e:
+            print(f"[{datetime.now()}] Discovery Check-in error: {e}")
         return
 
     # ACTIVE MODE: Normal heartbeat with token
