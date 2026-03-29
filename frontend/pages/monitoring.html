@@ -169,11 +169,40 @@
             return;
         }
         strip.innerHTML = entries.slice(0, 12).map((item, i) => {
-            const time = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const temp = item.temperature != null ? Number(item.temperature).toFixed(1) : '--';
+            const hasHour = item && item.hour != null;
+            const time = hasHour
+                ? String(item.hour)
+                : new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const rawTemp = hasHour ? item.temp : item.temperature;
+            const temp = rawTemp != null ? Number(rawTemp).toFixed(1) : '--';
             return `<div class="hour-cell${i === 0 ? ' current' : ''}">
-                        <div class="h-time">${i === 0 ? (window.i18n?.t('now') || 'Now') : time}</div>
+                        <div class="h-time">${time}</div>
                         <div class="h-temp">${temp}°</div>
+                    </div>`;
+        }).join('');
+    }
+
+    /* ── Render history list ── */
+    function renderHistory(days) {
+        const list = document.getElementById('historyList');
+        if (!list) return;
+        if (!days || !days.length) {
+            list.innerHTML = '<div class="no-data-msg" data-i18n="no_historical_data">' + (window.i18n?.t('no_historical_data') || 'No historical data available') + '</div>';
+            return;
+        }
+        const fmt = v => v != null ? Number(v).toFixed(1) + '°' : '--°';
+        const highLabel = window.i18n?.t('highest') || 'Highest';
+        const lowLabel  = window.i18n?.t('lowest')  || 'Lowest';
+        list.innerHTML = days.map(d => {
+            const label = d.label || '—';
+            const high  = d.high?.temp;
+            const low   = d.low?.temp;
+            return `<div class="history-item" style="display:flex;justify-content:space-between;align-items:center;padding:12px 8px;border-bottom:1px solid rgba(0,0,0,0.06);">
+                        <div style="font-weight:700;">${label}</div>
+                        <div style="display:flex;gap:10px;color:var(--tok-text-secondary);font-size:12px;">
+                            <span>${highLabel}: ${fmt(high)}</span>
+                            <span>${lowLabel}: ${fmt(low)}</span>
+                        </div>
                     </div>`;
         }).join('');
     }
@@ -212,8 +241,14 @@
         if (lineEl) {
             const high  = data.temp_high ?? temp;
             const low   = data.temp_low  ?? temp;
-            const hTime = data.high_at ? new Date(data.high_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
-            const lTime = data.low_at  ? new Date(data.low_at ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
+            const fmtTime = (v) => {
+                if (!v) return '--';
+                if (typeof v === 'string') return v;
+                try { return new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+                catch(_) { return '--'; }
+            };
+            const hTime = fmtTime(data.high_at);
+            const lTime = fmtTime(data.low_at);
             const fmt   = v => v != null ? Number(v).toFixed(1) + '°' : '--°';
             const highestLabel = window.i18n?.t('highest') || 'Highest';
             const lowestLabel = window.i18n?.t('lowest') || 'Lowest';
@@ -228,13 +263,23 @@
         if (!farmId || !coopId) return;
 
         try {
-            const res  = await window.API.get('/v1/farms/' + farmId + '/coops/' + coopId);
-            setHero((res?.data) || {});
-        } catch(e) { console.warn('coop fetch', e); }
-
-        try {
             const tr = await window.API.get('/v1/farms/' + farmId + '/coops/' + coopId + '/temperature-timeline');
-            renderHourly((tr?.data?.points) || []);
+            const timeline = (tr?.data) || {};
+            const coopRes  = await window.API.get('/v1/farms/' + farmId + '/coops/' + coopId);
+            const coopObj  = (coopRes?.data) || {};
+
+            setHero({
+                name:        coopObj.name || timeline.coop_name,
+                temperature: timeline.current_temp ?? null,
+                humidity:    timeline.current_humidity ?? null,
+                temp_high:   timeline.today?.high?.temp,
+                high_at:     timeline.today?.high?.time,
+                temp_low:    timeline.today?.low?.temp,
+                low_at:      timeline.today?.low?.time,
+            });
+
+            renderHourly((timeline.today?.hourly) || []);
+            renderHistory((timeline.history) || []);
         } catch(e) { renderHourly([]); }
     }
 
