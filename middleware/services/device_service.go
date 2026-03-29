@@ -686,7 +686,7 @@ func (s *DeviceService) GetDeviceCommands(userID, farmID, deviceID uuid.UUID, li
 // GetPendingCommands returns all pending commands for a specific gateway/hardware
 func (s *DeviceService) GetPendingCommands(hardwareID string) ([]models.DeviceCommand, error) {
 	rows, err := database.DB.Query(`
-		SELECT dc.id, dc.device_id, dc.farm_id, dc.coop_id, dc.issued_by, dc.command_type, dc.command_value, dc.action_duration, dc.status, dc.response, dc.issued_at, dc.executed_at, dc.created_at
+		SELECT dc.id, dc.device_id, dc.farm_id, dc.coop_id, dc.issued_by, dc.command_type, dc.command_value, dc.action_duration, dc.status, dc.response, dc.issued_at, dc.executed_at, dc.created_at, d.model
 		FROM device_commands dc
 		JOIN devices d ON dc.device_id = d.id
 		WHERE d.hardware_id = $1 AND dc.status = 'pending'
@@ -700,7 +700,7 @@ func (s *DeviceService) GetPendingCommands(hardwareID string) ([]models.DeviceCo
 	var commands []models.DeviceCommand
 	for rows.Next() {
 		var c models.DeviceCommand
-		if err := rows.Scan(&c.ID, &c.DeviceID, &c.FarmID, &c.CoopID, &c.IssuedBy, &c.CommandType, &c.CommandValue, &c.ActionDuration, &c.Status, &c.Response, &c.IssuedAt, &c.ExecutedAt, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.DeviceID, &c.FarmID, &c.CoopID, &c.IssuedBy, &c.CommandType, &c.CommandValue, &c.ActionDuration, &c.Status, &c.Response, &c.IssuedAt, &c.ExecutedAt, &c.CreatedAt, &c.DeviceModel); err != nil {
 			continue
 		}
 		commands = append(commands, c)

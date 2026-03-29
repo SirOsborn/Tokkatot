@@ -210,7 +210,18 @@ const app = createApp({
 
     async toggleDevice(device) {
       device.loading = true;
-      const cmd = device.last_state === 'on' ? 'turn_off' : 'turn_on';
+      const wantOn = device.last_state !== 'on';
+
+      // For gateway compatibility, prefer model-specific commands when possible.
+      // Gateway understands: fan_on/off, heater_on/off, feeder_on/off, conveyor_on/off.
+      const model = this.getDeviceModel(device);
+      const cmdByModel = {
+        'fan':           wantOn ? 'fan_on' : 'fan_off',
+        'heater':        wantOn ? 'heater_on' : 'heater_off',
+        'feeder_motor':  wantOn ? 'feeder_on' : 'feeder_off',
+        'conveyor_belt': wantOn ? 'conveyor_on' : 'conveyor_off',
+      };
+      const cmd = cmdByModel[model] || (wantOn ? 'turn_on' : 'turn_off');
       try {
         const fid = this.selectedFarmId;
         await window.API.post('/v1/farms/' + fid + '/devices/' + device.id + '/commands', { command_type: cmd });
