@@ -3,8 +3,8 @@
 
 #include "esp_err.h"
 
-#define WIFI_SSID "Smart Poultry 1.0.0-0001"
-#define WIFI_PASS "skibiditoilet168"
+#define WIFI_SSID "Anya"
+#define WIFI_PASS "cutiepie"
 
 #define WIFI_STATIC_IP "10.0.0.2"
 #define WIFI_GATEWAY   "10.0.0.1"
