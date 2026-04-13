@@ -1,0 +1,24 @@
+Category,Subcategory,Item,Qty,Unit Cost (USD),Duration (Months),Subtotal (USD),Priority,Phase,Owner,Notes
+Cloud Infra,Compute,AWS EC2 instance,1,,,,"Must-have",P1,,
+Cloud Infra,Storage,EBS gp3 volume,1,,,,"Must-have",P1,,
+Cloud Infra,Network,Public IPv4,1,,,,"Must-have",P1,,
+Cloud Infra,Backup,EBS snapshots,1,,,,"Must-have",P1,,
+Cloud Infra,Data Transfer,Outbound bandwidth reserve,1,,,,"Must-have",P1,,
+Cloudflare,Edge Security,"WAF/rate-limit paid add-on (if used)",1,,,,"Nice-to-have",P1,,
+Cloudflare,Website,"Pages/Workers paid tier (if needed)",1,,,,"Nice-to-have",P1,,
+Data Platform,Object Storage,"AI image storage bucket (S3 or R2)",1,,,,"Must-have",P3,,
+Data Platform,Requests,Object storage operation reserve,1,,,,"Must-have",P3,,
+Data Platform,Lifecycle,Tiering/archive reserve,1,,,,"Nice-to-have",P4,,
+Software,Landing Page,Final UI/content/assets completion,1,,,,"Must-have",P1,,Technical spend only
+Software,Web App,"QA, bug bash, pilot hardening tools",1,,,,"Must-have",P2,,
+Software,Security,Testing tools/scanners/logging tools,1,,,,"Nice-to-have",P2,,
+AI Service,Integration,AI API deployment and integration infra,1,,,,"Must-have",P3,,
+AI Service,Data Ops,Labeling/storage utilities,1,,,,"Nice-to-have",P4,,
+Hardware,Standard Kit,Gateway kit for standard farm,2,,,,"Must-have",P2,,Pi4 + sensors + relays
+Hardware,AI Kit,Gateway kit for AI farm,1,,,,"Must-have",P3,,Pi5 + AI HAT+ + camera
+Hardware,Spare Parts,Sensors/relays/SD cards/cables reserve,1,,,,"Must-have",P2,,
+Hardware,Enclosure & Power,"Cases, PSU, cooling, weather protection",3,,,,"Must-have",P2,,
+R&D Testing,Bench Testing,Test consumables and replacements,1,,,,"Must-have",P2,,
+R&D Testing,Field Testing,"On-site test support materials",1,,,,"Must-have",P3,,Excluding logistics if separate
+R&D Testing,Validation,Calibration and reliability tests,1,,,,"Must-have",P3,,
+Risk Buffer,Contingency,"Technical contingency reserve (10-15%)",1,,,,"Must-have",P1-P5,,From subtotal
